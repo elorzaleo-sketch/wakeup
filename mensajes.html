@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Wake Up · Generador de mensajes</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+  :root{
+    --cyan:#5DB4C9; --pink:#F11D8C; --green:#199432; --black:#080808;
+    --bg:#f4f7f8; --card:#ffffff; --line:#e2e8ea; --muted:#7a8a8f;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0; font-family:'Outfit',sans-serif; color:var(--black);
+    background:var(--bg);
+    background-image:radial-gradient(circle at 12% 0%, rgba(93,180,201,.10), transparent 40%),
+                     radial-gradient(circle at 95% 8%, rgba(241,29,140,.08), transparent 38%);
+    min-height:100vh;
+  }
+  header{
+    display:flex; align-items:center; gap:14px; padding:12px 22px;
+    background:var(--black); color:#fff; position:sticky; top:0; z-index:20;
+  }
+  .logo{ height:44px; display:flex; align-items:center; }
+  .logo svg{ height:44px; width:auto; display:block; }
+  header h1{ font-family:'Bricolage Grotesque'; font-weight:500; font-size:15px; margin:0; opacity:.7; }
+  .layout{ display:grid; grid-template-columns:1fr 420px; gap:24px; max-width:1240px; margin:0 auto; padding:24px 22px 60px; align-items:start; }
+  @media(max-width:980px){ .layout{ grid-template-columns:1fr; } .preview-wrap{ position:static!important; } }
+
+  .card{ background:var(--card); border:1px solid var(--line); border-radius:16px; padding:18px 18px 20px; margin-bottom:16px; box-shadow:0 1px 2px rgba(8,8,8,.03); }
+  .card > .title{ display:flex; align-items:center; gap:9px; font-family:'Bricolage Grotesque'; font-weight:600; font-size:17px; margin:0 0 14px; }
+  .card > .title .emoji{ font-size:20px; }
+  .pill{ font-size:11px; font-weight:600; padding:2px 9px; border-radius:99px; background:rgba(93,180,201,.16); color:#2b7a8c; text-transform:uppercase; letter-spacing:.4px; }
+  .pill.act{ background:rgba(241,29,140,.12); color:#b01069; }
+
+  label{ display:block; font-size:12px; font-weight:600; color:var(--muted); margin:0 0 5px; text-transform:uppercase; letter-spacing:.3px; }
+  input[type=text],input[type=time],input[type=date],select,textarea{
+    width:100%; font-family:inherit; font-size:14px; padding:9px 11px; border:1px solid var(--line);
+    border-radius:10px; background:#fbfdfd; color:var(--black); outline:none; transition:border-color .15s;
+  }
+  input:focus,select:focus,textarea:focus{ border-color:var(--cyan); }
+  textarea{ resize:vertical; min-height:42px; }
+  .row{ display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end; }
+  .field{ flex:1; min-width:120px; }
+
+  .item{ background:#f8fbfc; border:1px solid var(--line); border-radius:12px; padding:12px; margin-bottom:10px; position:relative; }
+  .item .item-head{ display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; }
+  .item .item-head .name{ font-weight:600; font-size:13px; color:var(--black); }
+  .del{ border:none; background:none; color:var(--muted); cursor:pointer; font-size:18px; line-height:1; padding:2px 6px; border-radius:8px; }
+  .del:hover{ background:rgba(241,29,140,.1); color:var(--pink); }
+
+  .add{ display:inline-flex; align-items:center; gap:6px; border:1.5px dashed var(--cyan); color:#2b7a8c; background:rgba(93,180,201,.07);
+        font-family:inherit; font-weight:600; font-size:13px; padding:8px 14px; border-radius:10px; cursor:pointer; margin-top:2px; transition:.15s; }
+  .add:hover{ background:rgba(93,180,201,.16); }
+
+  .chips{ display:flex; flex-wrap:wrap; gap:6px; margin:8px 0 4px; }
+  .chip{ display:inline-flex; align-items:center; gap:6px; background:var(--black); color:#fff; font-size:12px; font-weight:600; padding:4px 6px 4px 11px; border-radius:99px; }
+  .chip.todos{ background:var(--green); }
+  .chip button{ border:none; background:rgba(255,255,255,.2); color:#fff; width:17px; height:17px; border-radius:99px; cursor:pointer; font-size:11px; line-height:1; }
+  .add-col{ display:flex; gap:8px; align-items:center; }
+  .add-col select{ flex:1; }
+  .plus{ width:38px; min-width:38px; height:38px; border-radius:10px; border:none; background:var(--cyan); color:#fff; font-size:20px; cursor:pointer; font-weight:700; }
+  .plus:hover{ background:#4aa3b8; }
+  .sub{ font-size:11px; color:var(--muted); }
+  .turno-grid{ display:flex; gap:14px; flex-wrap:wrap; align-items:flex-start; }
+  .turno-grid .hor{ max-width:150px; }
+  .turno-grid .cols{ flex:1; min-width:200px; }
+
+  .preview-wrap{ position:sticky; top:80px; }
+  .preview{ background:#0b1416; border-radius:16px; padding:0; overflow:hidden; box-shadow:0 8px 30px rgba(8,8,8,.18); }
+  .preview .wa-top{ background:#1f2c33; color:#cfe9d6; padding:11px 16px; display:flex; align-items:center; gap:10px; font-size:13px; font-weight:600; }
+  .preview .wa-top .dot{ width:30px;height:30px;border-radius:99px;background:var(--green);display:flex;align-items:center;justify-content:center;font-size:15px; }
+  .preview .wa-body{ padding:18px 14px; background:#0b141a;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40'%3E%3Ccircle cx='20' cy='20' r='1' fill='%23ffffff08'/%3E%3C/svg%3E"); }
+  .bubble{ background:#005c4b; color:#e9fff5; border-radius:10px 10px 10px 2px; padding:12px 14px; max-width:100%;
+    font-size:13.5px; line-height:1.55; white-space:pre-wrap; word-break:break-word; font-family:'Outfit',sans-serif; min-height:40px; }
+  .bubble .ph{ color:#9fc6bb; font-style:italic; }
+  .bubble strong{ font-weight:700; }
+  .actions{ padding:14px; background:#0b1416; display:flex; gap:10px; }
+  .btn{ flex:1; border:none; border-radius:11px; padding:12px; font-family:'Bricolage Grotesque'; font-weight:600; font-size:15px; cursor:pointer; }
+  .btn.primary{ background:var(--pink); color:#fff; }
+  .btn.primary:hover{ background:#d4137b; }
+  .btn.ghost{ background:#1f2c33; color:#cfe9d6; flex:0 0 auto; padding:12px 16px; }
+  .toast{ position:fixed; bottom:24px; left:50%; transform:translateX(-50%) translateY(20px); background:var(--green); color:#fff;
+    padding:11px 20px; border-radius:99px; font-weight:600; font-size:14px; opacity:0; pointer-events:none; transition:.25s; z-index:50; }
+  .toast.show{ opacity:1; transform:translateX(-50%) translateY(0); }
+
+  .datebar{ display:flex; gap:14px; align-items:flex-end; flex-wrap:wrap; }
+  .dateout{ font-family:'Bricolage Grotesque'; font-weight:800; font-size:26px; color:var(--pink); text-transform:uppercase; line-height:1; }
+  .loadbar{ display:flex; gap:10px; align-items:center; font-size:12px; color:var(--muted); margin-top:14px; }
+  .loadbar label.filelbl{ display:inline-flex; align-items:center; gap:6px; background:rgba(25,148,50,.1); color:var(--green); padding:6px 12px; border-radius:9px; cursor:pointer; font-weight:600; text-transform:none; letter-spacing:0; margin:0; }
+  .loadbar input{ display:none; }
+</style>
+</head>
+<body>
+<header>
+  <div class="logo"><svg id="Layer_1" xmlns="http://www.w3.org/2000/svg" version="1.1" viewBox="0 0 410.48 408.65">
+  <!-- Generator: Adobe Illustrator 30.1.0, SVG Export Plug-In . SVG Version: 2.1.1 Build 136)  -->
+  <defs>
+    <style>
+      .st0 {
+        fill: #f11d8c;
+      }
+
+      .st0, .st1, .st2, .st3 {
+        fill-rule: evenodd;
+      }
+
+      .st1 {
+        fill: #fff;
+      }
+
+      .st2 {
+        fill: #199432;
+      }
+
+      .st3 {
+        fill: #5db4c9;
+      }
+    </style>
+  </defs>
+  <path class="st1" d="M145.09,107.08c13.1,1.6,27.68,2.64,35.44,2.25,1.91-.09,20.62-1.8,17.03-7.14-5.29-7.88-15.08-9.75-23.88-8.52-9.4,1.31-19.47,6.38-28.59,13.41M102.21,141.98c4.62-13.58,12.11-24.36,21.93-33.72-2.65-.86-4.98-1.73-6.85-2.59-6.72-3.1-9.86-5.03-14.07-11.01,7.75,4.24,11.27,6.33,20.07,8.7,1.43.38,3.12.77,5.01,1.14,2.16-1.86,4.41-3.66,6.75-5.42,18.7-14.06,50.36-27.37,68.79-5.18,11.51,13.85-2.38,22.01-16.49,23.57-10.3,1.14-31.2-1.48-48.35-5.28-10.75,9.79-19.42,21.99-22.83,33.1-.91,3.86-4.78,6.25-8.64,5.33-3.86-.91-6.25-4.78-5.33-8.64Z"/>
+  <path class="st2" d="M196.87,105.41c-8.69,5.02-26.99,5.04-51.78,1.67,17.58-12.28,33.76-16.94,47.76-9.71,5.04,4,6.16,6.6,4.02,8.04"/>
+  <path class="st1" d="M250.83,141.2c-15.91,30.37-18.93,58.38-30.3,88.99-.77,2.07.7.6-1.56,3.59-1.54-4.75-1.15-4.06-.5-10.32,2.99-28.67,8.78-61.94,20.38-88.34,1.68-3.3,5.72-4.62,9.02-2.95,3.31,1.68,4.62,5.72,2.95,9.02"/>
+  <path class="st1" d="M264.34,225.04l.58,2.17c-15.16-9.04-30.58-18.21-45.96-26.85l-6.81-3.77c-3.32-2.38-5.22-1.32-5.84-5.05-.96-5.74,9.07-7.4,13.61-9.04,12.03-4.36,46.04-17.59,56.69-19.07l4.95-.11c-6.37,3.71-2.98,1.89-11.55,5.96-14.98,7.12-30.99,14.83-46.57,21.57,12.47,5.7,27.21,13.81,36.96,18.93,10.78,5.66,8.14,2.86,16.87,11.77.75,3.63-1.58,7.18-5.21,7.93-3.37.7-6.66-1.26-7.73-4.44"/>
+  <path class="st1" d="M151.33,219.29c11.82-6.56,34.75-59.39,42.22-62.27,7.74-2.99,7.19,12.06,7.51,16.1.99,12.41,1.46,22.41,4.91,34.62,1.51,5.34,2.7,8.24,2.57,13.75-3.69-5.1-7.85-14.34-9.84-20.47-3.03-9.36-3.97-18.92-5.51-28.04-6.31,11.42-12.21,25.28-18.16,36.04-5.22,9.44-9.24,16.94-18.54,22.66-3.42,1.42-7.35-.2-8.77-3.62-1.42-3.42.2-7.35,3.62-8.77"/>
+  <path class="st1" d="M173.11,258.7c-8.38,5.48-14.51,54.64-3.87,50.2,19.56-8.16,31.91-56.49,38.38-75.18,1.17-3.39,1.11-4.34,3.33-6.48v1.6c-1.32,19.63-11.52,59-22.59,75.11-11.86,17.25-30.53,24.81-35.41-.97-2.95-15.6-.39-45.18,13.24-55.76,3.18-1.91,7.3-.89,9.21,2.29,1.91,3.18.89,7.3-2.29,9.21"/>
+  <path class="st1" d="M289.54,170.69c8.04-9.36,16.42-20.16,20.14-26.39.92-1.54,9.3-16.97,3.28-16.95-8.88.03-15.41,6.67-19.02,14.15-3.86,7.99-5.14,18.46-4.41,29.19M294.44,222.16c-8.17-10.64-12.67-22.06-14.85-34.56-2.04,1.62-3.93,2.98-5.57,3.98-5.9,3.62-9.03,5.06-15.87,5.23,7.32-3.83,10.77-5.48,17.18-11.1,1.04-.91,2.21-2.03,3.49-3.31-.32-2.64-.56-5.33-.71-8.06-1.23-21.84,4.84-53.37,31.66-56.19,16.75-1.76,15.88,13.27,9.78,25.05-4.46,8.61-17.34,23.5-29.19,34.87,2.04,13.44,7.03,26.52,13.9,34.93,2.53,2.71,2.38,6.96-.34,9.49-2.71,2.53-6.96,2.38-9.49-.34Z"/>
+  <path class="st0" d="M315.11,129.55c-.6,9.36-10.09,23.61-25.57,41.14-.42-20.05,4.34-35.05,17.23-42.18,5.73-1.84,8.33-1.36,8.34,1.04"/>
+  <path class="st0" d="M263.42,285.92c6.46-5.93,7.43-20.35,8.74-28.57.69-4.33,1.92-18.55,4.48-21.79,7.17,2.55,8.49,27.97,8.69,34.66.35,11.98-.47,19.33-7.27,29.21-3.73,4.04-10.03,4.3-14.08.56-4.04-3.73-4.3-10.03-.56-14.08"/>
+  <path class="st0" d="M261.61,308.08c5.15.71,8.59,6.59,7.69,13.13-.9,6.54-5.81,11.27-10.96,10.56-5.15-.71-8.59-6.59-7.69-13.13.9-6.54,5.81-11.27,10.96-10.56"/>
+  <path class="st1" d="M111.27,166.97c-3.05,8.43-6.45,28.06-8.46,45.41,5.39-8.93,10.85-17.72,13.2-21.57,4.12-6.76,23.56-41.41,31.86-41.56,6.99-.12,7.58,6.6,4.86,12.26-7.34,15.25-5.38,8.53-10.54,25.51-1.51,4.95-4.23,13.69-6.75,22.54,1.68-2.81,3.43-5.64,5.3-8.54,6.25-9.69,42.83-65.85,51.85-62.42-15.96,14.35-41.34,59.81-52.5,80-2.36,4.27-6.55,13.35-8.73,16.92-2.7,4.43-7.6,7.28-10.63,2.01-1.95-3.4,1.36-19.49,5.15-34.81-11.08,19.67-24.25,43.08-26.29,45.2-2.98,3.08-8.57,2.49-11.52-.69-8.26-8.9,2.74-74.64,6.99-87.12,1.89-4.48,7.06-6.57,11.53-4.67,4.48,1.89,6.57,7.06,4.67,11.53"/>
+  <path class="st1" d="M224.17,289.52c4.14,4.35,10.15,3.53,16.76-3.33,13.55-14.07,8.29-30.07-2.69-42.44-3.83,9.78-8.03,25.87-10.41,33.65-1.11,3.64-2.31,7.77-3.65,12.12M189.75,318.08c11.86-3.67,31.17-78.74,40.42-88.42,9.25-9.68,19.12,5.59,23.37,12.78,12.2,20.68,5.61,49.82-17.85,56.41-5.67,1.59-10.3.38-13.71-2.49-5.28,15.76-12.79,32.62-25.39,39.31-4.86,1.89-10.32-.52-12.21-5.37-1.89-4.86.52-10.32,5.37-12.21Z"/>
+  <path class="st3" d="M298.76,347.6c-68.46,56.91-170.27,50.93-231.51-15.15-61.24-66.07-59.49-168.04,2.44-231.99-48.68,64.94-45.56,157.36,11.57,219,57.13,61.64,149.05,71.75,217.5,28.13"/>
+  <path class="st3" d="M340.79,308.19c61.93-63.95,63.68-165.92,2.44-231.99C281.99,10.12,180.18,4.14,111.72,61.05c68.45-43.62,160.36-33.5,217.5,28.14,57.13,61.64,60.25,154.06,11.57,219.01"/>
+</svg></div>
+  <h1>Generador de mensajes · WhatsApp</h1>
+</header>
+
+<div class="layout">
+  <div class="form">
+    <div class="card">
+      <div class="datebar">
+        <div class="field" style="max-width:200px"><label>Día</label><input type="date" id="fecha"></div>
+        <div class="dateout" id="dateout">—</div>
+      </div>
+      <div class="loadbar">
+        <label class="filelbl">📊 Cargar actividades (Excel)<input type="file" id="xlsx" accept=".xlsx,.xls,.csv"></label>
+        <span id="actcount"></span>
+      </div>
+    </div>
+
+    <div class="card" data-meal="desayuno">
+      <div class="title"><span class="emoji">🌅</span> Desayuno <span class="pill">comida</span></div>
+      <div class="turnos" id="desayuno-turnos"></div>
+      <button class="add" data-add-turno="desayuno">＋ Agregar turno</button>
+      <div style="margin-top:14px"><label>Observaciones</label><textarea data-obs="desayuno" placeholder="(opcional)"></textarea></div>
+    </div>
+
+    <div class="card act" data-act="actManana">
+      <div class="title"><span class="emoji">☀️</span> Actividad de la mañana <span class="pill act">actividad</span></div>
+      <div class="act-body"></div>
+    </div>
+
+    <div class="card" data-meal="almuerzo">
+      <div class="title"><span class="emoji">🍴</span> Almuerzo <span class="pill">comida</span></div>
+      <div class="turnos" id="almuerzo-turnos"></div>
+      <button class="add" data-add-turno="almuerzo">＋ Agregar turno</button>
+      <div style="margin-top:14px"><label>Observaciones</label><textarea data-obs="almuerzo" placeholder="(opcional)"></textarea></div>
+    </div>
+
+    <div class="card act" data-act="actTarde">
+      <div class="title"><span class="emoji">🌤️</span> Actividad de la tarde <span class="pill act">actividad</span></div>
+      <div class="act-body"></div>
+    </div>
+
+    <div class="card" data-meal="merienda">
+      <div class="title"><span class="emoji">🥪</span> Merienda <span class="pill">comida</span></div>
+      <div class="row"><div class="field" style="max-width:160px"><label>Horario</label><input type="time" data-merhorario></div></div>
+      <div style="margin-top:14px"><label>Observaciones</label><textarea data-obs="merienda" placeholder="(opcional)"></textarea></div>
+    </div>
+
+    <div class="card" data-meal="cena">
+      <div class="title"><span class="emoji">🍽️</span> Cena <span class="pill">comida</span></div>
+      <div class="turnos" id="cena-turnos"></div>
+      <button class="add" data-add-turno="cena">＋ Agregar turno</button>
+      <div style="margin-top:14px"><label>Observaciones</label><textarea data-obs="cena" placeholder="(opcional)"></textarea></div>
+    </div>
+
+    <div class="card act" data-act="actNoche">
+      <div class="title"><span class="emoji">🌙</span> Actividad de la noche <span class="pill act">actividad</span></div>
+      <div class="act-body"></div>
+    </div>
+  </div>
+
+  <div class="preview-wrap">
+    <div class="preview">
+      <div class="wa-top"><span class="dot">🌎</span> Vista previa del mensaje</div>
+      <div class="wa-body"><div class="bubble" id="bubble"></div></div>
+      <div class="actions">
+        <button class="btn primary" id="crear">Crear mensaje</button>
+        <button class="btn ghost" id="copy" title="Copiar">📋</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const COLEGIOS = ['Berazategui','El Encuentro','Emanuel','Hay Vida En Jesús','M.T. Alvear','Menoyo','Zion'];
+
+/* Actividades reales (los detalles se completan con el Excel: columnas Actividad | Emoji | Detalle) */
+let ACTIVIDADES = [
+  {nombre:'Adventure City Tour', emoji:'🏙️', detalle:''},
+  {nombre:'Ski', emoji:'🏂', detalle:''},
+  {nombre:'Piedras Blancas De Día', emoji:'❄️', detalle:''},
+  {nombre:'Adventure Day (Tom Wesley)', emoji:'🎒', detalle:''},
+  {nombre:'Canopy', emoji:'🌲', detalle:''},
+  {nombre:'Extremos Encantado', emoji:'🧗', detalle:''},
+  {nombre:'Trekking', emoji:'🥾', detalle:''},
+  {nombre:'Chocolatería', emoji:'🍫', detalle:''},
+  {nombre:'Aventura en el cerro', emoji:'🛵', detalle:''},
+  {nombre:'Noche Fluo en pileta', emoji:'🌟', detalle:''},
+  {nombre:'Fiesta Wake Up', emoji:'🎉', detalle:''},
+  {nombre:'Fourtrack', emoji:'🏎️', detalle:''},
+  {nombre:'Sala de Escape', emoji:'🔒', detalle:''},
+  {nombre:'Noche Bowling', emoji:'🎳', detalle:''},
+  {nombre:'Cena de Gala', emoji:'🍽️', detalle:''},
+  {nombre:'Piedras Blancas De Noche', emoji:'🌜', detalle:''},
+  {nombre:'Centro Libre/Compras', emoji:'🛍️', detalle:''},
+];
+
+const state = {
+  fecha:'',
+  desayuno:{turnos:[{h:'',colegios:[]}], obs:''},
+  almuerzo:{turnos:[{h:'',colegios:[]}], obs:''},
+  cena:    {turnos:[{h:'',colegios:[]}], obs:''},
+  merienda:{h:'', obs:''},
+  actManana:{actividad:'', grupos:[{colegios:[], h:''}], detalles:'', obs:''},
+  actTarde: {actividad:'', grupos:[{colegios:[], h:''}], detalles:'', obs:''},
+  actNoche: {actividad:'', grupos:[{colegios:[], h:''}], detalles:'', obs:''},
+};
+
+const NUM = ['','1️⃣','2️⃣','3️⃣','4️⃣','5️⃣','6️⃣','7️⃣','8️⃣','9️⃣','🔟'];
+const numEmoji = n => NUM[n] || (n+'.');
+const $ = s => document.querySelector(s);
+
+/* ===== Selector de colegios (compartido por turnos y grupos) ===== */
+function colOptions(){ return '<option value="Todos">Todos</option>' + COLEGIOS.map(c=>`<option value="${c}">${c}</option>`).join(''); }
+function colPickerMarkup(colegios){
+  const chips = colegios.map((c,ci)=>`<span class="chip ${c==='Todos'?'todos':''}">${c}<button data-rm="${ci}">✕</button></span>`).join('');
+  return `<label>Colegios</label>
+    <div class="add-col"><select class="colsel">${colOptions()}</select><button class="plus" type="button" title="Agregar colegio">＋</button></div>
+    <div class="chips">${chips||'<span class="sub">Sin colegios seleccionados</span>'}</div>`;
+}
+function wireColPicker(scope, obj, rerender){
+  scope.querySelector('.plus').addEventListener('click', ()=>{
+    const v = scope.querySelector('.colsel').value;
+    if(v==='Todos') obj.colegios = ['Todos'];
+    else { obj.colegios = obj.colegios.filter(c=>c!=='Todos'); if(!obj.colegios.includes(v)) obj.colegios.push(v); }
+    rerender(); updatePreview();
+  });
+  scope.querySelectorAll('[data-rm]').forEach(b=> b.addEventListener('click', e=>{
+    obj.colegios.splice(+e.currentTarget.dataset.rm,1); rerender(); updatePreview();
+  }));
+}
+
+/* ===== Fecha ===== */
+const DIAS = ['DOMINGO','LUNES','MARTES','MIÉRCOLES','JUEVES','VIERNES','SÁBADO'];
+function diaTexto(iso){ if(!iso) return ''; const [y,m,d]=iso.split('-').map(Number); return `${DIAS[new Date(y,m-1,d).getDay()]} ${d}`; }
+const fechaInput = $('#fecha');
+fechaInput.value='2026-08-01'; state.fecha=fechaInput.value; fechaInput.min='2026-08-01'; fechaInput.max='2026-08-31';
+function refreshDate(){ state.fecha=fechaInput.value; $('#dateout').textContent=diaTexto(state.fecha)||'—'; updatePreview(); }
+fechaInput.addEventListener('change', refreshDate);
+
+/* ===== Turnos de comida (con colegios) ===== */
+function renderTurnos(meal){
+  const cont = $('#'+meal+'-turnos'); cont.innerHTML='';
+  state[meal].turnos.forEach((t,i)=>{
+    const div=document.createElement('div'); div.className='item';
+    div.innerHTML = `<div class="item-head"><span class="name">Turno ${i+1}</span>
+        ${state[meal].turnos.length>1?'<button class="del" title="Quitar turno">✕</button>':''}</div>
+      <div class="turno-grid">
+        <div class="hor"><label>Horario</label><input type="time" value="${t.h}"></div>
+        <div class="cols">${colPickerMarkup(t.colegios)}</div>
+      </div>`;
+    div.querySelector('input[type=time]').addEventListener('input', e=>{ t.h=e.target.value; updatePreview(); });
+    wireColPicker(div.querySelector('.cols'), t, ()=>renderTurnos(meal));
+    const del=div.querySelector('.del');
+    if(del) del.addEventListener('click', ()=>{ state[meal].turnos.splice(i,1); renderTurnos(meal); updatePreview(); });
+    cont.appendChild(div);
+  });
+}
+
+/* ===== Actividades ===== */
+function actOptions(sel){ return '<option value="">— Elegir actividad —</option>' +
+  ACTIVIDADES.map(a=>`<option value="${a.nombre}" ${a.nombre===sel?'selected':''}>${a.emoji} ${a.nombre}</option>`).join(''); }
+function renderActivity(key){
+  const a=state[key];
+  const card=document.querySelector(`[data-act="${key}"] .act-body`);
+  card.innerHTML = `
+    <div class="field" style="margin-bottom:14px"><label>Actividad</label><select class="act-select">${actOptions(a.actividad)}</select></div>
+    <div class="grupos"></div>
+    <button class="add" data-add-grupo>＋ Agregar grupo</button>
+    <div style="margin-top:14px"><label>Detalles (se completa solo según la actividad)</label>
+      <textarea class="det" placeholder="(se autocompleta — podés editarlo)">${a.detalles}</textarea></div>
+    <div style="margin-top:12px"><label>Observaciones</label><textarea class="obs" placeholder="(opcional)">${a.obs}</textarea></div>`;
+  card.querySelector('.act-select').addEventListener('change', e=>{
+    a.actividad=e.target.value;
+    const found=ACTIVIDADES.find(x=>x.nombre===a.actividad);
+    a.detalles = found ? (found.detalle||'') : '';
+    card.querySelector('.det').value=a.detalles; updatePreview();
+  });
+  card.querySelector('.det').addEventListener('input', e=>{ a.detalles=e.target.value; updatePreview(); });
+  card.querySelector('.obs').addEventListener('input', e=>{ a.obs=e.target.value; updatePreview(); });
+  card.querySelector('[data-add-grupo]').addEventListener('click', ()=>{ a.grupos.push({colegios:[],h:''}); renderGrupos(key); updatePreview(); });
+  renderGrupos(key);
+}
+function renderGrupos(key){
+  const a=state[key]; const cont=document.querySelector(`[data-act="${key}"] .grupos`); cont.innerHTML='';
+  a.grupos.forEach((g,i)=>{
+    const div=document.createElement('div'); div.className='item';
+    div.innerHTML = `<div class="item-head"><span class="name">Salida Grupo ${i+1}</span>
+        ${a.grupos.length>1?'<button class="del" title="Quitar grupo">✕</button>':''}</div>
+      <div class="cols">${colPickerMarkup(g.colegios)}</div>
+      <div class="row" style="margin-top:8px"><div class="field" style="max-width:160px"><label>⏰ Horario</label>
+        <input type="time" class="ghor" value="${g.h}"></div></div>`;
+    wireColPicker(div.querySelector('.cols'), g, ()=>renderGrupos(key));
+    div.querySelector('.ghor').addEventListener('input', e=>{ g.h=e.target.value; updatePreview(); });
+    const del=div.querySelector('.del');
+    if(del) del.addEventListener('click', ()=>{ a.grupos.splice(i,1); renderGrupos(key); updatePreview(); });
+    cont.appendChild(div);
+  });
+}
+
+/* ===== Listeners generales ===== */
+document.querySelectorAll('[data-add-turno]').forEach(b=>
+  b.addEventListener('click', ()=>{ const m=b.dataset.addTurno; state[m].turnos.push({h:'',colegios:[]}); renderTurnos(m); updatePreview(); }));
+document.querySelectorAll('[data-obs]').forEach(t=>
+  t.addEventListener('input', e=>{ state[e.target.dataset.obs].obs=e.target.value; updatePreview(); }));
+$('[data-merhorario]').addEventListener('input', e=>{ state.merienda.h=e.target.value; updatePreview(); });
+
+/* ===== Excel ===== */
+$('#xlsx').addEventListener('change', async e=>{
+  const file=e.target.files[0]; if(!file) return;
+  try{
+    const wb=XLSX.read(await file.arrayBuffer());
+    const rows=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]]);
+    const parsed=rows.map(r=>{ const k=Object.keys(r);
+      const get=(...names)=>{ for(const n of names){ const f=k.find(x=>x.toLowerCase().trim()===n); if(f) return String(r[f]); } return ''; };
+      return { nombre:get('actividad','nombre'), emoji:get('emoji')||'📌', detalle:get('detalle','detalles') };
+    }).filter(a=>a.nombre);
+    if(parsed.length){ ACTIVIDADES=parsed; ['actManana','actTarde','actNoche'].forEach(renderActivity); refreshActCount(true); toast('Actividades cargadas ✔'); }
+    else toast('No encontré filas válidas');
+  }catch(err){ toast('Error al leer el Excel'); console.error(err); }
+});
+function refreshActCount(loaded){ $('#actcount').textContent = `${ACTIVIDADES.length} actividades` + (loaded?'':' (lista interna)'); }
+
+/* ===== Generar mensaje ===== */
+function mealBlock(emoji, titulo, meal){
+  const m=state[meal];
+  const turnos=m.turnos.filter(t=>t.h || t.colegios.length);
+  if(!turnos.length && !m.obs.trim()) return '';
+  let out=`${emoji} *${titulo}*\n`;
+  turnos.forEach((t,i)=>{
+    const bits=[]; if(t.h) bits.push(t.h); if(t.colegios.length) bits.push(t.colegios.join(', '));
+    out += `${numEmoji(i+1)} Turno ${i+1}: ${bits.join(' — ')}\n`;
+  });
+  if(m.obs.trim()) out += `Observaciones: ${m.obs.trim()}\n`;
+  return out;
+}
+function activityBlock(key){
+  const a=state[key];
+  const act=ACTIVIDADES.find(x=>x.nombre===a.actividad);
+  const grupos=a.grupos.filter(g=>g.colegios.length || g.h);
+  if(!a.actividad && !grupos.length && !a.detalles.trim() && !a.obs.trim()) return '';
+  let out='';
+  if(act) out += `${act.emoji} *${act.nombre.toUpperCase()}*\n`;
+  else if(a.actividad) out += `*${a.actividad.toUpperCase()}*\n`;
+  grupos.forEach((g,i)=>{
+    let line=`${numEmoji(i+1)} Salida Grupo ${i+1}`;
+    if(g.colegios.length) line += `: ${g.colegios.join(', ')}`;
+    if(g.h) line += ` ⏰ ${g.h}`;
+    out += line+'\n';
+  });
+  if(a.detalles.trim()) out += `*Detalles:* ${a.detalles.trim()}\n`;
+  if(a.obs.trim()) out += `*Observaciones:* ${a.obs.trim()}\n`;
+  return out;
+}
+function buildMessage(){
+  const parts=[]; if(state.fecha) parts.push(`📅 *${diaTexto(state.fecha)}*`);
+  const blocks=[
+    mealBlock('🌅','DESAYUNO','desayuno'),
+    activityBlock('actManana'),
+    mealBlock('🍴','ALMUERZO','almuerzo'),
+    activityBlock('actTarde'),
+    (state.merienda.h || state.merienda.obs.trim()) ?
+      `🥪 *MERIENDA*\n${state.merienda.h?`⏰ ${state.merienda.h}\n`:''}${state.merienda.obs.trim()?`Observaciones: ${state.merienda.obs.trim()}\n`:''}` : '',
+    mealBlock('🍽️','CENA','cena'),
+    activityBlock('actNoche'),
+  ].filter(b=>b.trim());
+  return [parts.join('\n'), ...blocks].filter(Boolean).join('\n').trim();
+}
+function updatePreview(){
+  const msg=buildMessage(); const b=$('#bubble');
+  if(!msg){ b.innerHTML='<span class="ph">Completá los campos y el mensaje se arma solo…</span>'; return; }
+  b.innerHTML = msg.replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c])).replace(/\*(.+?)\*/g,'<strong>$1</strong>');
+}
+
+/* ===== Copiar ===== */
+function toast(t){ const el=$('#toast'); el.textContent=t; el.classList.add('show'); setTimeout(()=>el.classList.remove('show'),1800); }
+$('#crear').addEventListener('click', ()=>{ const msg=buildMessage(); if(msg) navigator.clipboard.writeText(msg).then(()=>toast('Mensaje copiado ✔')); else toast('Todavía no hay nada que copiar'); });
+$('#copy').addEventListener('click', ()=>{ const msg=buildMessage(); if(msg) navigator.clipboard.writeText(msg).then(()=>toast('Copiado ✔')); });
+
+/* ===== Init ===== */
+['desayuno','almuerzo','cena'].forEach(renderTurnos);
+['actManana','actTarde','actNoche'].forEach(renderActivity);
+refreshDate(); refreshActCount(false); updatePreview();
+</script>
+</body>
+</html>
