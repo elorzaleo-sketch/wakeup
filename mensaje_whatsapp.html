@@ -60,7 +60,9 @@
   .chips{ display:flex; flex-wrap:wrap; gap:6px; margin:8px 0 4px; }
   .chip{ display:inline-flex; align-items:center; gap:6px; background:var(--black); color:#fff; font-size:12px; font-weight:600; padding:4px 6px 4px 11px; border-radius:99px; }
   .chip.todos{ background:var(--green); }
+  .chip.dup{ background:#d9820c; }
   .chip button{ border:none; background:rgba(255,255,255,.2); color:#fff; width:17px; height:17px; border-radius:99px; cursor:pointer; font-size:11px; line-height:1; }
+  .warn{ display:flex; align-items:center; gap:7px; background:rgba(217,130,12,.12); color:#b3690a; font-size:12.5px; font-weight:600; padding:7px 11px; border-radius:9px; margin-bottom:10px; }
   .add-col{ display:flex; gap:8px; align-items:center; }
   .add-col select{ flex:1; }
   .plus{ width:38px; min-width:38px; height:38px; border-radius:10px; border:none; background:var(--cyan); color:#fff; font-size:20px; cursor:pointer; font-weight:700; }
@@ -252,8 +254,21 @@ const $ = s => document.querySelector(s);
 
 /* ===== Selector de colegios (compartido por turnos y grupos) ===== */
 function colOptions(){ return '<option value="Todos">Todos</option>' + COLEGIOS.map(c=>`<option value="${c}">${c}</option>`).join(''); }
-function colPickerMarkup(colegios){
-  const chips = colegios.map((c,ci)=>`<span class="chip ${c==='Todos'?'todos':''}">${c}<button data-rm="${ci}">✕</button></span>`).join('');
+function blockConflicts(items){
+  const count={}; items.forEach(it=>it.colegios.forEach(c=>count[c]=(count[c]||0)+1));
+  const dup=new Set(Object.keys(count).filter(c=>count[c]>1));
+  const hasTodos=items.some(it=>it.colegios.includes('Todos'));
+  const named=items.some(it=>it.colegios.some(c=>c!=='Todos'));
+  if(hasTodos && named){ dup.add('Todos'); items.forEach(it=>it.colegios.forEach(c=>{ if(c!=='Todos') dup.add(c); })); }
+  return dup;
+}
+function warnHTML(){ return '<div class="warn">⚠️ Hay colegios repetidos en este bloque</div>'; }
+function colPickerMarkup(colegios, dup){
+  dup = dup || new Set();
+  const chips = colegios.map((c,ci)=>{
+    const bad = dup.has(c);
+    return `<span class="chip ${c==='Todos'?'todos':''} ${bad?'dup':''}">${bad?'⚠️ ':''}${c}<button data-rm="${ci}">✕</button></span>`;
+  }).join('');
   return `<label>Colegios</label>
     <div class="add-col"><select class="colsel">${colOptions()}</select><button class="plus" type="button" title="Agregar colegio">＋</button></div>
     <div class="chips">${chips||'<span class="sub">Sin colegios seleccionados</span>'}</div>`;
@@ -274,25 +289,27 @@ function wireColPicker(scope, obj, rerender){
 const DIAS = ['DOMINGO','LUNES','MARTES','MIÉRCOLES','JUEVES','VIERNES','SÁBADO'];
 function diaTexto(iso){ if(!iso) return ''; const [y,m,d]=iso.split('-').map(Number); return `${DIAS[new Date(y,m-1,d).getDay()]} ${d}`; }
 const fechaInput = $('#fecha');
-fechaInput.value='2026-08-01'; state.fecha=fechaInput.value; fechaInput.min='2026-08-01'; fechaInput.max='2026-08-31';
+fechaInput.value='2026-08-15'; state.fecha=fechaInput.value; fechaInput.min='2026-08-01'; fechaInput.max='2026-08-31';
 function refreshDate(){ state.fecha=fechaInput.value; $('#dateout').textContent=diaTexto(state.fecha)||'—'; updatePreview(); }
 fechaInput.addEventListener('change', refreshDate);
 
 /* ===== Turnos de comida (con colegios) ===== */
 function renderTurnos(meal){
-  const cont = $('#'+meal+'-turnos'); cont.innerHTML='';
-  state[meal].turnos.forEach((t,i)=>{
+  const items = state[meal].turnos;
+  const dup = blockConflicts(items);
+  const cont = $('#'+meal+'-turnos'); cont.innerHTML = dup.size ? warnHTML() : '';
+  items.forEach((t,i)=>{
     const div=document.createElement('div'); div.className='item';
     div.innerHTML = `<div class="item-head"><span class="name">Turno ${i+1}</span>
-        ${state[meal].turnos.length>1?'<button class="del" title="Quitar turno">✕</button>':''}</div>
+        ${items.length>1?'<button class="del" title="Quitar turno">✕</button>':''}</div>
       <div class="turno-grid">
         <div class="hor"><label>Horario</label><input type="time" value="${t.h}"></div>
-        <div class="cols">${colPickerMarkup(t.colegios)}</div>
+        <div class="cols">${colPickerMarkup(t.colegios, dup)}</div>
       </div>`;
     div.querySelector('input[type=time]').addEventListener('input', e=>{ t.h=e.target.value; updatePreview(); });
     wireColPicker(div.querySelector('.cols'), t, ()=>renderTurnos(meal));
     const del=div.querySelector('.del');
-    if(del) del.addEventListener('click', ()=>{ state[meal].turnos.splice(i,1); renderTurnos(meal); updatePreview(); });
+    if(del) del.addEventListener('click', ()=>{ items.splice(i,1); renderTurnos(meal); updatePreview(); });
     cont.appendChild(div);
   });
 }
@@ -322,12 +339,13 @@ function renderActivity(key){
   renderGrupos(key);
 }
 function renderGrupos(key){
-  const a=state[key]; const cont=document.querySelector(`[data-act="${key}"] .grupos`); cont.innerHTML='';
+  const a=state[key]; const dup=blockConflicts(a.grupos);
+  const cont=document.querySelector(`[data-act="${key}"] .grupos`); cont.innerHTML = dup.size ? warnHTML() : '';
   a.grupos.forEach((g,i)=>{
     const div=document.createElement('div'); div.className='item';
     div.innerHTML = `<div class="item-head"><span class="name">Salida Grupo ${i+1}</span>
         ${a.grupos.length>1?'<button class="del" title="Quitar grupo">✕</button>':''}</div>
-      <div class="cols">${colPickerMarkup(g.colegios)}</div>
+      <div class="cols">${colPickerMarkup(g.colegios, dup)}</div>
       <div class="row" style="margin-top:8px"><div class="field" style="max-width:160px"><label>⏰ Horario</label>
         <input type="time" class="ghor" value="${g.h}"></div></div>`;
     wireColPicker(div.querySelector('.cols'), g, ()=>renderGrupos(key));
@@ -345,6 +363,11 @@ document.querySelectorAll('[data-obs]').forEach(t=>
   t.addEventListener('input', e=>{ state[e.target.dataset.obs].obs=e.target.value; updatePreview(); }));
 $('[data-merhorario]').addEventListener('input', e=>{ state.merienda.h=e.target.value; updatePreview(); });
 
+/* ===== Persistencia de actividades ===== */
+const LS_KEY='wakeup_actividades';
+function saveActs(){ try{ localStorage.setItem(LS_KEY, JSON.stringify(ACTIVIDADES)); }catch(e){} }
+function loadActs(){ try{ const s=localStorage.getItem(LS_KEY); if(s){ const a=JSON.parse(s); if(Array.isArray(a)&&a.length){ ACTIVIDADES=a; return true; } } }catch(e){} return false; }
+
 /* ===== Excel ===== */
 $('#xlsx').addEventListener('change', async e=>{
   const file=e.target.files[0]; if(!file) return;
@@ -355,11 +378,11 @@ $('#xlsx').addEventListener('change', async e=>{
       const get=(...names)=>{ for(const n of names){ const f=k.find(x=>x.toLowerCase().trim()===n); if(f) return String(r[f]); } return ''; };
       return { nombre:get('actividad','nombre'), emoji:get('emoji')||'📌', detalle:get('detalle','detalles') };
     }).filter(a=>a.nombre);
-    if(parsed.length){ ACTIVIDADES=parsed; ['actManana','actTarde','actNoche'].forEach(renderActivity); refreshActCount(true); toast('Actividades cargadas ✔'); }
+    if(parsed.length){ ACTIVIDADES=parsed; saveActs(); ['actManana','actTarde','actNoche'].forEach(renderActivity); refreshActCount(true); toast('Actividades cargadas y guardadas ✔'); }
     else toast('No encontré filas válidas');
   }catch(err){ toast('Error al leer el Excel'); console.error(err); }
 });
-function refreshActCount(loaded){ $('#actcount').textContent = `${ACTIVIDADES.length} actividades` + (loaded?'':' (lista interna)'); }
+function refreshActCount(saved){ $('#actcount').textContent = `${ACTIVIDADES.length} actividades` + (saved?' · guardadas ✔':' (lista interna)'); }
 
 /* ===== Generar mensaje ===== */
 function mealBlock(emoji, titulo, meal){
@@ -418,9 +441,10 @@ $('#crear').addEventListener('click', ()=>{ const msg=buildMessage(); if(msg) na
 $('#copy').addEventListener('click', ()=>{ const msg=buildMessage(); if(msg) navigator.clipboard.writeText(msg).then(()=>toast('Copiado ✔')); });
 
 /* ===== Init ===== */
+const _saved = loadActs();
 ['desayuno','almuerzo','cena'].forEach(renderTurnos);
 ['actManana','actTarde','actNoche'].forEach(renderActivity);
-refreshDate(); refreshActCount(false); updatePreview();
+refreshDate(); refreshActCount(_saved); updatePreview();
 </script>
 </body>
 </html>
