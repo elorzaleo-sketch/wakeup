@@ -8,6 +8,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
 <style>
   :root{
     --cyan:#5DB4C9; --pink:#F11D8C; --green:#199432; --black:#080808;
@@ -96,6 +97,8 @@
   .loadbar{ display:flex; gap:10px; align-items:center; font-size:12px; color:var(--muted); margin-top:14px; }
   .loadbar label.filelbl{ display:inline-flex; align-items:center; gap:6px; background:rgba(25,148,50,.1); color:var(--green); padding:6px 12px; border-radius:9px; cursor:pointer; font-weight:600; text-transform:none; letter-spacing:0; margin:0; }
   .loadbar input{ display:none; }
+  .reset-link{ border:none; background:none; color:var(--muted); font-family:inherit; font-size:12px; cursor:pointer; text-decoration:underline; padding:0; }
+  .reset-link:hover{ color:var(--pink); }
 </style>
 </head>
 <body>
@@ -153,6 +156,7 @@
       <div class="loadbar">
         <label class="filelbl">📊 Cargar actividades (Excel)<input type="file" id="xlsx" accept=".xlsx,.xls,.csv"></label>
         <span id="actcount"></span>
+        <button id="resetacts" class="reset-link" type="button">recargar desde la base</button>
       </div>
     </div>
 
@@ -236,6 +240,7 @@ let ACTIVIDADES = [
   {nombre:'Piedras Blancas De Noche', emoji:'🌜', detalle:''},
   {nombre:'Centro Libre/Compras', emoji:'🛍️', detalle:''},
 ];
+const DEFAULT_ACTS = JSON.parse(JSON.stringify(ACTIVIDADES));
 
 const state = {
   fecha:'',
@@ -363,10 +368,29 @@ document.querySelectorAll('[data-obs]').forEach(t=>
   t.addEventListener('input', e=>{ state[e.target.dataset.obs].obs=e.target.value; updatePreview(); }));
 $('[data-merhorario]').addEventListener('input', e=>{ state.merienda.h=e.target.value; updatePreview(); });
 
-/* ===== Persistencia de actividades ===== */
-const LS_KEY='wakeup_actividades';
-function saveActs(){ try{ localStorage.setItem(LS_KEY, JSON.stringify(ACTIVIDADES)); }catch(e){} }
-function loadActs(){ try{ const s=localStorage.getItem(LS_KEY); if(s){ const a=JSON.parse(s); if(Array.isArray(a)&&a.length){ ACTIVIDADES=a; return true; } } }catch(e){} return false; }
+/* ===== Persistencia de actividades (Supabase) ===== */
+const SUPABASE_URL = 'https://mzousqdahqterfawhwsz.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im16b3VzcWRhaHF0ZXJmYXdod3N6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA1MTc4MzUsImV4cCI6MjA5NjA5MzgzNX0.EdSlcRdLD75OdYlwtZGLVgL_PGpJysWb_MKvuwGgj5Y';
+let sb = null;
+try { if(window.supabase && SUPABASE_ANON_KEY !== 'PEGAR_ANON_KEY_ACA') sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY); } catch(e){ console.error(e); }
+
+async function fetchActs(){
+  if(!sb) return false;
+  const { data, error } = await sb.from('actividades').select('nombre,emoji,detalle,orden').order('orden',{ascending:true});
+  if(error){ console.error(error); return false; }
+  if(data && data.length){ ACTIVIDADES = data.map(d=>({nombre:d.nombre, emoji:d.emoji||'📌', detalle:d.detalle||''})); return true; }
+  return false;
+}
+async function pushActs(list){
+  if(!sb){ toast('Supabase no configurado'); return false; }
+  const del = await sb.from('actividades').delete().gte('orden', 0);   // borra todo
+  if(del.error){ console.error(del.error); toast('Error al guardar en la base'); return false; }
+  const rows = list.map((a,i)=>({nombre:a.nombre, emoji:a.emoji, detalle:a.detalle, orden:i}));
+  const ins = await sb.from('actividades').insert(rows);
+  if(ins.error){ console.error(ins.error); toast('Error al guardar en la base'); return false; }
+  return true;
+}
+function refreshSelectedDetails(){ ['actManana','actTarde','actNoche'].forEach(k=>{ const a=state[k]; if(a.actividad){ const f=ACTIVIDADES.find(x=>x.nombre===a.actividad); a.detalles = f?(f.detalle||''):a.detalles; } }); }
 
 /* ===== Excel ===== */
 $('#xlsx').addEventListener('change', async e=>{
@@ -375,14 +399,29 @@ $('#xlsx').addEventListener('change', async e=>{
     const wb=XLSX.read(await file.arrayBuffer());
     const rows=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]]);
     const parsed=rows.map(r=>{ const k=Object.keys(r);
-      const get=(...names)=>{ for(const n of names){ const f=k.find(x=>x.toLowerCase().trim()===n); if(f) return String(r[f]); } return ''; };
+      const get=(...names)=>{ for(const n of names){ const f=k.find(x=>x.toLowerCase().trim().startsWith(n)); if(f) return String(r[f]); } return ''; };
       return { nombre:get('actividad','nombre'), emoji:get('emoji')||'📌', detalle:get('detalle','detalles') };
     }).filter(a=>a.nombre);
-    if(parsed.length){ ACTIVIDADES=parsed; saveActs(); ['actManana','actTarde','actNoche'].forEach(renderActivity); refreshActCount(true); toast('Actividades cargadas y guardadas ✔'); }
+    if(parsed.length){
+      ACTIVIDADES=parsed; refreshSelectedDetails();
+      ['actManana','actTarde','actNoche'].forEach(renderActivity);
+      toast('Procesando…');
+      const saved = await pushActs(parsed);
+      refreshActCount(saved);
+      toast(saved ? 'Actividades guardadas en la base ✔' : 'Cargadas localmente (no se guardó online)');
+    }
     else toast('No encontré filas válidas');
   }catch(err){ toast('Error al leer el Excel'); console.error(err); }
 });
-function refreshActCount(saved){ $('#actcount').textContent = `${ACTIVIDADES.length} actividades` + (saved?' · guardadas ✔':' (lista interna)'); }
+function refreshActCount(saved){ $('#actcount').textContent = `${ACTIVIDADES.length} actividades` + (saved?' · en la base ✔':' (lista interna)'); }
+$('#resetacts').addEventListener('click', async ()=>{
+  toast('Recargando…');
+  const ok = await fetchActs();
+  refreshSelectedDetails();
+  ['actManana','actTarde','actNoche'].forEach(renderActivity);
+  refreshActCount(ok); updatePreview();
+  toast(ok ? 'Actividades recargadas ✔' : 'No hay nada en la base todavía');
+});
 
 /* ===== Generar mensaje ===== */
 function mealBlock(emoji, titulo, meal){
@@ -408,8 +447,8 @@ function activityBlock(key){
   grupos.forEach((g,i)=>{
     let line=`${numEmoji(i+1)} Salida Grupo ${i+1}`;
     if(g.colegios.length) line += `: ${g.colegios.join(', ')}`;
-    if(g.h) line += ` ⏰ ${g.h}`;
     out += line+'\n';
+    if(g.h) out += `⏰ ${g.h}\n`;
   });
   if(a.detalles.trim()) out += `*Detalles:* ${a.detalles.trim()}\n`;
   if(a.obs.trim()) out += `*Observaciones:* ${a.obs.trim()}\n`;
@@ -441,10 +480,13 @@ $('#crear').addEventListener('click', ()=>{ const msg=buildMessage(); if(msg) na
 $('#copy').addEventListener('click', ()=>{ const msg=buildMessage(); if(msg) navigator.clipboard.writeText(msg).then(()=>toast('Copiado ✔')); });
 
 /* ===== Init ===== */
-const _saved = loadActs();
 ['desayuno','almuerzo','cena'].forEach(renderTurnos);
 ['actManana','actTarde','actNoche'].forEach(renderActivity);
-refreshDate(); refreshActCount(_saved); updatePreview();
+refreshDate(); refreshActCount(false); updatePreview();
+(async ()=>{
+  const ok = await fetchActs();
+  if(ok){ refreshSelectedDetails(); ['actManana','actTarde','actNoche'].forEach(renderActivity); refreshActCount(true); updatePreview(); }
+})();
 </script>
 </body>
 </html>
