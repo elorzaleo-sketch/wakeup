@@ -1,0 +1,667 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Wake Up Viajes — Ficha del viajero</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;500;700&family=DM+Sans:wght@300;400;500&display=swap');
+
+  :root {
+    --cyan: #5DB4C9;
+    --pink: #F11D8C;
+    --green: #199432;
+    --black: #080808;
+    --surface: #111113;
+    --card: #18181b;
+    --border: #252528;
+    --text: #f0f0f0;
+    --muted: #666;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--black);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Animated background */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background:
+      radial-gradient(ellipse 600px 400px at 10% 20%, rgba(93,180,201,0.06) 0%, transparent 70%),
+      radial-gradient(ellipse 400px 500px at 90% 70%, rgba(241,29,140,0.05) 0%, transparent 70%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .page {
+    position: relative;
+    z-index: 1;
+    max-width: 520px;
+    margin: 0 auto;
+    padding: 0 20px 60px;
+  }
+
+  /* Hero */
+  .hero {
+    text-align: center;
+    padding: 48px 0 32px;
+  }
+
+  .logo-wrap {
+    width: 90px;
+    height: 90px;
+    margin: 0 auto 20px;
+    position: relative;
+  }
+
+  .logo-wrap svg { width: 100%; height: 100%; }
+
+  .hero-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 26px;
+    font-weight: 700;
+    color: #fff;
+    line-height: 1.1;
+    margin-bottom: 8px;
+  }
+
+  .hero-sub {
+    font-size: 14px;
+    color: var(--muted);
+    font-weight: 300;
+  }
+
+  .divider {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 28px 0 20px;
+  }
+
+  .divider-line { flex: 1; height: 1px; background: var(--border); }
+
+  .divider-label {
+    font-family: 'Syne', sans-serif;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--cyan);
+  }
+
+  /* Fields */
+  .field { margin-bottom: 16px; }
+
+  .field label {
+    display: block;
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+    color: #cccccc;
+    margin-bottom: 8px;
+  }
+
+  .field label .req { color: var(--pink); margin-left: 3px; }
+
+  .field input[type="text"],
+  .field input[type="tel"],
+  .field select,
+  .field textarea {
+    width: 100%;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 15px;
+    font-weight: 400;
+    padding: 13px 16px;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    appearance: none;
+    -webkit-appearance: none;
+  }
+
+  .field input:focus,
+  .field select:focus,
+  .field textarea:focus {
+    border-color: var(--cyan);
+    box-shadow: 0 0 0 3px rgba(93,180,201,0.12);
+  }
+
+  .field input::placeholder,
+  .field textarea::placeholder { color: #333; }
+
+  .field select {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%23555' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 14px center;
+    padding-right: 40px;
+    cursor: pointer;
+  }
+
+  .field select option { background: #1a1a1a; }
+  .field textarea { resize: none; min-height: 88px; line-height: 1.6; }
+
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+  /* Age buttons */
+  .age-group { display: flex; gap: 8px; }
+
+  .age-btn {
+    flex: 1;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    color: var(--muted);
+    font-family: 'Syne', sans-serif;
+    font-size: 16px;
+    font-weight: 700;
+    padding: 12px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.15s;
+    user-select: none;
+  }
+
+  .age-btn:hover { border-color: var(--pink); color: var(--pink); }
+
+  .age-btn.active {
+    background: var(--pink);
+    border-color: var(--pink);
+    color: #fff;
+  }
+
+  /* Photo upload */
+  .photo-zone {
+    border: 1.5px dashed var(--border);
+    border-radius: 16px;
+    padding: 32px 20px;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color 0.2s, background 0.2s;
+    background: var(--card);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .photo-zone:hover { border-color: var(--pink); }
+
+  .photo-zone input[type="file"] {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    cursor: pointer;
+    width: 100%;
+    height: 100%;
+  }
+
+  .photo-icon { font-size: 36px; margin-bottom: 10px; }
+
+  .photo-zone p { font-size: 14px; color: #444; line-height: 1.6; }
+  .photo-zone .hint { font-size: 12px; color: var(--pink); margin-top: 6px; }
+
+  .photo-preview {
+    display: none;
+    width: 100%;
+    max-height: 220px;
+    object-fit: cover;
+    border-radius: 10px;
+  }
+
+  .photo-name {
+    display: none;
+    font-size: 12px;
+    color: var(--green);
+    margin-top: 8px;
+  }
+
+  /* Submit */
+  .submit-btn {
+    width: 100%;
+    background: var(--pink);
+    border: none;
+    border-radius: 14px;
+    color: #fff;
+    font-family: 'Syne', sans-serif;
+    font-size: 16px;
+    font-weight: 700;
+    padding: 16px;
+    cursor: pointer;
+    margin-top: 28px;
+    letter-spacing: 0.5px;
+    transition: opacity 0.15s, transform 0.1s;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .submit-btn:hover { opacity: 0.92; }
+  .submit-btn:active { transform: scale(0.99); }
+  .submit-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  /* Success screen */
+  .success-screen {
+    display: none;
+    text-align: center;
+    padding: 60px 20px;
+  }
+
+  .success-icon {
+    width: 72px;
+    height: 72px;
+    background: rgba(25,148,50,0.15);
+    border: 2px solid var(--green);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 24px;
+    font-size: 32px;
+  }
+
+  .success-screen h2 {
+    font-family: 'Syne', sans-serif;
+    font-size: 24px;
+    font-weight: 700;
+    color: #fff;
+    margin-bottom: 10px;
+  }
+
+  .success-screen p { color: var(--muted); font-size: 15px; line-height: 1.6; }
+
+  /* Error */
+  .error-msg {
+    display: none;
+    background: rgba(241,29,140,0.1);
+    border: 1px solid rgba(241,29,140,0.3);
+    border-radius: 10px;
+    color: var(--pink);
+    font-size: 13px;
+    padding: 12px 16px;
+    margin-top: 12px;
+    text-align: center;
+  }
+
+  .footer {
+    text-align: center;
+    font-size: 12px;
+    color: #2a2a2a;
+    margin-top: 24px;
+    font-weight: 300;
+  }
+
+  @media (max-width: 400px) {
+    .two-col { grid-template-columns: 1fr; }
+    .hero-title { font-size: 22px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="page">
+
+  <!-- Hero -->
+  <div class="hero">
+    <div class="logo-wrap">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 410.48 408.65">
+        <defs><style>.s0{fill:#f11d8c;fill-rule:evenodd}.s1{fill:#fff;fill-rule:evenodd}.s2{fill:#199432;fill-rule:evenodd}.s3{fill:#5db4c9;fill-rule:evenodd}</style></defs>
+        <path class="s1" d="M145.09,107.08c13.1,1.6,27.68,2.64,35.44,2.25,1.91-.09,20.62-1.8,17.03-7.14-5.29-7.88-15.08-9.75-23.88-8.52-9.4,1.31-19.47,6.38-28.59,13.41M102.21,141.98c4.62-13.58,12.11-24.36,21.93-33.72-2.65-.86-4.98-1.73-6.85-2.59-6.72-3.1-9.86-5.03-14.07-11.01,7.75,4.24,11.27,6.33,20.07,8.7,1.43.38,3.12.77,5.01,1.14,2.16-1.86,4.41-3.66,6.75-5.42,18.7-14.06,50.36-27.37,68.79-5.18,11.51,13.85-2.38,22.01-16.49,23.57-10.3,1.14-31.2-1.48-48.35-5.28-10.75,9.79-19.42,21.99-22.83,33.1-.91,3.86-4.78,6.25-8.64,5.33-3.86-.91-6.25-4.78-5.33-8.64Z"/>
+        <path class="s2" d="M196.87,105.41c-8.69,5.02-26.99,5.04-51.78,1.67,17.58-12.28,33.76-16.94,47.76-9.71,5.04,4,6.16,6.6,4.02,8.04"/>
+        <path class="s1" d="M250.83,141.2c-15.91,30.37-18.93,58.38-30.3,88.99-.77,2.07.7.6-1.56,3.59-1.54-4.75-1.15-4.06-.5-10.32,2.99-28.67,8.78-61.94,20.38-88.34,1.68-3.3,5.72-4.62,9.02-2.95,3.31,1.68,4.62,5.72,2.95,9.02"/>
+        <path class="s1" d="M264.34,225.04l.58,2.17c-15.16-9.04-30.58-18.21-45.96-26.85l-6.81-3.77c-3.32-2.38-5.22-1.32-5.84-5.05-.96-5.74,9.07-7.4,13.61-9.04,12.03-4.36,46.04-17.59,56.69-19.07l4.95-.11c-6.37,3.71-2.98,1.89-11.55,5.96-14.98,7.12-30.99,14.83-46.57,21.57,12.47,5.7,27.21,13.81,36.96,18.93,10.78,5.66,8.14,2.86,16.87,11.77.75,3.63-1.58,7.18-5.21,7.93-3.37.7-6.66-1.26-7.73-4.44"/>
+        <path class="s1" d="M151.33,219.29c11.82-6.56,34.75-59.39,42.22-62.27,7.74-2.99,7.19,12.06,7.51,16.1.99,12.41,1.46,22.41,4.91,34.62,1.51,5.34,2.7,8.24,2.57,13.75-3.69-5.1-7.85-14.34-9.84-20.47-3.03-9.36-3.97-18.92-5.51-28.04-6.31,11.42-12.21,25.28-18.16,36.04-5.22,9.44-9.24,16.94-18.54,22.66-3.42,1.42-7.35-.2-8.77-3.62-1.42-3.42.2-7.35,3.62-8.77"/>
+        <path class="s1" d="M173.11,258.7c-8.38,5.48-14.51,54.64-3.87,50.2,19.56-8.16,31.91-56.49,38.38-75.18,1.17-3.39,1.11-4.34,3.33-6.48v1.6c-1.32,19.63-11.52,59-22.59,75.11-11.86,17.25-30.53,24.81-35.41-.97-2.95-15.6-.39-45.18,13.24-55.76,3.18-1.91,7.3-.89,9.21,2.29,1.91,3.18.89,7.3-2.29,9.21"/>
+        <path class="s1" d="M289.54,170.69c8.04-9.36,16.42-20.16,20.14-26.39.92-1.54,9.3-16.97,3.28-16.95-8.88.03-15.41,6.67-19.02,14.15-3.86,7.99-5.14,18.46-4.41,29.19M294.44,222.16c-8.17-10.64-12.67-22.06-14.85-34.56-2.04,1.62-3.93,2.98-5.57,3.98-5.9,3.62-9.03,5.06-15.87,5.23,7.32-3.83,10.77-5.48,17.18-11.1,1.04-.91,2.21-2.03,3.49-3.31-.32-2.64-.56-5.33-.71-8.06-1.23-21.84,4.84-53.37,31.66-56.19,16.75-1.76,15.88,13.27,9.78,25.05-4.46,8.61-17.34,23.5-29.19,34.87,2.04,13.44,7.03,26.52,13.9,34.93,2.53,2.71,2.38,6.96-.34,9.49-2.71,2.53-6.96,2.38-9.49-.34Z"/>
+        <path class="s0" d="M315.11,129.55c-.6,9.36-10.09,23.61-25.57,41.14-.42-20.05,4.34-35.05,17.23-42.18,5.73-1.84,8.33-1.36,8.34,1.04"/>
+        <path class="s0" d="M263.42,285.92c6.46-5.93,7.43-20.35,8.74-28.57.69-4.33,1.92-18.55,4.48-21.79,7.17,2.55,8.49,27.97,8.69,34.66.35,11.98-.47,19.33-7.27,29.21-3.73,4.04-10.03,4.3-14.08.56-4.04-3.73-4.3-10.03-.56-14.08"/>
+        <path class="s0" d="M261.61,308.08c5.15.71,8.59,6.59,7.69,13.13-.9,6.54-5.81,11.27-10.96,10.56-5.15-.71-8.59-6.59-7.69-13.13.9-6.54,5.81-11.27,10.96-10.56"/>
+        <path class="s1" d="M111.27,166.97c-3.05,8.43-6.45,28.06-8.46,45.41,5.39-8.93,10.85-17.72,13.2-21.57,4.12-6.76,23.56-41.41,31.86-41.56,6.99-.12,7.58,6.6,4.86,12.26-7.34,15.25-5.38,8.53-10.54,25.51-1.51,4.95-4.23,13.69-6.75,22.54,1.68-2.81,3.43-5.64,5.3-8.54,6.25-9.69,42.83-65.85,51.85-62.42-15.96,14.35-41.34,59.81-52.5,80-2.36,4.27-6.55,13.35-8.73,16.92-2.7,4.43-7.6,7.28-10.63,2.01-1.95-3.4,1.36-19.49,5.15-34.81-11.08,19.67-24.25,43.08-26.29,45.2-2.98,3.08-8.57,2.49-11.52-.69-8.26-8.9,2.74-74.64,6.99-87.12,1.89-4.48,7.06-6.57,11.53-4.67,4.48,1.89,6.57,7.06,4.67,11.53"/>
+        <path class="s1" d="M224.17,289.52c4.14,4.35,10.15,3.53,16.76-3.33,13.55-14.07,8.29-30.07-2.69-42.44-3.83,9.78-8.03,25.87-10.41,33.65-1.11,3.64-2.31,7.77-3.65,12.12M189.75,318.08c11.86-3.67,31.17-78.74,40.42-88.42,9.25-9.68,19.12,5.59,23.37,12.78,12.2,20.68,5.61,49.82-17.85,56.41-5.67,1.59-10.3.38-13.71-2.49-5.28,15.76-12.79,32.62-25.39,39.31-4.86,1.89-10.32-.52-12.21-5.37-1.89-4.86.52-10.32,5.37-12.21Z"/>
+        <path class="s3" d="M298.76,347.6c-68.46,56.91-170.27,50.93-231.51-15.15-61.24-66.07-59.49-168.04,2.44-231.99-48.68,64.94-45.56,157.36,11.57,219,57.13,61.64,149.05,71.75,217.5,28.13"/>
+        <path class="s3" d="M340.79,308.19c61.93-63.95,63.68-165.92,2.44-231.99C281.99,10.12,180.18,4.14,111.72,61.05c68.45-43.62,160.36-33.5,217.5,28.14,57.13,61.64,60.25,154.06,11.57,219.01"/>
+      </svg>
+    </div>
+    <h1 class="hero-title">Ficha del viajero</h1>
+    <p class="hero-sub">Completá tus datos para el viaje</p>
+  </div>
+
+  <!-- Form -->
+  <form id="mainForm" onsubmit="handleSubmit(event)">
+
+    <div class="divider">
+      <div class="divider-line"></div>
+      <span class="divider-label">Tus datos</span>
+      <div class="divider-line"></div>
+    </div>
+
+    <div class="two-col">
+      <div class="field">
+        <label>Nombre completo<span class="req">*</span></label>
+        <input type="text" id="nombre" placeholder="Ej: Federica Raminger" required>
+      </div>
+      <div class="field">
+        <label>Apellido<span class="req">*</span></label>
+        <input type="text" id="apellido" placeholder="Ej: Raminger" required>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>Si tenés más de un nombre, ¿cuál preferís? <span style="color:var(--muted);text-transform:none;font-weight:300;font-size:11px;letter-spacing:0">(opcional)</span></label>
+      <input type="text" id="apodo" placeholder="Ej: María, Sofi, Tomás...">
+    </div>
+
+    <div class="field">
+      <label>Edad<span class="req">*</span></label>
+      <div class="age-group" id="radiosEdad">
+        <div class="age-btn" onclick="selectAge(this,'17')">17</div>
+        <div class="age-btn" onclick="selectAge(this,'18')">18</div>
+        <div class="age-btn" onclick="selectAge(this,'19')">19</div>
+      </div>
+      <input type="hidden" id="edad">
+    </div>
+
+    <div class="field">
+      <label>Sexo<span class="req">*</span></label>
+      <div class="age-group" id="radiosSexo">
+        <div class="age-btn" onclick="selectSexo(this,'Masculino')">Masculino</div>
+        <div class="age-btn" onclick="selectSexo(this,'Femenino')">Femenino</div>
+        <div class="age-btn" onclick="selectSexo(this,'Prefiero no responder')" style="font-size:12px">No respondo</div>
+      </div>
+      <input type="hidden" id="sexo">
+    </div>
+
+    <div class="field">
+      <label>Colegio / Grupo<span class="req">*</span></label>
+      <select id="colegio" required>
+        <option value="" disabled selected>Seleccioná tu colegio</option>
+        <option>Berazategui</option>
+        <option>El Encuentro</option>
+        <option>Emanuel</option>
+        <option>Hay Vida En Jesús</option>
+        <option>M. T Alvear</option>
+        <option>Menoyo</option>
+        <option>Zion</option>
+      </select>
+    </div>
+
+    <div class="photo-zone" id="photoZone">
+      <input type="file" id="photoInput" accept="image/jpeg,image/jpg,image/png,image/webp" onchange="previewPhoto(this)">
+      <div id="photoPlaceholder">
+        <div class="photo-icon">📸</div>
+        <p>Subí tu mejor foto del 2026<br>que se vea bien tu cara</p>
+        <p class="hint">Tocá para elegir o sacar foto</p>
+      </div>
+      <img id="photoPreview" class="photo-preview" alt="Vista previa">
+      <p class="photo-name" id="photoName"></p>
+    </div>
+
+    <div class="divider">
+      <div class="divider-line"></div>
+      <span class="divider-label">Talles de ropa</span>
+      <div class="divider-line"></div>
+    </div>
+
+    <div class="field" style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin-bottom:20px">
+      <p style="font-size:13px;color:var(--muted);line-height:1.6">Para prepararte la ropa en Bariloche, necesitamos que completes estos talles. Si algo no te queda perfecto, allá lo podemos cambiar — pero intentá ser lo más preciso posible. <strong style="color:var(--text)">Elegí tu talle real y actual.</strong></p>
+    </div>
+
+    <div class="field">
+      <label>Pantalón<span class="req">*</span></label>
+      <div class="radio-group" id="radiosPantalon">
+        <div class="age-btn" onclick="selectTalle('pantalon',this,'XS')">XS</div>
+        <div class="age-btn" onclick="selectTalle('pantalon',this,'S')">S</div>
+        <div class="age-btn" onclick="selectTalle('pantalon',this,'M')">M</div>
+        <div class="age-btn" onclick="selectTalle('pantalon',this,'L')">L</div>
+        <div class="age-btn" onclick="selectTalle('pantalon',this,'XL')">XL</div>
+        <div class="age-btn" onclick="selectTalle('pantalon',this,'XXL')">XXL</div>
+      </div>
+      <input type="hidden" id="talle_pantalon">
+    </div>
+
+    <div class="field">
+      <label>Campera<span class="req">*</span></label>
+      <div class="radio-group" id="radiosCampera">
+        <div class="age-btn" onclick="selectTalle('campera',this,'XS')">XS</div>
+        <div class="age-btn" onclick="selectTalle('campera',this,'S')">S</div>
+        <div class="age-btn" onclick="selectTalle('campera',this,'M')">M</div>
+        <div class="age-btn" onclick="selectTalle('campera',this,'L')">L</div>
+        <div class="age-btn" onclick="selectTalle('campera',this,'XL')">XL</div>
+        <div class="age-btn" onclick="selectTalle('campera',this,'XXL')">XXL</div>
+      </div>
+      <input type="hidden" id="talle_campera">
+    </div>
+
+    <div class="field">
+      <label>Bota<span class="req">*</span> <span style="text-transform:none;font-weight:300;font-size:11px;letter-spacing:0">— tu talle real de calzado</span></label>
+      <select id="talle_bota" required>
+        <option value="" disabled selected>Seleccioná tu talle</option>
+        <option>33</option><option>34</option><option>35</option>
+        <option>36</option><option>37</option><option>38</option>
+        <option>39</option><option>40</option><option>41</option>
+        <option>42</option><option>43</option><option>44</option>
+      </select>
+    </div>
+
+    <div class="divider">
+      <div class="divider-line"></div>
+      <span class="divider-label">Datos de tus padres/tutores</span>
+      <div class="divider-line"></div>
+    </div>
+
+    <div class="two-col">
+      <div class="field">
+        <label>Nombre del padre</label>
+        <input type="text" id="nombre_padre" placeholder="Nombre y apellido">
+      </div>
+      <div class="field">
+        <label>Teléfono del padre</label>
+        <input type="tel" id="telefono_padre" placeholder="+54 11...">
+      </div>
+    </div>
+
+    <div class="two-col">
+      <div class="field">
+        <label>Nombre de la madre</label>
+        <input type="text" id="nombre_madre" placeholder="Nombre y apellido">
+      </div>
+      <div class="field">
+        <label>Teléfono de la madre</label>
+        <input type="tel" id="telefono_madre" placeholder="+54 11...">
+      </div>
+    </div>
+
+    <button type="submit" class="submit-btn" id="submitBtn">Enviar mi ficha</button>
+    <div class="error-msg" id="errorMsg"></div>
+
+  </form>
+
+  <!-- Success screen -->
+  <div class="success-screen" id="successScreen">
+    <div class="success-icon">✓</div>
+    <h2>¡Todo listo!</h2>
+    <p>Tu ficha fue enviada correctamente.<br>Nos vemos en el viaje 🚀</p>
+  </div>
+
+  <p class="footer">Wake Up Viajes — Tu aventura empieza acá</p>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+  const SUPABASE_URL = 'https://mzousqdahqterfawhwsz.supabase.co';
+  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im16b3VzcWRhaHF0ZXJmYXdod3N6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA1MTc4MzUsImV4cCI6MjA5NjA5MzgzNX0.EdSlcRdLD75OdYlwtZGLVgL_PGpJysWb_MKvuwGgj5Y';
+
+  const { createClient } = supabase;
+  const db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  let edadSeleccionada = '';
+  let talles = { pantalon: '', campera: '' };
+  let sexoSeleccionado = '';
+
+  function selectAge(el, val) {
+    document.querySelectorAll('#radiosEdad .age-btn').forEach(b => b.classList.remove('active'));
+    el.classList.add('active');
+    edadSeleccionada = val;
+    document.getElementById('edad').value = val;
+  }
+
+  function selectSexo(el, val) {
+    document.querySelectorAll('#radiosSexo .age-btn').forEach(b => b.classList.remove('active'));
+    el.classList.add('active');
+    sexoSeleccionado = val;
+    document.getElementById('sexo').value = val;
+  }
+
+  function selectTalle(tipo, el, val) {
+    const groupId = 'radios' + tipo.charAt(0).toUpperCase() + tipo.slice(1);
+    document.querySelectorAll('#' + groupId + ' .age-btn').forEach(b => b.classList.remove('active'));
+    el.classList.add('active');
+    talles[tipo] = val;
+    document.getElementById('talle_' + tipo).value = val;
+  }
+
+  let processedPhotoFile = null;
+
+  function previewPhoto(input) {
+    if (!input.files || !input.files[0]) return;
+    const file = input.files[0];
+    const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+    const validExts = ['.jpg', '.jpeg', '.png', '.webp'];
+    const ext = '.' + file.name.split('.').pop().toLowerCase();
+
+    if (!validTypes.includes(file.type) && !validExts.includes(ext)) {
+      document.getElementById('photoPlaceholder').style.display = 'block';
+      document.getElementById('photoName').style.display = 'block';
+      document.getElementById('photoName').textContent = '⚠️ Formato no válido. Usá JPG, JPEG o PNG.';
+      document.getElementById('photoName').style.color = 'var(--pink)';
+      input.value = '';
+      processedPhotoFile = null;
+      return;
+    }
+
+    processedPhotoFile = file;
+    const reader = new FileReader();
+    reader.onload = e => {
+      const preview = document.getElementById('photoPreview');
+      preview.src = e.target.result;
+      preview.style.display = 'block';
+      document.getElementById('photoPlaceholder').style.display = 'none';
+      document.getElementById('photoName').style.display = 'block';
+      document.getElementById('photoName').style.color = '';
+      document.getElementById('photoName').textContent = '✓ ' + file.name;
+    };
+    reader.readAsDataURL(file);
+  }
+
+  async function handleSubmit(e) {
+    e.preventDefault();
+
+    const toTitleCase = s => s.toLowerCase().replace(/\w/g, c => c.toUpperCase());
+    const nombre = toTitleCase(document.getElementById('nombre').value.trim());
+    const apellido = toTitleCase(document.getElementById('apellido').value.trim());
+    const edad = edadSeleccionada;
+    const colegio = document.getElementById('colegio').value;
+    const photoFile = processedPhotoFile || document.getElementById('photoInput').files[0];
+
+    const errorEl = document.getElementById('errorMsg');
+    errorEl.style.display = 'none';
+
+    if (!nombre || !apellido) {
+      showError('Por favor ingresá nombre y apellido.');
+      return;
+    }
+    if (!edad) {
+      showError('Por favor seleccioná tu edad.');
+      return;
+    }
+    if (!sexoSeleccionado) {
+      showError('Por favor seleccioná tu sexo.');
+      return;
+    }
+    if (!colegio) {
+      showError('Por favor seleccioná tu colegio.');
+      return;
+    }
+    if (!photoFile) {
+      showError('Por favor subí tu foto.');
+      return;
+    }
+    if (!talles.pantalon) {
+      showError('Por favor seleccioná tu talle de pantalón.');
+      return;
+    }
+    if (!talles.campera) {
+      showError('Por favor seleccioná tu talle de campera.');
+      return;
+    }
+    if (!document.getElementById('talle_bota').value) {
+      showError('Por favor seleccioná tu talle de bota.');
+      return;
+    }
+
+    const btn = document.getElementById('submitBtn');
+    btn.disabled = true;
+    btn.textContent = 'Enviando...';
+
+    try {
+      // Upload photo
+      const ext = photoFile.name.split('.').pop().toLowerCase();
+      const fileName = `${Date.now()}_${nombre}_${apellido}.${ext}`.replace(/\s+/g, '_');
+
+      const { data: uploadData, error: uploadError } = await db.storage
+        .from('fotos')
+        .upload(fileName, photoFile, { cacheControl: '3600', upsert: false });
+
+      if (uploadError) throw uploadError;
+
+      const { data: urlData } = db.storage.from('fotos').getPublicUrl(fileName);
+      const foto_url = urlData.publicUrl;
+
+      // Insert record
+      const { error: insertError } = await db.from('alumnos').insert([{
+        nombre,
+        apellido,
+        apodo: document.getElementById('apodo').value.trim(),
+        edad,
+        sexo: sexoSeleccionado,
+        colegio,
+        foto_url,
+        talle_pantalon: talles.pantalon,
+        talle_campera: talles.campera,
+        talle_bota: document.getElementById('talle_bota').value,
+        nombre_padre: document.getElementById('nombre_padre').value.trim(),
+        telefono_padre: document.getElementById('telefono_padre').value.trim(),
+        nombre_madre: document.getElementById('nombre_madre').value.trim(),
+        telefono_madre: document.getElementById('telefono_madre').value.trim(),
+      }]);
+
+      if (insertError) throw insertError;
+
+      // Success
+      document.getElementById('mainForm').style.display = 'none';
+      document.getElementById('successScreen').style.display = 'block';
+
+    } catch (err) {
+      console.error(err);
+      showError('Hubo un error al enviar. Intentá de nuevo o contactá a Wake Up.');
+      btn.disabled = false;
+      btn.textContent = 'Enviar mi ficha';
+    }
+  }
+
+  function showError(msg) {
+    const el = document.getElementById('errorMsg');
+    el.textContent = msg;
+    el.style.display = 'block';
+  }
+</script>
+</body>
+</html>
