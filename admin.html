@@ -1,0 +1,1116 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Wake Up Admin">
+<meta name="theme-color" content="#080808">
+<link rel="manifest" href="/manifest-admin.json">
+<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Wake Up — Panel Admin</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;500;700&family=DM+Sans:wght@300;400;500&display=swap');
+  :root {
+    --cyan:#5DB4C9;--pink:#F11D8C;--green:#199432;
+    --black:#080808;--surface:#111113;--card:#18181b;
+    --border:#252528;--text:#f0f0f0;--muted:#888;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{background:var(--black);color:var(--text);font-family:'DM Sans',sans-serif;min-height:100vh;}
+
+  /* LOGIN */
+  #loginScreen{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:20px;}
+  .login-box{background:var(--card);border:1px solid var(--border);border-radius:20px;padding:40px 36px;width:100%;max-width:380px;text-align:center;}
+  .login-logo{width:72px;height:72px;margin:0 auto 20px;}
+  .login-logo svg{width:100%;height:100%;}
+  .login-box h1{font-family:'Syne',sans-serif;font-size:20px;font-weight:700;margin-bottom:6px;}
+  .login-box p{font-size:13px;color:var(--muted);margin-bottom:28px;}
+  .login-box input{width:100%;background:var(--surface);border:1px solid var(--border);border-radius:10px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:15px;padding:13px 16px;outline:none;margin-bottom:14px;transition:border-color .2s;}
+  .login-box input:focus{border-color:var(--cyan);}
+  .login-btn{width:100%;background:var(--pink);border:none;border-radius:10px;color:#fff;font-family:'Syne',sans-serif;font-size:15px;font-weight:700;padding:13px;cursor:pointer;transition:opacity .15s;}
+  .login-btn:hover{opacity:.9;}
+  .login-error{display:none;color:var(--pink);font-size:13px;margin-top:12px;}
+
+  /* ADMIN */
+  #adminScreen{display:none;}
+  .topbar{background:var(--surface);border-bottom:1px solid var(--border);padding:12px 28px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;}
+  .topbar-left{display:flex;align-items:center;gap:12px;}
+  .topbar-logo{width:36px;height:36px;flex-shrink:0;}
+  .topbar-logo svg{width:100%;height:100%;}
+  .topbar h1{font-family:'Syne',sans-serif;font-size:15px;font-weight:700;color:#fff;}
+  .topbar-right{display:flex;align-items:center;gap:12px;}
+  .logout-btn{background:transparent;border:1px solid var(--border);border-radius:8px;color:var(--muted);font-family:'DM Sans',sans-serif;font-size:13px;padding:7px 14px;cursor:pointer;transition:border-color .15s,color .15s;}
+  .logout-btn:hover{border-color:var(--pink);color:var(--pink);}
+  .main{padding:24px 28px;max-width:1300px;margin:0 auto;}
+
+  /* Stats */
+  .stats-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:24px;}
+  .stat-card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:16px 18px;}
+  .stat-label{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;}
+  .stat-value{font-family:'Syne',sans-serif;font-size:26px;font-weight:700;color:#fff;}
+  .stat-value.cyan{color:var(--cyan);}.stat-value.pink{color:var(--pink);}.stat-value.green{color:var(--green);}
+
+  /* Controls */
+  .controls{display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap;}
+  .ctrl{background:var(--card);border:1px solid var(--border);border-radius:10px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;padding:9px 14px;outline:none;appearance:none;-webkit-appearance:none;transition:border-color .2s;cursor:pointer;}
+  .ctrl:focus{border-color:var(--cyan);}
+  .ctrl::placeholder{color:#444;}
+  .ctrl-search{min-width:200px;}
+  .sort-btn{background:var(--card);border:1px solid var(--border);border-radius:10px;color:var(--muted);font-family:'DM Sans',sans-serif;font-size:13px;padding:9px 14px;cursor:pointer;transition:all .15s;white-space:nowrap;}
+  .sort-btn.active{border-color:var(--cyan);color:var(--cyan);}
+  .export-btn{background:var(--cyan);border:none;border-radius:10px;color:#fff;font-family:'Syne',sans-serif;font-size:14px;font-weight:700;padding:10px 18px;cursor:pointer;margin-left:auto;transition:opacity .15s;white-space:nowrap;}
+  .export-btn:hover{opacity:.9;}.export-btn:disabled{opacity:.5;cursor:not-allowed;}
+  .export-obs-btn{background:transparent;border:1px solid var(--pink);border-radius:10px;color:var(--pink);font-family:'Syne',sans-serif;font-size:13px;font-weight:700;padding:10px 14px;cursor:pointer;transition:all .15s;white-space:nowrap;}
+  .export-obs-btn:hover{background:var(--pink);color:#fff;}
+
+  /* Table */
+  .table-wrap{background:var(--card);border:1px solid var(--border);border-radius:16px;overflow:hidden;overflow-x:auto;}
+  table{width:100%;border-collapse:collapse;min-width:900px;}
+  thead{background:var(--surface);}
+  th{font-family:'Syne',sans-serif;font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--muted);padding:12px 14px;text-align:left;border-bottom:1px solid var(--border);white-space:nowrap;user-select:none;}
+  th.sortable{cursor:pointer;}
+  th.sortable:hover{color:var(--cyan);}
+  th.sort-asc::after{content:' ↑';color:var(--cyan);}
+  th.sort-desc::after{content:' ↓';color:var(--cyan);}
+  td{padding:10px 14px;font-size:13px;border-bottom:1px solid #1a1a1d;vertical-align:middle;}
+  tr:last-child td{border-bottom:none;}
+  tr:hover td{background:rgba(255,255,255,0.02);}
+  .student-photo{width:40px;height:40px;border-radius:50%;object-fit:cover;border:2px solid var(--border);cursor:zoom-in;transition:border-color .15s;}
+  .student-photo:hover{border-color:var(--cyan);}
+  .no-photo{width:40px;height:40px;border-radius:50%;background:var(--surface);border:2px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:16px;}
+  .badge{display:inline-block;padding:2px 9px;border-radius:20px;font-size:11px;font-weight:500;background:rgba(93,180,201,.12);color:var(--cyan);}
+  .check-done{color:var(--green);font-size:17px;cursor:pointer;}
+  .check-pending{color:#333;font-size:17px;cursor:pointer;}
+  .obs-cell{font-size:12px;color:var(--muted);max-width:140px;}
+  .obs-input{background:transparent;border:none;border-bottom:1px solid var(--border);color:var(--text);font-family:'DM Sans',sans-serif;font-size:12px;padding:3px 4px;width:100%;outline:none;transition:border-color .2s;}
+  .obs-input:focus{border-color:var(--cyan);}
+  .obs-input::placeholder{color:#333;}
+  .empty-state{text-align:center;padding:60px 20px;color:var(--muted);}
+  .empty-state .icon{font-size:40px;margin-bottom:12px;}
+  .loading{text-align:center;padding:60px 20px;color:var(--muted);font-size:14px;}
+
+  /* Photo modal */
+  .photo-modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:1000;align-items:center;justify-content:center;}
+  .photo-modal.open{display:flex;}
+  .photo-modal img{max-width:90vw;max-height:85vh;border-radius:12px;box-shadow:0 0 60px rgba(0,0,0,.8);}
+  .photo-modal-name{position:fixed;bottom:32px;left:50%;transform:translateX(-50%);color:#fff;font-family:'Syne',sans-serif;font-size:16px;font-weight:700;background:rgba(0,0,0,.6);padding:8px 20px;border-radius:20px;}
+  .photo-modal-close{position:fixed;top:24px;right:28px;color:#fff;font-size:28px;cursor:pointer;opacity:.7;}
+  .photo-modal-close:hover{opacity:1;}
+
+
+  /* Faltantes modal */
+  .faltantes-btn{background:transparent;border:1px solid var(--muted);border-radius:10px;color:var(--muted);font-family:'DM Sans',sans-serif;font-size:13px;padding:9px 14px;cursor:pointer;transition:all .15s;white-space:nowrap;}
+  .faltantes-btn:hover{border-color:var(--cyan);color:var(--cyan);}
+  .overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:200;align-items:center;justify-content:center;padding:20px;}
+  .overlay.open{display:flex;}
+  .modal-box{background:var(--card);border:1px solid var(--border);border-radius:20px;width:100%;max-width:540px;max-height:80vh;display:flex;flex-direction:column;}
+  .modal-header{padding:20px 24px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+  .modal-header h2{font-family:'Syne',sans-serif;font-size:16px;font-weight:700;}
+  .modal-close{background:none;border:none;color:var(--muted);font-size:22px;cursor:pointer;line-height:1;}
+  .modal-close:hover{color:#fff;}
+  .modal-body{padding:20px 24px;overflow-y:auto;flex:1;}
+  .upload-zone{border:1.5px dashed var(--border);border-radius:12px;padding:24px;text-align:center;cursor:pointer;transition:border-color .2s;position:relative;background:var(--surface);}
+  .upload-zone:hover{border-color:var(--cyan);}
+  .upload-zone input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;}
+  .upload-zone p{font-size:13px;color:var(--muted);}
+  .upload-zone .icon{font-size:28px;margin-bottom:8px;}
+  .faltantes-list{margin-top:16px;}
+  .faltantes-count{font-size:13px;color:var(--muted);margin-bottom:12px;}
+  .faltantes-count span{color:var(--pink);font-weight:700;}
+  .faltante-item{display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--surface);border-radius:10px;margin-bottom:8px;font-size:14px;}
+  .faltante-item .dot{width:8px;height:8px;border-radius:50%;background:var(--pink);flex-shrink:0;}
+  .presentes-ok{text-align:center;padding:20px;color:var(--green);font-size:14px;}
+  .toggle-cols{display:flex;align-items:center;gap:8px;margin-bottom:12px;flex-wrap:wrap;}
+  .col-toggle{background:var(--card);border:1px solid var(--border);border-radius:8px;color:var(--muted);font-family:'DM Sans',sans-serif;font-size:12px;padding:5px 12px;cursor:pointer;transition:all .15s;user-select:none;}
+  .col-toggle.hidden{background:transparent;border-color:#333;color:#444;text-decoration:line-through;}
+  .col-toggle:hover{border-color:var(--cyan);color:var(--cyan);}
+  @media(max-width:700px){.main{padding:16px;}.topbar{padding:10px 16px;}.sort-btn{display:none;}}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="loginScreen">
+  <div class="login-box">
+    <div class="login-logo">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 410.48 408.65">
+        <defs><style>.a0{fill:#f11d8c;fill-rule:evenodd}.a1{fill:#fff;fill-rule:evenodd}.a2{fill:#199432;fill-rule:evenodd}.a3{fill:#5db4c9;fill-rule:evenodd}</style></defs>
+        <path class="a1" d="M145.09,107.08c13.1,1.6,27.68,2.64,35.44,2.25,1.91-.09,20.62-1.8,17.03-7.14-5.29-7.88-15.08-9.75-23.88-8.52-9.4,1.31-19.47,6.38-28.59,13.41M102.21,141.98c4.62-13.58,12.11-24.36,21.93-33.72-2.65-.86-4.98-1.73-6.85-2.59-6.72-3.1-9.86-5.03-14.07-11.01,7.75,4.24,11.27,6.33,20.07,8.7,1.43.38,3.12.77,5.01,1.14,2.16-1.86,4.41-3.66,6.75-5.42,18.7-14.06,50.36-27.37,68.79-5.18,11.51,13.85-2.38,22.01-16.49,23.57-10.3,1.14-31.2-1.48-48.35-5.28-10.75,9.79-19.42,21.99-22.83,33.1-.91,3.86-4.78,6.25-8.64,5.33-3.86-.91-6.25-4.78-5.33-8.64Z"/>
+        <path class="a2" d="M196.87,105.41c-8.69,5.02-26.99,5.04-51.78,1.67,17.58-12.28,33.76-16.94,47.76-9.71,5.04,4,6.16,6.6,4.02,8.04"/>
+        <path class="a1" d="M250.83,141.2c-15.91,30.37-18.93,58.38-30.3,88.99-.77,2.07.7.6-1.56,3.59-1.54-4.75-1.15-4.06-.5-10.32,2.99-28.67,8.78-61.94,20.38-88.34,1.68-3.3,5.72-4.62,9.02-2.95,3.31,1.68,4.62,5.72,2.95,9.02"/>
+        <path class="a1" d="M264.34,225.04l.58,2.17c-15.16-9.04-30.58-18.21-45.96-26.85l-6.81-3.77c-3.32-2.38-5.22-1.32-5.84-5.05-.96-5.74,9.07-7.4,13.61-9.04,12.03-4.36,46.04-17.59,56.69-19.07l4.95-.11c-6.37,3.71-2.98,1.89-11.55,5.96-14.98,7.12-30.99,14.83-46.57,21.57,12.47,5.7,27.21,13.81,36.96,18.93,10.78,5.66,8.14,2.86,16.87,11.77.75,3.63-1.58,7.18-5.21,7.93-3.37.7-6.66-1.26-7.73-4.44"/>
+        <path class="a1" d="M151.33,219.29c11.82-6.56,34.75-59.39,42.22-62.27,7.74-2.99,7.19,12.06,7.51,16.1.99,12.41,1.46,22.41,4.91,34.62,1.51,5.34,2.7,8.24,2.57,13.75-3.69-5.1-7.85-14.34-9.84-20.47-3.03-9.36-3.97-18.92-5.51-28.04-6.31,11.42-12.21,25.28-18.16,36.04-5.22,9.44-9.24,16.94-18.54,22.66-3.42,1.42-7.35-.2-8.77-3.62-1.42-3.42.2-7.35,3.62-8.77"/>
+        <path class="a1" d="M173.11,258.7c-8.38,5.48-14.51,54.64-3.87,50.2,19.56-8.16,31.91-56.49,38.38-75.18,1.17-3.39,1.11-4.34,3.33-6.48v1.6c-1.32,19.63-11.52,59-22.59,75.11-11.86,17.25-30.53,24.81-35.41-.97-2.95-15.6-.39-45.18,13.24-55.76,3.18-1.91,7.3-.89,9.21,2.29,1.91,3.18.89,7.3-2.29,9.21"/>
+        <path class="a1" d="M289.54,170.69c8.04-9.36,16.42-20.16,20.14-26.39.92-1.54,9.3-16.97,3.28-16.95-8.88.03-15.41,6.67-19.02,14.15-3.86,7.99-5.14,18.46-4.41,29.19M294.44,222.16c-8.17-10.64-12.67-22.06-14.85-34.56-2.04,1.62-3.93,2.98-5.57,3.98-5.9,3.62-9.03,5.06-15.87,5.23,7.32-3.83,10.77-5.48,17.18-11.1,1.04-.91,2.21-2.03,3.49-3.31-.32-2.64-.56-5.33-.71-8.06-1.23-21.84,4.84-53.37,31.66-56.19,16.75-1.76,15.88,13.27,9.78,25.05-4.46,8.61-17.34,23.5-29.19,34.87,2.04,13.44,7.03,26.52,13.9,34.93,2.53,2.71,2.38,6.96-.34,9.49-2.71,2.53-6.96,2.38-9.49-.34Z"/>
+        <path class="a0" d="M315.11,129.55c-.6,9.36-10.09,23.61-25.57,41.14-.42-20.05,4.34-35.05,17.23-42.18,5.73-1.84,8.33-1.36,8.34,1.04"/>
+        <path class="a0" d="M263.42,285.92c6.46-5.93,7.43-20.35,8.74-28.57.69-4.33,1.92-18.55,4.48-21.79,7.17,2.55,8.49,27.97,8.69,34.66.35,11.98-.47,19.33-7.27,29.21-3.73,4.04-10.03,4.3-14.08.56-4.04-3.73-4.3-10.03-.56-14.08"/>
+        <path class="a0" d="M261.61,308.08c5.15.71,8.59,6.59,7.69,13.13-.9,6.54-5.81,11.27-10.96,10.56-5.15-.71-8.59-6.59-7.69-13.13.9-6.54,5.81-11.27,10.96-10.56"/>
+        <path class="a1" d="M111.27,166.97c-3.05,8.43-6.45,28.06-8.46,45.41,5.39-8.93,10.85-17.72,13.2-21.57,4.12-6.76,23.56-41.41,31.86-41.56,6.99-.12,7.58,6.6,4.86,12.26-7.34,15.25-5.38,8.53-10.54,25.51-1.51,4.95-4.23,13.69-6.75,22.54,1.68-2.81,3.43-5.64,5.3-8.54,6.25-9.69,42.83-65.85,51.85-62.42-15.96,14.35-41.34,59.81-52.5,80-2.36,4.27-6.55,13.35-8.73,16.92-2.7,4.43-7.6,7.28-10.63,2.01-1.95-3.4,1.36-19.49,5.15-34.81-11.08,19.67-24.25,43.08-26.29,45.2-2.98,3.08-8.57,2.49-11.52-.69-8.26-8.9,2.74-74.64,6.99-87.12,1.89-4.48,7.06-6.57,11.53-4.67,4.48,1.89,6.57,7.06,4.67,11.53"/>
+        <path class="a1" d="M224.17,289.52c4.14,4.35,10.15,3.53,16.76-3.33,13.55-14.07,8.29-30.07-2.69-42.44-3.83,9.78-8.03,25.87-10.41,33.65-1.11,3.64-2.31,7.77-3.65,12.12M189.75,318.08c11.86-3.67,31.17-78.74,40.42-88.42,9.25-9.68,19.12,5.59,23.37,12.78,12.2,20.68,5.61,49.82-17.85,56.41-5.67,1.59-10.3.38-13.71-2.49-5.28,15.76-12.79,32.62-25.39,39.31-4.86,1.89-10.32-.52-12.21-5.37-1.89-4.86.52-10.32,5.37-12.21Z"/>
+        <path class="a3" d="M298.76,347.6c-68.46,56.91-170.27,50.93-231.51-15.15-61.24-66.07-59.49-168.04,2.44-231.99-48.68,64.94-45.56,157.36,11.57,219,57.13,61.64,149.05,71.75,217.5,28.13"/>
+        <path class="a3" d="M340.79,308.19c61.93-63.95,63.68-165.92,2.44-231.99C281.99,10.12,180.18,4.14,111.72,61.05c68.45-43.62,160.36-33.5,217.5,28.14,57.13,61.64,60.25,154.06,11.57,219.01"/>
+      </svg>
+    </div>
+    <h1>Panel Admin</h1>
+    <p>Wake Up Viajes — Acceso restringido</p>
+    <input type="password" id="passwordInput" placeholder="Contraseña" onkeydown="if(event.key==='Enter')doLogin()">
+    <button class="login-btn" onclick="doLogin()">Ingresar</button>
+    <p class="login-error" id="loginError">Contraseña incorrecta</p>
+  </div>
+</div>
+
+<!-- ADMIN -->
+<div id="adminScreen">
+  <div class="topbar">
+    <div class="topbar-left">
+      <div class="topbar-logo">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 410.48 408.65">
+          <defs><style>.c0{fill:#f11d8c;fill-rule:evenodd}.c1{fill:#fff;fill-rule:evenodd}.c2{fill:#199432;fill-rule:evenodd}.c3{fill:#5db4c9;fill-rule:evenodd}</style></defs>
+          <path class="c1" d="M145.09,107.08c13.1,1.6,27.68,2.64,35.44,2.25,1.91-.09,20.62-1.8,17.03-7.14-5.29-7.88-15.08-9.75-23.88-8.52-9.4,1.31-19.47,6.38-28.59,13.41M102.21,141.98c4.62-13.58,12.11-24.36,21.93-33.72-2.65-.86-4.98-1.73-6.85-2.59-6.72-3.1-9.86-5.03-14.07-11.01,7.75,4.24,11.27,6.33,20.07,8.7,1.43.38,3.12.77,5.01,1.14,2.16-1.86,4.41-3.66,6.75-5.42,18.7-14.06,50.36-27.37,68.79-5.18,11.51,13.85-2.38,22.01-16.49,23.57-10.3,1.14-31.2-1.48-48.35-5.28-10.75,9.79-19.42,21.99-22.83,33.1-.91,3.86-4.78,6.25-8.64,5.33-3.86-.91-6.25-4.78-5.33-8.64Z"/>
+          <path class="c2" d="M196.87,105.41c-8.69,5.02-26.99,5.04-51.78,1.67,17.58-12.28,33.76-16.94,47.76-9.71,5.04,4,6.16,6.6,4.02,8.04"/>
+          <path class="c1" d="M250.83,141.2c-15.91,30.37-18.93,58.38-30.3,88.99-.77,2.07.7.6-1.56,3.59-1.54-4.75-1.15-4.06-.5-10.32,2.99-28.67,8.78-61.94,20.38-88.34,1.68-3.3,5.72-4.62,9.02-2.95,3.31,1.68,4.62,5.72,2.95,9.02"/>
+          <path class="c1" d="M264.34,225.04l.58,2.17c-15.16-9.04-30.58-18.21-45.96-26.85l-6.81-3.77c-3.32-2.38-5.22-1.32-5.84-5.05-.96-5.74,9.07-7.4,13.61-9.04,12.03-4.36,46.04-17.59,56.69-19.07l4.95-.11c-6.37,3.71-2.98,1.89-11.55,5.96-14.98,7.12-30.99,14.83-46.57,21.57,12.47,5.7,27.21,13.81,36.96,18.93,10.78,5.66,8.14,2.86,16.87,11.77.75,3.63-1.58,7.18-5.21,7.93-3.37.7-6.66-1.26-7.73-4.44"/>
+          <path class="c1" d="M151.33,219.29c11.82-6.56,34.75-59.39,42.22-62.27,7.74-2.99,7.19,12.06,7.51,16.1.99,12.41,1.46,22.41,4.91,34.62,1.51,5.34,2.7,8.24,2.57,13.75-3.69-5.1-7.85-14.34-9.84-20.47-3.03-9.36-3.97-18.92-5.51-28.04-6.31,11.42-12.21,25.28-18.16,36.04-5.22,9.44-9.24,16.94-18.54,22.66-3.42,1.42-7.35-.2-8.77-3.62-1.42-3.42.2-7.35,3.62-8.77"/>
+          <path class="c1" d="M173.11,258.7c-8.38,5.48-14.51,54.64-3.87,50.2,19.56-8.16,31.91-56.49,38.38-75.18,1.17-3.39,1.11-4.34,3.33-6.48v1.6c-1.32,19.63-11.52,59-22.59,75.11-11.86,17.25-30.53,24.81-35.41-.97-2.95-15.6-.39-45.18,13.24-55.76,3.18-1.91,7.3-.89,9.21,2.29,1.91,3.18.89,7.3-2.29,9.21"/>
+          <path class="c1" d="M289.54,170.69c8.04-9.36,16.42-20.16,20.14-26.39.92-1.54,9.3-16.97,3.28-16.95-8.88.03-15.41,6.67-19.02,14.15-3.86,7.99-5.14,18.46-4.41,29.19M294.44,222.16c-8.17-10.64-12.67-22.06-14.85-34.56-2.04,1.62-3.93,2.98-5.57,3.98-5.9,3.62-9.03,5.06-15.87,5.23,7.32-3.83,10.77-5.48,17.18-11.1,1.04-.91,2.21-2.03,3.49-3.31-.32-2.64-.56-5.33-.71-8.06-1.23-21.84,4.84-53.37,31.66-56.19,16.75-1.76,15.88,13.27,9.78,25.05-4.46,8.61-17.34,23.5-29.19,34.87,2.04,13.44,7.03,26.52,13.9,34.93,2.53,2.71,2.38,6.96-.34,9.49-2.71,2.53-6.96,2.38-9.49-.34Z"/>
+          <path class="c0" d="M315.11,129.55c-.6,9.36-10.09,23.61-25.57,41.14-.42-20.05,4.34-35.05,17.23-42.18,5.73-1.84,8.33-1.36,8.34,1.04"/>
+          <path class="c0" d="M263.42,285.92c6.46-5.93,7.43-20.35,8.74-28.57.69-4.33,1.92-18.55,4.48-21.79,7.17,2.55,8.49,27.97,8.69,34.66.35,11.98-.47,19.33-7.27,29.21-3.73,4.04-10.03,4.3-14.08.56-4.04-3.73-4.3-10.03-.56-14.08"/>
+          <path class="c0" d="M261.61,308.08c5.15.71,8.59,6.59,7.69,13.13-.9,6.54-5.81,11.27-10.96,10.56-5.15-.71-8.59-6.59-7.69-13.13.9-6.54,5.81-11.27,10.96-10.56"/>
+          <path class="c1" d="M111.27,166.97c-3.05,8.43-6.45,28.06-8.46,45.41,5.39-8.93,10.85-17.72,13.2-21.57,4.12-6.76,23.56-41.41,31.86-41.56,6.99-.12,7.58,6.6,4.86,12.26-7.34,15.25-5.38,8.53-10.54,25.51-1.51,4.95-4.23,13.69-6.75,22.54,1.68-2.81,3.43-5.64,5.3-8.54,6.25-9.69,42.83-65.85,51.85-62.42-15.96,14.35-41.34,59.81-52.5,80-2.36,4.27-6.55,13.35-8.73,16.92-2.7,4.43-7.6,7.28-10.63,2.01-1.95-3.4,1.36-19.49,5.15-34.81-11.08,19.67-24.25,43.08-26.29,45.2-2.98,3.08-8.57,2.49-11.52-.69-8.26-8.9,2.74-74.64,6.99-87.12,1.89-4.48,7.06-6.57,11.53-4.67,4.48,1.89,6.57,7.06,4.67,11.53"/>
+          <path class="c1" d="M224.17,289.52c4.14,4.35,10.15,3.53,16.76-3.33,13.55-14.07,8.29-30.07-2.69-42.44-3.83,9.78-8.03,25.87-10.41,33.65-1.11,3.64-2.31,7.77-3.65,12.12M189.75,318.08c11.86-3.67,31.17-78.74,40.42-88.42,9.25-9.68,19.12,5.59,23.37,12.78,12.2,20.68,5.61,49.82-17.85,56.41-5.67,1.59-10.3.38-13.71-2.49-5.28,15.76-12.79,32.62-25.39,39.31-4.86,1.89-10.32-.52-12.21-5.37-1.89-4.86.52-10.32,5.37-12.21Z"/>
+          <path class="c3" d="M298.76,347.6c-68.46,56.91-170.27,50.93-231.51-15.15-61.24-66.07-59.49-168.04,2.44-231.99-48.68,64.94-45.56,157.36,11.57,219,57.13,61.64,149.05,71.75,217.5,28.13"/>
+          <path class="c3" d="M340.79,308.19c61.93-63.95,63.68-165.92,2.44-231.99C281.99,10.12,180.18,4.14,111.72,61.05c68.45-43.62,160.36-33.5,217.5,28.14,57.13,61.64,60.25,154.06,11.57,219.01"/>
+        </svg>
+      </div>
+      <h1>Panel Admin — Wake Up</h1>
+    </div>
+    <div class="topbar-right">
+      <span id="totalBadge" style="font-size:13px;color:var(--muted)"></span>
+      <button class="logout-btn" onclick="recargarDatos()" id="refreshBtn">↻ Actualizar</button>
+      <button class="logout-btn" onclick="doLogout()">Cerrar sesión</button>
+    </div>
+  </div>
+
+  <div class="main">
+    <div class="stats-row">
+      <div class="stat-card"><div class="stat-label">Total alumnos</div><div class="stat-value cyan" id="statTotal">—</div></div>
+      <div class="stat-card"><div class="stat-label">Con foto</div><div class="stat-value green" id="statFotos">—</div></div>
+      <div class="stat-card"><div class="stat-label">Con observaciones</div><div class="stat-value pink" id="statObs">—</div></div>
+      <div class="stat-card"><div class="stat-label">Revisados</div><div class="stat-value" id="statRevisados">—</div></div>
+    </div>
+
+    <div class="controls">
+      <input type="text" id="searchInput" class="ctrl ctrl-search" placeholder="Buscar nombre o apellido..." oninput="renderTable()">
+      <select id="colegioFilter" class="ctrl" onchange="renderTable()">
+        <option value="">Todos los colegios</option>
+        <option>Berazategui</option><option>El Encuentro</option><option>Emanuel</option>
+        <option>Hay Vida En Jesús</option><option>M. T Alvear</option><option>Menoyo</option><option>Zion</option>
+      </select>
+      <select id="sexoFilter" class="ctrl" onchange="renderTable()">
+        <option value="">Todos los sexos</option>
+        <option>Masculino</option><option>Femenino</option><option>Prefiero no responder</option>
+      </select>
+      <button class="export-btn" onclick="exportDocx('fichas')" id="exportBtn">⬇ Fichas + fotos</button>
+      <button class="export-obs-btn" onclick="exportDocx('obs')" id="exportObsBtn">⬇ Observaciones</button>
+      <button class="export-obs-btn" onclick="exportDocx('padres')" id="exportPadresBtn" style="border-color:var(--green);color:var(--green)">⬇ Datos de padres</button>
+      <button class="export-obs-btn" onclick="exportExcel()" id="exportXlsBtn" style="border-color:#1d6f42;color:#1d6f42">⬇ Excel completo</button>
+      <button class="export-obs-btn" onclick="exportExcelRopa()" id="exportRopaBtn" style="border-color:#1d6f42;color:#1d6f42">⬇ Excel ropa</button>
+      <button class="faltantes-btn" onclick="openFaltantes()">👥 Ver faltantes</button>
+      <button class="faltantes-btn" onclick="openPasajeros()" id="gestionarBtn" style="border-color:var(--cyan);color:var(--cyan)">📋 Gestionar listado</button>
+    </div>
+
+    <div class="toggle-cols">
+      <span style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:1px">Columnas:</span>
+      <span class="col-toggle" onclick="toggleCol('playlist',this)">Playlist</span>
+      <span class="col-toggle" onclick="toggleColGroup(['pantalon','campera','bota'],this)">Ropa</span>
+    </div>
+    <div class="table-wrap">
+      <div class="loading" id="loadingState">Cargando alumnos...</div>
+      <table id="alumnosTable" style="display:none">
+        <thead><tr>
+          <th>Foto</th>
+          <th class="sortable" onclick="sortBy('apellido')">Apellido</th>
+          <th class="sortable" onclick="sortBy('nombre')">Nombre</th>
+          <th class="sortable" onclick="sortBy('apodo')">N. Pref.</th>
+          <th class="sortable" onclick="sortBy('colegio')">Colegio</th>
+          <th class="sortable" onclick="sortBy('edad')">Edad</th>
+          <th class="sortable" onclick="sortBy('sexo')">Sexo</th>
+          <th data-col="playlist">Playlist</th>
+          <th data-col="pantalon">Pantalón</th>
+          <th data-col="campera">Campera</th>
+          <th data-col="bota">Bota</th>
+          <th>Obs. médicas</th>
+          <th>Dieta</th>
+          <th>Observaciones</th>
+          <th>Revisado ✓</th>
+          <th></th>
+        </tr></thead>
+        <tbody id="tableBody"></tbody>
+      </table>
+      <div class="empty-state" id="emptyState" style="display:none">
+        <div class="icon">📭</div><p>No hay alumnos que coincidan</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Photo modal -->
+<div class="photo-modal" id="photoModal" onclick="closeModal()">
+  <span class="photo-modal-close">✕</span>
+  <img id="modalImg" src="" alt="">
+  <div class="photo-modal-name" id="modalName"></div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2">
+
+  // ── FALTANTES ──
+  async function openFaltantes(){
+    document.getElementById('faltantesOverlay').classList.add('open');
+    const body=document.getElementById('faltantesBody');
+    body.innerHTML='<div style="text-align:center;color:var(--muted);padding:20px;font-size:14px">Cargando...</div>';
+    
+    const {data:pasajeros,error}=await db.from('pasajeros').select('*').order('apellido');
+    if(error||!pasajeros||pasajeros.length===0){
+      body.innerHTML='<div style="text-align:center;color:var(--muted);padding:20px;font-size:14px">No hay listado cargado aún.<br>Usá <strong>Gestionar listado</strong> para subir el Excel.</div>';
+      return;
+    }
+
+    const registrados=allAlumnos.map(a=>({
+      apellido:(a.apellido||'').toLowerCase().trim(),
+      nombre:(a.nombre||'').toLowerCase().trim()
+    }));
+
+    const faltantes=pasajeros.filter(p=>
+      !registrados.some(r=>r.apellido===p.apellido.toLowerCase().trim()&&r.nombre===p.nombre.toLowerCase().trim())
+    );
+
+    if(faltantes.length===0){
+      body.innerHTML=`<div class="presentes-ok">✓ ¡Todos los ${pasajeros.length} pasajeros completaron la ficha!</div>`;
+      return;
+    }
+
+    body.innerHTML=`
+      <div class="faltantes-count">Faltan completar la ficha: <span>${faltantes.length} de ${pasajeros.length}</span> pasajeros</div>
+      ${faltantes.map(f=>`
+        <div class="faltante-item">
+          <div class="dot"></div>
+          <span><strong>${f.apellido}</strong>, ${f.nombre}</span>
+        </div>`).join('')}`;
+  }
+
+  function closeFaltantes(e){
+    if(!e||e.target===document.getElementById('faltantesOverlay'))
+      document.getElementById('faltantesOverlay').classList.remove('open');
+  }
+
+  // ── GESTIONAR PASAJEROS ──
+  async function openPasajeros(){
+    document.getElementById('pasajerosOverlay').classList.add('open');
+    document.getElementById('uploadZone').style.display='block';
+    await renderPasajerosList();
+  }
+
+  function closePasajeros(e){
+    if(!e||e.target===document.getElementById('pasajerosOverlay'))
+      document.getElementById('pasajerosOverlay').classList.remove('open');
+  }
+
+  async function renderPasajerosList(){
+    const {data,error}=await db.from('pasajeros').select('*').order('apellido');
+    const el=document.getElementById('pasajerosList');
+    if(error||!data||data.length===0){
+      el.innerHTML='<p style="font-size:13px;color:var(--muted);text-align:center;margin-top:8px">No hay pasajeros cargados aún.</p>';
+      return;
+    }
+    el.innerHTML=`
+      <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px">${data.length} pasajeros en el listado</div>
+      ${data.map(p=>`
+        <div class="faltante-item" style="justify-content:space-between">
+          <div style="display:flex;align-items:center;gap:10px">
+            <div class="dot" style="background:var(--cyan)"></div>
+            <span><strong>${p.apellido}</strong>, ${p.nombre}</span>
+          </div>
+          <button onclick="askDeletePasajero('${p.id}','${p.apellido} ${p.nombre}')"
+            style="background:none;border:none;color:#444;font-size:16px;cursor:pointer;padding:2px 6px;border-radius:6px;transition:color .15s"
+            onmouseover="this.style.color='var(--pink)'" onmouseout="this.style.color='#444'">✕</button>
+        </div>`).join('')}`;
+  }
+
+  async function procesarExcel(input){
+    if(!input.files||!input.files[0])return;
+    await loadScript('https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js');
+    const file=input.files[0];
+    const reader=new FileReader();
+    reader.onload=async function(e){
+      const data=new Uint8Array(e.target.result);
+      const wb=XLSX.read(data,{type:'array'});
+      const ws=wb.Sheets[wb.SheetNames[0]];
+      const rows=XLSX.utils.sheet_to_json(ws,{header:1});
+      // Use sheet_to_json with default object mode (uses first row as keys)
+      const objRows=XLSX.utils.sheet_to_json(ws,{defval:''});
+      // Detect key names (could be 'Apellido'/'Nombre' or column letters)
+      const nuevos=objRows.map(r=>{
+        // Try common key names
+        const apellido=(r['Apellido']||r['apellido']||r['APELLIDO']||Object.values(r)[0]||'').toString().trim();
+        const nombre=(r['Nombre']||r['nombre']||r['NOMBRE']||Object.values(r)[1]||'').toString().trim();
+        return {apellido,nombre};
+      }).filter(r=>r.apellido.length>0);
+
+      if(nuevos.length===0){alert('No se encontraron datos en el archivo.');return;}
+
+      // Ask confirm before replacing
+      if(!confirm(`¿Reemplazar el listado actual con ${nuevos.length} pasajeros del Excel?`))return;
+
+      // Delete all and re-insert
+      await db.from('pasajeros').delete().neq('id','00000000-0000-0000-0000-000000000000');
+      const {error}=await db.from('pasajeros').insert(nuevos);
+      if(error){alert('Error al guardar: '+error.message);return;}
+      input.value='';
+      await renderPasajerosList();
+    };
+    reader.readAsArrayBuffer(file);
+  }
+
+  // ── DELETE ALUMNO ──
+  let pendingDeleteId=null;
+  let pendingDeleteType=null;
+
+  function askDeleteAlumno(id,nombre){
+    pendingDeleteId=id;
+    pendingDeleteType='alumno';
+    document.getElementById('confirmMsg').innerHTML=`¿Querés eliminar la ficha de <strong>${nombre}</strong>?<br>Esta acción no se puede deshacer.`;
+    document.getElementById('confirmOverlay').classList.add('open');
+  }
+
+  function askDeletePasajero(id,nombre){
+    pendingDeleteId=id;
+    pendingDeleteType='pasajero';
+    document.getElementById('confirmMsg').innerHTML=`¿Querés eliminar a <strong>${nombre}</strong> del listado?`;
+    document.getElementById('confirmOverlay').classList.add('open');
+  }
+
+  function cancelDelete(){
+    pendingDeleteId=null;pendingDeleteType=null;
+    document.getElementById('confirmOverlay').classList.remove('open');
+  }
+
+  async function confirmDelete(){
+    if(!pendingDeleteId)return;
+    if(pendingDeleteType==='alumno'){
+      const {error}=await db.from('alumnos').delete().eq('id',pendingDeleteId);
+      if(error){alert('Error al eliminar: '+error.message);}
+      else{allAlumnos=allAlumnos.filter(a=>a.id!==pendingDeleteId);updateStats();renderTable();}
+    } else {
+      const {error}=await db.from('pasajeros').delete().eq('id',pendingDeleteId);
+      if(!error) await renderPasajerosList();
+    }
+    cancelDelete();
+  }
+</script>
+<script>
+  const SUPABASE_URL='https://mzousqdahqterfawhwsz.supabase.co';
+  const SUPABASE_ANON_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im16b3VzcWRhaHF0ZXJmYXdod3N6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA1MTc4MzUsImV4cCI6MjA5NjA5MzgzNX0.EdSlcRdLD75OdYlwtZGLVgL_PGpJysWb_MKvuwGgj5Y';
+  const PASSWORD='Wakeupadmin26!';
+  const PASSWORD_READONLY='Wakeupcoordi!';
+  let isReadOnly=false;
+  const {createClient}=supabase;
+  const db=createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
+  let allAlumnos=[];
+  let sortField='apellido';
+  let sortDir='asc';
+
+  function doLogin(){
+    const val=document.getElementById('passwordInput').value;
+    if(val===PASSWORD||val===PASSWORD_READONLY){
+      isReadOnly=(val===PASSWORD_READONLY);
+      document.getElementById('loginScreen').style.display='none';
+      document.getElementById('adminScreen').style.display='block';
+      applyReadOnlyMode();
+      loadAlumnos();
+      autoRefreshInterval=setInterval(recargarDatos,60000);
+    } else {
+      document.getElementById('loginError').style.display='block';
+    }
+  }
+
+  function applyReadOnlyMode(){
+    if(!isReadOnly)return;
+    // Hide edit-only buttons
+    const gb=document.getElementById('gestionarBtn');if(gb)gb.style.display='none';
+    // Add readonly badge to topbar
+    const badge=document.createElement('span');
+    badge.textContent='Solo lectura';
+    badge.style.cssText='font-size:11px;background:rgba(241,29,140,0.15);color:var(--pink);border-radius:6px;padding:3px 10px;font-weight:500;';
+    document.querySelector('.topbar-right').prepend(badge);
+  }
+
+  function doLogout(){
+    if(autoRefreshInterval)clearInterval(autoRefreshInterval);
+    document.getElementById('adminScreen').style.display='none';
+    document.getElementById('loginScreen').style.display='flex';
+    document.getElementById('passwordInput').value='';
+  }
+
+  let autoRefreshInterval=null;
+
+  async function recargarDatos(){
+    const btn=document.getElementById('refreshBtn');
+    if(btn){btn.textContent='↻ Actualizando...';btn.disabled=true;}
+    await loadAlumnos();
+    if(btn){btn.textContent='↻ Actualizar';btn.disabled=false;}
+  }
+
+  async function loadAlumnos(){
+    const {data,error}=await db.from('alumnos').select('*');
+    document.getElementById('loadingState').style.display='none';
+    if(error||!data){document.getElementById('emptyState').style.display='block';return;}
+    allAlumnos=data;
+    updateStats();
+    renderTable();
+    document.getElementById('alumnosTable').style.display='table';
+  }
+
+  function updateStats(){
+    const total=allAlumnos.length;
+    const conFoto=allAlumnos.filter(a=>a.foto_url).length;
+    const conObs=allAlumnos.filter(a=>a.obs_salud||a.obs_dieta).length;
+    const revisados=allAlumnos.filter(a=>a.check_completado).length;
+    document.getElementById('statTotal').textContent=total;
+    document.getElementById('statFotos').textContent=conFoto;
+    document.getElementById('statObs').textContent=conObs;
+    document.getElementById('statRevisados').textContent=revisados;
+    document.getElementById('totalBadge').textContent=total+' alumnos';
+  }
+
+  function sortBy(field){
+    if(sortField===field) sortDir=sortDir==='asc'?'desc':'asc';
+    else{sortField=field;sortDir='asc';}
+    // Update header classes
+    document.querySelectorAll('th.sortable').forEach(th=>{
+      th.classList.remove('sort-asc','sort-desc');
+      if(th.textContent.toLowerCase().includes(field)||
+         (field==='apellido'&&th.textContent.includes('Apellido'))||
+         (field==='nombre'&&th.textContent.includes('Nombre'))||
+         (field==='apodo'&&th.textContent.includes('Apodo'))||
+         (field==='colegio'&&th.textContent.includes('Colegio'))||
+         (field==='edad'&&th.textContent.includes('Edad'))){
+        th.classList.add(sortDir==='asc'?'sort-asc':'sort-desc');
+      }
+    });
+    renderTable();
+  }
+
+  function getFiltered(){
+    const search=document.getElementById('searchInput').value.toLowerCase();
+    const colegio=document.getElementById('colegioFilter').value;
+    let result=allAlumnos.filter(a=>{
+      const ms=!search||(a.nombre||'').toLowerCase().includes(search)||(a.apellido||'').toLowerCase().includes(search);
+      const mc=!colegio||a.colegio===colegio;
+      const msexo=!document.getElementById('sexoFilter').value||a.sexo===document.getElementById('sexoFilter').value;
+      return ms&&mc&&msexo;
+    });
+    result.sort((a,b)=>{
+      const va=(a[sortField]||'').toString().toLowerCase();
+      const vb=(b[sortField]||'').toString().toLowerCase();
+      return sortDir==='asc'?va.localeCompare(vb):vb.localeCompare(va);
+    });
+    return result;
+  }
+
+  function renderTable(){
+    const filtered=getFiltered();
+    const tbody=document.getElementById('tableBody');
+    const empty=document.getElementById('emptyState');
+    const table=document.getElementById('alumnosTable');
+    if(filtered.length===0){table.style.display='none';empty.style.display='block';return;}
+    table.style.display='table';empty.style.display='none';
+    tbody.innerHTML=filtered.map(a=>`
+      <tr>
+        <td>${a.foto_url
+          ?`<img class="student-photo" src="${a.foto_url}" alt="${a.nombre}" onclick="openModal('${a.foto_url}','${(a.nombre||'')} ${(a.apellido||'')}')">`
+          :`<div class="no-photo">👤</div>`}
+        </td>
+        <td><input class="obs-input" style="font-weight:700;width:100%;min-width:100px" value="${toTC(a.apellido)}"
+            onblur="if(!isReadOnly)saveFieldTC('${a.id}','apellido',this.value,this)" ${isReadOnly?'readonly':''}></td>
+        <td><input class="obs-input" style="width:100%;min-width:120px" value="${toTC(a.nombre)}"
+            onblur="if(!isReadOnly)saveFieldTC('${a.id}','nombre',this.value,this)" ${isReadOnly?'readonly':''}></td>
+        <td style="color:var(--muted)">${a.apodo||'—'}</td>
+        <td><select class="obs-input" style="width:120px" ${isReadOnly?'disabled':''} onchange="saveField('${a.id}','colegio',this.value,this)"><option value=''>—</option><option ${a.colegio==='Berazategui'?'selected':''}>Berazategui</option><option ${a.colegio==='El Encuentro'?'selected':''}>El Encuentro</option><option ${a.colegio==='Emanuel'?'selected':''}>Emanuel</option><option ${a.colegio==='Hay Vida En Jesús'?'selected':''}>Hay Vida En Jesús</option><option ${a.colegio==='M. T Alvear'?'selected':''}>M. T Alvear</option><option ${a.colegio==='Menoyo'?'selected':''}>Menoyo</option><option ${a.colegio==='Zion'?'selected':''}>Zion</option></select></td>
+        <td><select class="obs-input" style="width:60px" ${isReadOnly?'disabled':''} onchange="saveField('${a.id}','edad',this.value,this)"><option value=''>—</option><option ${a.edad==='17'?'selected':''}>17</option><option ${a.edad==='18'?'selected':''}>18</option><option ${a.edad==='19'?'selected':''}>19</option></select></td>
+        <td style="font-size:12px;color:var(--muted)">${a.sexo||'—'}</td>
+        <td data-col="playlist" style="color:var(--muted);font-size:12px">${a.playlist||'—'}</td>
+        <td data-col="pantalon" style="font-size:13px;text-align:center">${a.talle_pantalon||'—'}</td>
+        <td data-col="campera" style="font-size:13px;text-align:center">${a.talle_campera||'—'}</td>
+        <td data-col="bota" style="font-size:13px;text-align:center">${a.talle_bota||'—'}</td>
+        <td class="obs-cell">
+          <input class="obs-input" placeholder="Sin observaciones" value="${a.obs_salud||''}"
+            id="obs_salud_${a.id}" onblur="if(!isReadOnly)saveField('${a.id}','obs_salud',this.value,this)" ${isReadOnly?'readonly':''}>
+        </td>
+        <td class="obs-cell">
+          <input class="obs-input" placeholder="Sin restricciones" value="${a.obs_dieta||''}"
+            id="obs_dieta_${a.id}" onblur="if(!isReadOnly)saveField('${a.id}','obs_dieta',this.value,this)" ${isReadOnly?'readonly':''}>
+        </td>
+        <td class="obs-cell">
+          <input class="obs-input" placeholder="—" value="${a.obs_general||''}"
+            id="obs_general_${a.id}" onblur="if(!isReadOnly)saveField('${a.id}','obs_general',this.value,this)" ${isReadOnly?'readonly':''}>
+        </td>
+        <td>
+          <span class="${a.check_completado?'check-done':'check-pending'}"
+            title="Click para cambiar" onclick="toggleCheck('${a.id}',${a.check_completado})">
+            ${a.check_completado?'✓':'○'}
+          </span>
+        </td>
+        <td>
+          ${isReadOnly?'':`<button onclick="askDeleteAlumno('`+a.id+`','`+a.nombre+` `+a.apellido+`')" style="background:none;border:none;color:#333;font-size:16px;cursor:pointer;padding:2px 8px;border-radius:6px;transition:color .15s" onmouseover="this.style.color='var(--pink)'" onmouseout="this.style.color='#333'">🗑</button>`}
+        </td>
+      </tr>`).join('');
+  }
+
+  const toTC = s => (s||'').toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
+
+  async function saveFieldTC(id, field, value, el){
+    const normalized = toTC(value.trim());
+    if(el) el.value = normalized; // update input visually
+    await saveField(id, field, normalized, el);
+    // Also update allAlumnos
+    const a = allAlumnos.find(x => x.id === id);
+    if(a) a[field] = normalized;
+  }
+
+  async function saveField(id,field,value,el){
+    if(el){el.style.borderColor='var(--cyan)';el.title='Guardando...';}
+    const update={};update[field]=value||null;
+    const {error}=await db.from('alumnos').update(update).eq('id',id);
+    if(error){
+      console.error('Error guardando '+field+':', JSON.stringify(error));
+      if(el){el.style.borderColor='var(--pink)';el.title='Error: '+error.message;}
+      alert('Error al guardar: '+error.message);
+    } else {
+      const a=allAlumnos.find(x=>x.id===id);
+      if(a){a[field]=value||null;}
+      updateStats();
+      if(el){el.style.borderColor='var(--green)';el.title='Guardado';setTimeout(()=>{el.style.borderColor='var(--border)';el.title='';},1500);}
+    }
+  }
+
+  async function toggleCheck(id,current){
+    const {error}=await db.from('alumnos').update({check_completado:!current}).eq('id',id);
+    if(!error){
+      const a=allAlumnos.find(x=>x.id===id);
+      if(a) a.check_completado=!current;
+      updateStats();
+      renderTable();
+      reapplyHiddenCols();
+    }
+  }
+
+  function reapplyHiddenCols(){
+    hiddenCols.forEach(col=>{
+      document.querySelectorAll('[data-col="'+col+'"]').forEach(el=>{
+        el.style.display='none';
+      });
+    });
+  }
+
+  function openModal(url,name){
+    document.getElementById('modalImg').src=url;
+    document.getElementById('modalName').textContent=name;
+    document.getElementById('photoModal').classList.add('open');
+  }
+
+  function closeModal(){document.getElementById('photoModal').classList.remove('open');}
+  document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal();});
+
+  // ── EXPORT ──
+  async function imgToArrayBuffer(url){
+    try{const r=await fetch(url);return await r.arrayBuffer();}catch{return null;}
+  }
+
+  async function loadXlsxStyle(){
+    await loadScript('https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js');
+  }
+
+  function sc(v, s){ return { v, s }; }
+
+  function buildStyledExcel(title, subtitle, headers, rows, colWidths, sheetName, filename){
+    const numCols = headers.length;
+    const CYAN    = '5DB4C9';
+    const DARK    = '111113';
+    const GRAY    = '3A3A3A';
+    const WHITE   = 'FFFFFF';
+    const LIGHT   = 'F0F8FA';
+    const BORDER  = { top:{style:'thin',color:{rgb:'CCCCCC'}}, bottom:{style:'thin',color:{rgb:'CCCCCC'}}, left:{style:'thin',color:{rgb:'CCCCCC'}}, right:{style:'thin',color:{rgb:'CCCCCC'}} };
+
+    const titleStyle = {
+      font:{ bold:true, sz:13, color:{rgb:DARK}, name:'Arial' },
+      fill:{ fgColor:{rgb:CYAN}, patternType:'solid' },
+      alignment:{ horizontal:'center', vertical:'center' }
+    };
+    const subtitleStyle = {
+      font:{ bold:true, sz:11, color:{rgb:WHITE}, name:'Arial' },
+      fill:{ fgColor:{rgb:GRAY}, patternType:'solid' },
+      alignment:{ horizontal:'center', vertical:'center' }
+    };
+    const colHeaderStyle = {
+      font:{ bold:true, sz:10, color:{rgb:CYAN}, name:'Arial' },
+      fill:{ fgColor:{rgb:DARK}, patternType:'solid' },
+      alignment:{ horizontal:'center', vertical:'center', wrapText:true },
+      border: BORDER
+    };
+    const rowStyleOdd = {
+      font:{ sz:10, name:'Arial' },
+      fill:{ fgColor:{rgb:WHITE}, patternType:'solid' },
+      alignment:{ vertical:'center' },
+      border: BORDER
+    };
+    const rowStyleEven = {
+      font:{ sz:10, name:'Arial' },
+      fill:{ fgColor:{rgb:LIGHT}, patternType:'solid' },
+      alignment:{ vertical:'center' },
+      border: BORDER
+    };
+    const numStyle = {
+      font:{ sz:10, name:'Arial', color:{rgb:'888888'} },
+      fill:{ fgColor:{rgb:WHITE}, patternType:'solid' },
+      alignment:{ horizontal:'center', vertical:'center' },
+      border: BORDER
+    };
+    const numStyleEven = { ...numStyle, fill:{ fgColor:{rgb:LIGHT}, patternType:'solid' } };
+
+    // Build AOA
+    const aoa = [];
+    // Row 0: title (merged)
+    const titleRow = Array(numCols+1).fill(sc('', titleStyle));
+    titleRow[0] = sc(title, titleStyle);
+    aoa.push(titleRow);
+    // Row 1: subtitle
+    const subRow = Array(numCols+1).fill(sc('', subtitleStyle));
+    subRow[0] = sc(subtitle, subtitleStyle);
+    aoa.push(subRow);
+    // Row 2: empty spacer
+    aoa.push(Array(numCols+1).fill(sc('', {fill:{fgColor:{rgb:DARK},patternType:'solid'}})));
+    // Row 3: col headers (col A = "N")
+    const hRow = [sc('N', colHeaderStyle), ...headers.map(h => sc(h, colHeaderStyle))];
+    aoa.push(hRow);
+    // Data rows
+    rows.forEach((row, i) => {
+      const st = i%2===0 ? rowStyleOdd : rowStyleEven;
+      const nst = i%2===0 ? numStyle : numStyleEven;
+      aoa.push([sc(i+1, nst), ...row.map(v => sc(v||'', st))]);
+    });
+
+    const ws = XLSX.utils.aoa_to_sheet(aoa);
+
+    // Merges for title and subtitle
+    ws['!merges'] = [
+      { s:{r:0,c:0}, e:{r:0,c:numCols} },
+      { s:{r:1,c:0}, e:{r:1,c:numCols} },
+      { s:{r:2,c:0}, e:{r:2,c:numCols} }
+    ];
+
+    // Row heights
+    ws['!rows'] = [{hpt:28},{hpt:22},{hpt:8},{hpt:32}];
+    for(let i=0;i<rows.length;i++) ws['!rows'].push({hpt:18});
+
+    // Col widths (col A = N number)
+    ws['!cols'] = [{wch:4}, ...colWidths];
+
+    // Autofilter on header row
+    ws['!autofilter'] = { ref: XLSX.utils.encode_range({s:{r:3,c:0}, e:{r:3+rows.length,c:numCols}}) };
+
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, sheetName);
+    const today = new Date().toLocaleDateString('es-AR');
+    XLSX.writeFile(wb, filename+'-'+today.replace(/\//g,'-')+'.xlsx');
+  }
+
+  async function exportExcel(){
+    const btn=document.getElementById('exportXlsBtn');
+    btn.disabled=true; btn.textContent='Generando Excel...';
+    try {
+      await loadXlsxStyle();
+      const filtered=getFiltered();
+      const headers=['Apellido','Nombre completo','N. Pref.','Sexo','Edad','Colegio',
+                     'Pantalón','Campera','Bota',
+                     'Obs. médicas','Dieta','Observaciones',
+                     'Nombre padre','Tel. padre','Nombre madre','Tel. madre','Revisado'];
+      const rows=filtered.map(a=>[
+        a.apellido||'',a.nombre||'',a.apodo||'',a.sexo||'',a.edad||'',a.colegio||'',
+        a.talle_pantalon||'',a.talle_campera||'',a.talle_bota||'',
+        a.obs_salud||'',a.obs_dieta||'',a.obs_general||'',
+        a.nombre_padre||'',a.telefono_padre||'',a.nombre_madre||'',a.telefono_madre||'',
+        a.check_completado?'Sí':'No'
+      ]);
+      const colWidths=[{wch:16},{wch:22},{wch:12},{wch:12},{wch:6},{wch:18},
+                       {wch:10},{wch:10},{wch:6},
+                       {wch:22},{wch:18},{wch:22},
+                       {wch:22},{wch:14},{wch:22},{wch:14},{wch:8}];
+      buildStyledExcel('WAKE UP VIAJES - LISTADO COMPLETO DE ALUMNOS','Bariloche 2026',
+        headers, rows, colWidths, 'Alumnos', 'wakeup-alumnos');
+    } catch(err){ console.error(err); alert('Error: '+err.message); }
+    btn.disabled=false; btn.textContent='⬇ Excel completo';
+  }
+
+  async function exportExcelRopa(){
+    const btn=document.getElementById('exportRopaBtn');
+    btn.disabled=true; btn.textContent='Generando...';
+    try {
+      await loadXlsxStyle();
+      const filtered=getFiltered();
+      const headers=['Apellido','Nombre completo','Sexo','Edad','Colegio','Pantalón','Campera','Bota','Observaciones'];
+      const rows=filtered.map(a=>[
+        a.apellido||'',a.nombre||'',a.sexo||'',a.edad||'',a.colegio||'',
+        a.talle_pantalon||'',a.talle_campera||'',a.talle_bota||'',
+        a.obs_general||''
+      ]);
+      const colWidths=[{wch:16},{wch:22},{wch:12},{wch:6},{wch:18},{wch:10},{wch:10},{wch:6},{wch:22}];
+      buildStyledExcel('WAKE UP VIAJES - LISTADO DE PASAJEROS - TALLES ROPA','Bariloche 2026',
+        headers, rows, colWidths, 'Ropa', 'wakeup-ropa');
+    } catch(err){ console.error(err); alert('Error: '+err.message); }
+    btn.disabled=false; btn.textContent='⬇ Excel ropa';
+  }
+
+  const hiddenCols=new Set();
+
+  function toggleColGroup(cols, btn){
+    const allHidden = cols.every(c => hiddenCols.has(c));
+    if(allHidden){
+      cols.forEach(c => hiddenCols.delete(c));
+      btn.classList.remove('hidden');
+    } else {
+      cols.forEach(c => hiddenCols.add(c));
+      btn.classList.add('hidden');
+    }
+    cols.forEach(col => {
+      document.querySelectorAll('[data-col="'+col+'"]').forEach(el => {
+        el.style.display = hiddenCols.has(col) ? 'none' : '';
+      });
+    });
+  }
+
+  function toggleCol(col, btn){
+    if(hiddenCols.has(col)){
+      hiddenCols.delete(col);
+      btn.classList.remove('hidden');
+    } else {
+      hiddenCols.add(col);
+      btn.classList.add('hidden');
+    }
+    // Show/hide th and td with data-col
+    document.querySelectorAll('[data-col="'+col+'"]').forEach(el=>{
+      el.style.display=hiddenCols.has(col)?'none':'';
+    });
+  }
+
+  function loadScript(src){
+    return new Promise((res,rej)=>{
+      if(document.querySelector(`script[src="${src}"]`))return res();
+      const s=document.createElement('script');s.src=src;s.onload=res;s.onerror=rej;document.head.appendChild(s);
+    });
+  }
+
+  async function exportDocx(mode){
+    const btnMap={fichas:'exportBtn',obs:'exportObsBtn',padres:'exportPadresBtn'};
+    const labelMap={fichas:'⬇ Fichas + fotos',obs:'⬇ Observaciones',padres:'⬇ Datos de padres'};
+    const btn=document.getElementById(btnMap[mode]);
+    btn.disabled=true;btn.textContent='Cargando librería...';
+    try{
+      await loadScript('https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js');
+      await loadScript('https://unpkg.com/docx@7.8.2/build/index.js');
+
+      let filtered=getFiltered();
+      if(mode==='obs') filtered=filtered.filter(a=>a.obs_salud||a.obs_dieta);
+      if(filtered.length===0){alert('No hay alumnos con observaciones en la selección actual.');btn.disabled=false;btn.textContent=labelMap[mode];return;}
+
+      const today=new Date().toLocaleDateString('es-AR');
+
+      // Load images only for modes that need photos
+      const imgMap={};
+      if(mode==='fichas'||mode==='obs'){
+        for(let i=0;i<filtered.length;i++){
+          const a=filtered[i];
+          if(a.foto_url){btn.textContent=`Cargando fotos... ${i+1}/${filtered.length}`;imgMap[a.id]=await imgToArrayBuffer(a.foto_url);}
+        }
+      }
+      btn.textContent='Generando archivo...';
+
+      const docxLib=window.docx||{};
+      const {Document,Packer,Paragraph,TextRun,Table,TableRow,TableCell,
+             ImageRun,AlignmentType,WidthType,BorderStyle,VerticalAlign,ShadingType}=docxLib;
+      if(!Document)throw new Error('Librería no cargada');
+
+      const gb={style:BorderStyle.SINGLE,size:1,color:'CCCCCC'};
+      const borders={top:gb,bottom:gb,left:gb,right:gb};
+      const cb={style:BorderStyle.SINGLE,size:3,color:'5DB4C9'};
+      const hBorders={top:cb,bottom:cb,left:cb,right:cb};
+
+      // Column config per mode
+      const configs={
+        fichas:{colWidths:[1300,1300,1100,1400,800,900,900,900,1300],headers:['Apellido','Nombre completo','N. Pref.','Colegio','Sexo','Pantalón','Campera','Bota','Foto']},
+        obs:   {colWidths:[1000,1000,800,1100,750,750,750,750,1100,1100,1000],headers:['Apellido','Nombre completo','N. Pref.','Colegio','Sexo','Pantalón','Campera','Bota','Obs. médicas','Dieta','Foto']},
+        padres:{colWidths:[1100,1100,1200,800,900,900,900,1400,1500,1400],headers:['Apellido','Nombre completo','Colegio','Sexo','Pantalón','Campera','Bota','Nombre padre','Tel. padre','Nombre madre']}
+      };
+      const {colWidths,headers}=configs[mode];
+
+      const mkCell=(text,idx,color,w)=>new TableCell({
+        borders,
+        width:{size:w||colWidths[idx],type:WidthType.DXA},
+        margins:{top:100,bottom:100,left:120,right:120},
+        verticalAlign:VerticalAlign.CENTER,
+        children:[new Paragraph({children:[new TextRun({text:text||'—',size:18,font:'Arial',color:color||'000000'})]})]
+      });
+
+      const mkPhotoCell=(buf,idx)=>buf
+        ?new TableCell({borders,width:{size:colWidths[idx],type:WidthType.DXA},margins:{top:60,bottom:60,left:60,right:60},verticalAlign:VerticalAlign.CENTER,
+            children:[new Paragraph({alignment:AlignmentType.CENTER,children:[new ImageRun({data:buf,type:'jpeg',transformation:{width:75,height:75}})]})]})
+        :mkCell('Sin foto',idx,'888888');
+
+      const headerRow=new TableRow({
+        tableHeader:true,
+        children:headers.map((text,i)=>new TableCell({
+          borders:hBorders,shading:{fill:'0a0a0a',type:ShadingType.CLEAR},
+          width:{size:colWidths[i],type:WidthType.DXA},
+          margins:{top:100,bottom:100,left:120,right:120},verticalAlign:VerticalAlign.CENTER,
+          children:[new Paragraph({children:[new TextRun({text,bold:true,size:20,font:'Arial',color:'5DB4C9'})]})]
+        }))
+      });
+
+      const dataRows=filtered.map(a=>{
+        const buf=imgMap[a.id];
+        if(mode==='fichas'){
+          return new TableRow({children:[mkCell(a.apellido,0),mkCell(a.nombre,1),mkCell(a.apodo,2),mkCell(a.colegio,3),mkCell(a.sexo,4),mkCell(a.talle_pantalon,5),mkCell(a.talle_campera,6),mkCell(a.talle_bota,7),mkPhotoCell(buf,8)]});
+        }
+        if(mode==='obs'){
+          return new TableRow({children:[
+            mkCell(a.apellido,0),mkCell(a.nombre,1),mkCell(a.apodo,2),mkCell(a.colegio,3),
+            mkCell(a.sexo,4),mkCell(a.talle_pantalon,5),mkCell(a.talle_campera,6),mkCell(a.talle_bota,7),
+            mkCell(a.obs_salud,8,'CC0000'),mkCell(a.obs_dieta,9,'996600'),mkPhotoCell(buf,10)
+          ]});
+        }
+        if(mode==='padres'){
+          return new TableRow({children:[
+            mkCell(a.apellido,0),mkCell(a.nombre,1),mkCell(a.colegio,2),
+            mkCell(a.sexo,3),mkCell(a.talle_pantalon,4),mkCell(a.talle_campera,5),mkCell(a.talle_bota,6),
+            mkCell(a.nombre_padre,7),mkCell(a.telefono_padre,8),mkCell(a.nombre_madre,9)
+          ]});
+        }
+      });
+
+      const titles={fichas:'Wake Up Viajes — Fichas de alumnos',obs:'Wake Up Viajes — Alumnos con observaciones',padres:'Wake Up Viajes — Datos de padres'};
+      const suffixes={fichas:'',obs:'-observaciones',padres:'-padres'};
+      const totalWidth=colWidths.reduce((a,b)=>a+b,0);
+
+      const doc=new Document({sections:[{
+        properties:{page:{size:{width:12240,height:15840},margin:{top:1080,right:900,bottom:1080,left:900}}},
+        children:[
+          new Paragraph({spacing:{after:160},children:[new TextRun({text:titles[mode],bold:true,size:28,font:'Arial'})]}),
+          new Paragraph({spacing:{after:360},children:[new TextRun({text:`Exportado el ${today} · ${filtered.length} alumnos`,size:18,font:'Arial',color:'888888'})]}),
+          new Table({width:{size:totalWidth,type:WidthType.DXA},columnWidths:colWidths,rows:[headerRow,...dataRows]})
+        ]
+      }]});
+
+      const blob=await Packer.toBlob(doc);
+      saveAs(blob,`wakeup-fichas${suffixes[mode]}-${today.replace(/\//g,'-')}.docx`);
+    }catch(err){
+      console.error(err);alert('Error: '+err.message);
+    }
+    btn.disabled=false;btn.textContent=labelMap[mode];
+  }
+
+
+  // ── FALTANTES ──
+  async function openFaltantes(){
+    document.getElementById('faltantesOverlay').classList.add('open');
+    const body=document.getElementById('faltantesBody');
+    body.innerHTML='<div style="text-align:center;color:var(--muted);padding:20px;font-size:14px">Cargando...</div>';
+    
+    const {data:pasajeros,error}=await db.from('pasajeros').select('*').order('apellido');
+    if(error||!pasajeros||pasajeros.length===0){
+      body.innerHTML='<div style="text-align:center;color:var(--muted);padding:20px;font-size:14px">No hay listado cargado aún.<br>Usá <strong>Gestionar listado</strong> para subir el Excel.</div>';
+      return;
+    }
+
+    const registrados=allAlumnos.map(a=>({
+      apellido:(a.apellido||'').toLowerCase().trim(),
+      nombre:(a.nombre||'').toLowerCase().trim()
+    }));
+
+    const faltantes=pasajeros.filter(p=>
+      !registrados.some(r=>r.apellido===p.apellido.toLowerCase().trim()&&r.nombre===p.nombre.toLowerCase().trim())
+    );
+
+    if(faltantes.length===0){
+      body.innerHTML=`<div class="presentes-ok">✓ ¡Todos los ${pasajeros.length} pasajeros completaron la ficha!</div>`;
+      return;
+    }
+
+    body.innerHTML=`
+      <div class="faltantes-count">Faltan completar la ficha: <span>${faltantes.length} de ${pasajeros.length}</span> pasajeros</div>
+      ${faltantes.map(f=>`
+        <div class="faltante-item">
+          <div class="dot"></div>
+          <span><strong>${f.apellido}</strong>, ${f.nombre}</span>
+        </div>`).join('')}`;
+  }
+
+  function closeFaltantes(e){
+    if(!e||e.target===document.getElementById('faltantesOverlay'))
+      document.getElementById('faltantesOverlay').classList.remove('open');
+  }
+
+  // ── GESTIONAR PASAJEROS ──
+  async function openPasajeros(){
+    document.getElementById('pasajerosOverlay').classList.add('open');
+    document.getElementById('uploadZone').style.display='block';
+    await renderPasajerosList();
+  }
+
+  function closePasajeros(e){
+    if(!e||e.target===document.getElementById('pasajerosOverlay'))
+      document.getElementById('pasajerosOverlay').classList.remove('open');
+  }
+
+  async function renderPasajerosList(){
+    const {data,error}=await db.from('pasajeros').select('*').order('apellido');
+    const el=document.getElementById('pasajerosList');
+    if(error||!data||data.length===0){
+      el.innerHTML='<p style="font-size:13px;color:var(--muted);text-align:center;margin-top:8px">No hay pasajeros cargados aún.</p>';
+      return;
+    }
+    el.innerHTML=`
+      <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px">${data.length} pasajeros en el listado</div>
+      ${data.map(p=>`
+        <div class="faltante-item" style="justify-content:space-between">
+          <div style="display:flex;align-items:center;gap:10px">
+            <div class="dot" style="background:var(--cyan)"></div>
+            <span><strong>${p.apellido}</strong>, ${p.nombre}</span>
+          </div>
+          <button onclick="askDeletePasajero('${p.id}','${p.apellido} ${p.nombre}')"
+            style="background:none;border:none;color:#444;font-size:16px;cursor:pointer;padding:2px 6px;border-radius:6px;transition:color .15s"
+            onmouseover="this.style.color='var(--pink)'" onmouseout="this.style.color='#444'">✕</button>
+        </div>`).join('')}`;
+  }
+
+  async function procesarExcel(input){
+    if(!input.files||!input.files[0])return;
+    await loadScript('https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js');
+    const file=input.files[0];
+    const reader=new FileReader();
+    reader.onload=async function(e){
+      const data=new Uint8Array(e.target.result);
+      const wb=XLSX.read(data,{type:'array'});
+      const ws=wb.Sheets[wb.SheetNames[0]];
+      const rows=XLSX.utils.sheet_to_json(ws,{header:1});
+      // Use sheet_to_json with default object mode (uses first row as keys)
+      const objRows=XLSX.utils.sheet_to_json(ws,{defval:''});
+      // Detect key names (could be 'Apellido'/'Nombre' or column letters)
+      const nuevos=objRows.map(r=>{
+        // Try common key names
+        const apellido=(r['Apellido']||r['apellido']||r['APELLIDO']||Object.values(r)[0]||'').toString().trim();
+        const nombre=(r['Nombre']||r['nombre']||r['NOMBRE']||Object.values(r)[1]||'').toString().trim();
+        return {apellido,nombre};
+      }).filter(r=>r.apellido.length>0);
+
+      if(nuevos.length===0){alert('No se encontraron datos en el archivo.');return;}
+
+      // Ask confirm before replacing
+      if(!confirm(`¿Reemplazar el listado actual con ${nuevos.length} pasajeros del Excel?`))return;
+
+      // Delete all and re-insert
+      await db.from('pasajeros').delete().neq('id','00000000-0000-0000-0000-000000000000');
+      const {error}=await db.from('pasajeros').insert(nuevos);
+      if(error){alert('Error al guardar: '+error.message);return;}
+      input.value='';
+      await renderPasajerosList();
+    };
+    reader.readAsArrayBuffer(file);
+  }
+
+  // ── DELETE ALUMNO ──
+  let pendingDeleteId=null;
+  let pendingDeleteType=null;
+
+  function askDeleteAlumno(id,nombre){
+    pendingDeleteId=id;
+    pendingDeleteType='alumno';
+    document.getElementById('confirmMsg').innerHTML=`¿Querés eliminar la ficha de <strong>${nombre}</strong>?<br>Esta acción no se puede deshacer.`;
+    document.getElementById('confirmOverlay').classList.add('open');
+  }
+
+  function askDeletePasajero(id,nombre){
+    pendingDeleteId=id;
+    pendingDeleteType='pasajero';
+    document.getElementById('confirmMsg').innerHTML=`¿Querés eliminar a <strong>${nombre}</strong> del listado?`;
+    document.getElementById('confirmOverlay').classList.add('open');
+  }
+
+  function cancelDelete(){
+    pendingDeleteId=null;pendingDeleteType=null;
+    document.getElementById('confirmOverlay').classList.remove('open');
+  }
+
+  async function confirmDelete(){
+    if(!pendingDeleteId)return;
+    if(pendingDeleteType==='alumno'){
+      const {error}=await db.from('alumnos').delete().eq('id',pendingDeleteId);
+      if(error){alert('Error al eliminar: '+error.message);}
+      else{allAlumnos=allAlumnos.filter(a=>a.id!==pendingDeleteId);updateStats();renderTable();}
+    } else {
+      const {error}=await db.from('pasajeros').delete().eq('id',pendingDeleteId);
+      if(!error) await renderPasajerosList();
+    }
+    cancelDelete();
+  }
+</script>
+
+<!-- Faltantes modal -->
+<div class="overlay" id="faltantesOverlay" onclick="closeFaltantes(event)">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h2>👥 Faltantes</h2>
+      <button class="modal-close" onclick="closeFaltantes()">✕</button>
+    </div>
+    <div class="modal-body" id="faltantesBody">
+      <div style="text-align:center;color:var(--muted);padding:20px;font-size:14px">Cargando...</div>
+    </div>
+  </div>
+</div>
+
+<!-- Gestionar pasajeros modal -->
+<div class="overlay" id="pasajerosOverlay" onclick="closePasajeros(event)">
+  <div class="modal-box" style="max-width:600px">
+    <div class="modal-header">
+      <h2>📋 Listado de pasajeros</h2>
+      <button class="modal-close" onclick="closePasajeros()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="upload-zone" id="uploadZone">
+        <input type="file" id="excelInput" accept=".xlsx,.xls,.csv" onchange="procesarExcel(this)">
+        <div class="icon">📂</div>
+        <p>Subí el Excel para cargar o reemplazar el listado<br><span style="font-size:11px;color:#444">Columna A: Apellido &nbsp;·&nbsp; Columna B: Nombre &nbsp;·&nbsp; Con encabezado</span></p>
+      </div>
+      <div id="pasajerosList" style="margin-top:16px"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Confirm delete modal -->
+<div class="overlay" id="confirmOverlay">
+  <div class="modal-box" style="max-width:380px">
+    <div class="modal-header">
+      <h2>⚠️ Confirmar eliminación</h2>
+    </div>
+    <div class="modal-body">
+      <p id="confirmMsg" style="font-size:14px;color:var(--muted);margin-bottom:20px;line-height:1.6"></p>
+      <div style="display:flex;gap:10px">
+        <button onclick="cancelDelete()" style="flex:1;background:transparent;border:1px solid var(--border);border-radius:10px;color:var(--muted);font-family:'DM Sans',sans-serif;font-size:14px;padding:11px;cursor:pointer">Cancelar</button>
+        <button onclick="confirmDelete()" style="flex:1;background:var(--pink);border:none;border-radius:10px;color:#fff;font-family:'Syne',sans-serif;font-size:14px;font-weight:700;padding:11px;cursor:pointer">Sí, eliminar</button>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>
