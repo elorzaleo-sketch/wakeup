@@ -146,6 +146,15 @@
   .faltan{ font-size:12.5px; font-weight:600; padding:8px 11px; border-radius:9px; margin-top:4px; }
   .faltan-pend{ background:rgba(217,130,12,.1); color:#b3690a; }
   .faltan-ok{ background:rgba(25,148,50,.1); color:var(--green); }
+
+  .cfg-upload{ display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin:6px 0 12px; }
+  .cfg-upload .filelbl{ display:inline-flex; align-items:center; gap:6px; background:rgba(25,148,50,.1); color:var(--green); padding:7px 13px; border-radius:9px; cursor:pointer; font-weight:600; font-size:13px; }
+  .cfg-upload .filelbl input{ display:none; }
+  .cfg-upload .sub{ font-size:11.5px; }
+  .suggest{ font-size:12.5px; color:#2b7a8c; background:rgba(93,180,201,.12); padding:8px 11px; border-radius:9px; margin-top:8px; display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+  .suggest strong{ color:var(--black); font-weight:600; }
+  .suggest-add{ border:none; background:var(--cyan); color:#fff; font-family:inherit; font-weight:600; font-size:11px; padding:5px 12px; border-radius:8px; cursor:pointer; margin-left:auto; white-space:nowrap; }
+  .suggest-add:hover{ background:#4aa3b8; }
 </style>
 </head>
 <body>
@@ -213,6 +222,10 @@
       <summary class="title"><span class="emoji">⚙️</span> Pasajeros y capacidades <span class="pill">solo para vos · no sale en el mensaje</span></summary>
       <div class="cfg-body">
         <label>Pasajeros por colegio</label>
+        <div class="cfg-upload">
+          <label class="filelbl">📊 Subir Excel de pasajeros<input type="file" id="cfgxlsx" accept=".xlsx,.xls,.csv"></label>
+          <span class="sub">Columnas: <strong>Colegio</strong> | <strong>Cantidad</strong> · se guarda en la base</span>
+        </div>
         <div class="cfg-grid" id="cfgCounts"></div>
         <div class="cfg-total">Total de pasajeros: <strong id="cfgTotal">0</strong></div>
         <div class="cfg-caps">
@@ -347,6 +360,45 @@ function faltantes(meal){
   return COLEGIOS.filter(c=> !assigned.has(c));
 }
 
+/* ===== Sugerencia: qué colegios sumar para acercarse a la capacidad sin pasarse ===== */
+function bestSubset(pool, room){
+  let best={schools:[], sum:0};
+  const n=pool.length;
+  for(let mask=1; mask<(1<<n); mask++){
+    let s=0; const names=[];
+    for(let i=0;i<n;i++){ if(mask&(1<<i)){ s+=pool[i].n; names.push(pool[i].c); } }
+    if(s<=room && (s>best.sum || (s===best.sum && names.length<best.schools.length))) best={schools:names, sum:s};
+  }
+  return best;
+}
+function poolDisponible(hermanos, propios){
+  const taken=new Set(hermanos); propios.forEach(c=>taken.add(c));
+  return COLEGIOS.filter(c=> !taken.has(c) && (config.counts[c]||0)>0).map(c=>({c, n:config.counts[c]}));
+}
+function poolForMeal(meal, turno){
+  if(turno.colegios.includes('Todos')) return [];
+  const sib=new Set();
+  state[meal].turnos.forEach(t=>{ if(t!==turno) t.colegios.forEach(c=>{ if(c!=='Todos') sib.add(c); }); });
+  return poolDisponible(sib, turno.colegios);
+}
+function poolForGrupo(key, grupo){
+  if(grupo.colegios.includes('Todos')) return [];
+  const sib=new Set();
+  state[key].grupos.forEach(g=>{ if(g!==grupo) g.colegios.forEach(c=>{ if(c!=='Todos') sib.add(c); }); });
+  return poolDisponible(sib, grupo.colegios);
+}
+function suggestHTML(used, cap, pool){
+  if(!cap || cap<=0) return '';
+  const room = cap - used;
+  if(room<=0 || !pool.length) return '';
+  const best = bestSubset(pool, room);
+  if(!best.schools.length) return '';
+  const detail = best.schools.map(c=>`${c} (${config.counts[c]})`).join(' + ');
+  const data = encodeURIComponent(JSON.stringify(best.schools));
+  return `<div class="suggest">💡 Podés sumar <strong>${detail}</strong> → quedaría ${used+best.sum}/${cap}
+    <button type="button" class="suggest-add" data-add='${data}'>Agregar</button></div>`;
+}
+
 /* Persistencia local: borrador del mensaje + configuración */
 function persist(){ if(!ready) return; try{ localStorage.setItem(LS_KEY, JSON.stringify({state, config})); }catch(e){} }
 function loadSaved(){
@@ -364,10 +416,23 @@ function refreshCfgTotal(){ const el=$('#cfgTotal'); if(el) el.textContent = tot
 function renderCfgCounts(){
   const cont=$('#cfgCounts'); if(!cont) return;
   cont.innerHTML = COLEGIOS.map(c=>`<div class="cfg-row"><span title="${c}">${c}</span><input type="number" min="0" inputmode="numeric" data-cfgcount="${c}" value="${config.counts[c]||''}" placeholder="0"></div>`).join('');
-  cont.querySelectorAll('[data-cfgcount]').forEach(inp=> inp.addEventListener('input', e=>{
-    config.counts[e.target.dataset.cfgcount] = parseInt(e.target.value)||0;
-    refreshCfgTotal(); rerenderCaps(); persist();
-  }));
+  cont.querySelectorAll('[data-cfgcount]').forEach(inp=>{
+    inp.addEventListener('input', e=>{
+      config.counts[e.target.dataset.cfgcount] = parseInt(e.target.value)||0;
+      refreshCfgTotal(); rerenderCaps(); persist();
+    });
+    inp.addEventListener('change', async e=>{
+      const ok = await saveConfigValue('colegio:'+e.target.dataset.cfgcount, parseInt(e.target.value)||0);
+      if(ok) toast('Guardado en la base ✔');
+    });
+  });
+}
+function applyConfigToUI(){
+  const cc=$('#capComedor'), cm=$('#capMicro'), cb=$('#capCombi');
+  if(cc) cc.value = config.comedor || '';
+  if(cm) cm.value = config.micro || '';
+  if(cb) cb.value = config.combi || '';
+  renderCfgCounts(); refreshCfgTotal(); rerenderCaps();
 }
 function resetDraft(){
   if(!confirm('¿Reiniciar el mensaje del día?\n\nSe borran turnos, actividades, horarios y observaciones.\nLas cantidades por colegio y las capacidades se conservan.')) return;
@@ -445,9 +510,14 @@ function renderTurnos(meal){
       <div class="turno-grid">
         <div class="hor"><label>Horario</label><input type="time" value="${t.h}"></div>
         <div class="cols">${colPickerMarkup(t.colegios, dup)}</div>
-      </div>${capWarnHTML(used, config.comedor, 'turno')}`;
+      </div>${capWarnHTML(used, config.comedor, 'turno')}${suggestHTML(used, config.comedor, poolForMeal(meal, t))}`;
     div.querySelector('input[type=time]').addEventListener('input', e=>{ t.h=e.target.value; updatePreview(); });
     wireColPicker(div.querySelector('.cols'), t, ()=>renderTurnos(meal));
+    const sg=div.querySelector('.suggest-add');
+    if(sg) sg.addEventListener('click', ()=>{
+      JSON.parse(decodeURIComponent(sg.dataset.add)).forEach(c=>{ if(!t.colegios.includes(c)) t.colegios.push(c); });
+      renderTurnos(meal); updatePreview();
+    });
     const del=div.querySelector('.del');
     if(del) del.addEventListener('click', ()=>{ items.splice(i,1); renderTurnos(meal); updatePreview(); });
     cont.appendChild(div);
@@ -497,6 +567,7 @@ function renderGrupos(key){
         ${a.grupos.length>1?'<button class="del" title="Quitar grupo">✕</button>':''}</div>
       <div class="cols">${colPickerMarkup(g.colegios, dup)}</div>
       <div class="warn-slot">${capWarnHTML(used, g.cap, 'grupo')}</div>
+      <div class="suggest-slot">${suggestHTML(used, g.cap, poolForGrupo(key, g))}</div>
       <div class="row" style="margin-top:8px">
         <div class="field" style="max-width:160px"><label>⏰ Horario</label><input type="time" class="ghor" value="${g.h}"></div>
         <div class="field" style="max-width:240px"><label>Lugares en el transporte</label>
@@ -510,9 +581,16 @@ function renderGrupos(key){
       const u=colegiosCount(g.colegios);
       div.querySelector('.cap-slot').innerHTML = capBadge(u, g.cap);
       div.querySelector('.warn-slot').innerHTML = capWarnHTML(u, g.cap, 'grupo');
+      div.querySelector('.suggest-slot').innerHTML = '';
     };
     gcap.addEventListener('input', e=>{ g.cap=parseInt(e.target.value)||0; refreshGcapVisual(); persist(); });
-    div.querySelectorAll('.cap-preset').forEach(b=> b.addEventListener('click', ()=>{ g.cap=parseInt(b.dataset.cap)||0; gcap.value=g.cap; refreshGcapVisual(); persist(); }));
+    gcap.addEventListener('change', ()=>{ renderGrupos(key); persist(); });
+    div.querySelectorAll('.cap-preset').forEach(b=> b.addEventListener('click', ()=>{ g.cap=parseInt(b.dataset.cap)||0; renderGrupos(key); persist(); }));
+    const sg=div.querySelector('.suggest-add');
+    if(sg) sg.addEventListener('click', ()=>{
+      JSON.parse(decodeURIComponent(sg.dataset.add)).forEach(c=>{ if(!g.colegios.includes(c)) g.colegios.push(c); });
+      renderGrupos(key); updatePreview();
+    });
     const del=div.querySelector('.del');
     if(del) del.addEventListener('click', ()=>{ a.grupos.splice(i,1); renderGrupos(key); updatePreview(); });
     cont.appendChild(div);
@@ -550,6 +628,37 @@ async function pushActs(list){
 }
 function refreshSelectedDetails(){ ['actManana','actTarde','actNoche'].forEach(k=>{ const a=state[k]; if(a.actividad){ const f=ACTIVIDADES.find(x=>x.nombre===a.actividad); a.detalles = f?(f.detalle||''):a.detalles; } }); }
 
+/* ===== Config en Supabase: pasajeros por colegio + capacidades (tabla config_app) ===== */
+async function fetchConfig(){
+  if(!sb) return false;
+  const { data, error } = await sb.from('config_app').select('clave,valor');
+  if(error){ console.error(error); return false; }
+  if(data && data.length){
+    data.forEach(row=>{
+      const k=row.clave, v=Number(row.valor)||0;
+      if(k && k.startsWith('colegio:')) config.counts[k.slice(8)] = v;
+      else if(k==='cap:comedor') config.comedor = v;
+      else if(k==='cap:micro') config.micro = v;
+      else if(k==='cap:combi') config.combi = v;
+    });
+    return true;
+  }
+  return false;
+}
+async function saveConfigValue(clave, valor){
+  if(!sb) return false;
+  const { error } = await sb.from('config_app').upsert({clave, valor}, {onConflict:'clave'});
+  if(error){ console.error(error); toast('No se pudo guardar en la base'); return false; }
+  return true;
+}
+async function pushConfigCounts(){
+  if(!sb) return false;
+  const rows = COLEGIOS.map(c=>({clave:'colegio:'+c, valor:config.counts[c]||0}));
+  const { error } = await sb.from('config_app').upsert(rows, {onConflict:'clave'});
+  if(error){ console.error(error); return false; }
+  return true;
+}
+
 /* ===== Excel ===== */
 $('#xlsx').addEventListener('change', async e=>{
   const file=e.target.files[0]; if(!file) return;
@@ -572,6 +681,36 @@ $('#xlsx').addEventListener('change', async e=>{
   }catch(err){ toast('Error al leer el Excel'); console.error(err); }
 });
 function refreshActCount(saved){ $('#actcount').textContent = `${ACTIVIDADES.length} actividades` + (saved?' · en la base ✔':' (lista interna)'); }
+
+/* ===== Excel de pasajeros por colegio ===== */
+$('#cfgxlsx').addEventListener('change', async e=>{
+  const file=e.target.files[0]; if(!file) return;
+  try{
+    const wb=XLSX.read(await file.arrayBuffer());
+    const rows=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]]);
+    const norm=s=>String(s).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[.\s]/g,'');
+    let matched=0;
+    rows.forEach(r=>{
+      const keys=Object.keys(r);
+      const kName=keys.find(x=>/coleg|escuel|grupo|nombre/i.test(x));
+      const kNum =keys.find(x=>/cantidad|pasajer|pax|cant|alumn|chic/i.test(x));
+      if(!kName) return;
+      const name=String(r[kName]).trim();
+      const num=kNum?parseInt(r[kNum])||0:0;
+      const found=COLEGIOS.find(c=>norm(c)===norm(name));
+      if(found){ config.counts[found]=num; matched++; }
+    });
+    if(matched){
+      renderCfgCounts(); refreshCfgTotal(); rerenderCaps(); persist();
+      toast('Procesando…');
+      const ok=await pushConfigCounts();
+      toast(ok ? `Pasajeros guardados en la base ✔ (${matched} colegios)` : `Cargados localmente (${matched}) — no se guardó online`);
+    } else {
+      toast('No reconocí colegios. El Excel debe tener columnas Colegio | Cantidad');
+    }
+  }catch(err){ toast('Error al leer el Excel'); console.error(err); }
+  e.target.value='';
+});
 $('#resetacts').addEventListener('click', async ()=>{
   toast('Recargando…');
   const ok = await fetchActs();
@@ -640,8 +779,11 @@ $('#copy').addEventListener('click', ()=>{ const msg=buildMessage(); if(msg) nav
 
 /* ===== Wiring de capacidades / persistencia ===== */
 $('#capComedor').addEventListener('input', e=>{ config.comedor=parseInt(e.target.value)||0; rerenderCaps(); persist(); });
+$('#capComedor').addEventListener('change', async e=>{ if(await saveConfigValue('cap:comedor', parseInt(e.target.value)||0)) toast('Guardado en la base ✔'); });
 $('#capMicro').addEventListener('input', e=>{ config.micro=parseInt(e.target.value)||0; rerenderCaps(); persist(); });
+$('#capMicro').addEventListener('change', async e=>{ if(await saveConfigValue('cap:micro', parseInt(e.target.value)||0)) toast('Guardado en la base ✔'); });
 $('#capCombi').addEventListener('input', e=>{ config.combi=parseInt(e.target.value)||0; rerenderCaps(); persist(); });
+$('#capCombi').addEventListener('change', async e=>{ if(await saveConfigValue('cap:combi', parseInt(e.target.value)||0)) toast('Guardado en la base ✔'); });
 $('#resetdraft').addEventListener('click', resetDraft);
 
 /* ===== Init ===== */
@@ -660,6 +802,10 @@ ready = true; updatePreview();
 (async ()=>{
   const ok = await fetchActs();
   if(ok){ if(!loadedFromStorage) refreshSelectedDetails(); ['actManana','actTarde','actNoche'].forEach(renderActivity); refreshActCount(true); updatePreview(); }
+})();
+(async ()=>{
+  const ok = await fetchConfig();
+  if(ok){ applyConfigToUI(); persist(); }
 })();
 </script>
 </body>
