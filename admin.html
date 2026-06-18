@@ -22,7 +22,7 @@
   body{background:var(--black);color:var(--text);font-family:'DM Sans',sans-serif;min-height:100vh;}
 
   /* LOGIN */
-  #loginScreen{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:20px;}
+  #loginScreen{display:none;position:fixed;inset:0;z-index:1000;align-items:center;justify-content:center;padding:20px;background:rgba(8,8,8,.55);backdrop-filter:blur(2px);}
   .login-box{background:var(--card);border:1px solid var(--border);border-radius:20px;padding:40px 36px;width:100%;max-width:380px;text-align:center;}
   .login-logo{width:72px;height:72px;margin:0 auto 20px;}
   .login-logo svg{width:100%;height:100%;}
@@ -35,7 +35,7 @@
   .login-error{display:none;color:var(--pink);font-size:13px;margin-top:12px;}
 
   /* ADMIN */
-  #adminScreen{display:none;}
+  #adminScreen{display:block;}
   .topbar{background:var(--surface);border-bottom:1px solid var(--border);padding:12px 28px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;}
   .topbar-left{display:flex;align-items:center;gap:12px;}
   .topbar-logo{width:36px;height:36px;flex-shrink:0;}
@@ -154,10 +154,11 @@
         <path class="a3" d="M340.79,308.19c61.93-63.95,63.68-165.92,2.44-231.99C281.99,10.12,180.18,4.14,111.72,61.05c68.45-43.62,160.36-33.5,217.5,28.14,57.13,61.64,60.25,154.06,11.57,219.01"/>
       </svg>
     </div>
-    <h1>Panel Admin</h1>
-    <p>Wake Up Viajes — Acceso restringido</p>
+    <h1>Modo edición</h1>
+    <p>Ingresá la contraseña para poder editar</p>
     <input type="password" id="passwordInput" placeholder="Contraseña" onkeydown="if(event.key==='Enter')doLogin()">
-    <button class="login-btn" onclick="doLogin()">Ingresar</button>
+    <button class="login-btn" onclick="doLogin()">Desbloquear edición</button>
+    <button class="login-btn" onclick="closeEditPrompt()" style="background:transparent;border:1.5px solid var(--line,#e2edef);color:var(--muted);margin-top:8px">Cancelar</button>
     <p class="login-error" id="loginError">Contraseña incorrecta</p>
   </div>
 </div>
@@ -190,7 +191,8 @@
     <div class="topbar-right">
       <span id="totalBadge" style="font-size:13px;color:var(--muted)"></span>
       <button class="logout-btn" onclick="recargarDatos()" id="refreshBtn">↻ Actualizar</button>
-      <button class="logout-btn" onclick="doLogout()">Cerrar sesión</button>
+      <button class="logout-btn" id="editBtn" onclick="openEditPrompt()" style="border-color:var(--cyan);color:var(--cyan)">✏️ Editar</button>
+      <button class="logout-btn" id="logoutBtn" onclick="doLogout()" style="display:none">Cerrar sesión</button>
     </div>
   </div>
 
@@ -414,44 +416,84 @@
   const SUPABASE_URL='https://mzousqdahqterfawhwsz.supabase.co';
   const SUPABASE_ANON_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im16b3VzcWRhaHF0ZXJmYXdod3N6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA1MTc4MzUsImV4cCI6MjA5NjA5MzgzNX0.EdSlcRdLD75OdYlwtZGLVgL_PGpJysWb_MKvuwGgj5Y';
   const PASSWORD='Wakeupadmin26!';
-  const PASSWORD_READONLY='Wakeupcoordi26!';
-  let isReadOnly=false;
+  const EDIT_KEY='wakeup_admin_edit';
+  function lsGet(k){try{return localStorage.getItem(k);}catch(e){return null;}}
+  function lsSet(k,v){try{localStorage.setItem(k,v);}catch(e){}}
+  function lsDel(k){try{localStorage.removeItem(k);}catch(e){}}
+  let isReadOnly=true;
   const {createClient}=supabase;
   const db=createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
   let allAlumnos=[];
   let sortField='apellido';
   let sortDir='asc';
 
+  // Arranque: entra directo en solo-lectura, salvo que ya se haya desbloqueado edición en este navegador
+  function initAdmin(){
+    isReadOnly = (lsGet(EDIT_KEY)!=='1');
+    applyMode();
+    loadAlumnos();
+    autoRefreshInterval=setInterval(recargarDatos,60000);
+  }
+  document.addEventListener('DOMContentLoaded',initAdmin);
+
+  // Abre el modal que pide la contraseña para editar
+  function openEditPrompt(){
+    document.getElementById('loginError').style.display='none';
+    document.getElementById('passwordInput').value='';
+    document.getElementById('loginScreen').style.display='flex';
+    setTimeout(()=>document.getElementById('passwordInput').focus(),50);
+  }
+  function closeEditPrompt(){
+    document.getElementById('loginScreen').style.display='none';
+  }
+
+  // Verifica la clave y desbloquea edición (queda guardado en el navegador)
   function doLogin(){
     const val=document.getElementById('passwordInput').value;
-    if(val===PASSWORD||val===PASSWORD_READONLY){
-      isReadOnly=(val===PASSWORD_READONLY);
+    if(val===PASSWORD){
+      lsSet(EDIT_KEY,'1');
+      isReadOnly=false;
       document.getElementById('loginScreen').style.display='none';
-      document.getElementById('adminScreen').style.display='block';
-      applyReadOnlyMode();
-      loadAlumnos();
-      autoRefreshInterval=setInterval(recargarDatos,60000);
+      applyMode();
+      renderTable();
     } else {
       document.getElementById('loginError').style.display='block';
     }
   }
 
-  function applyReadOnlyMode(){
-    if(!isReadOnly)return;
-    // Hide edit-only buttons
-    const gb=document.getElementById('gestionarBtn');if(gb)gb.style.display='none';
-    // Add readonly badge to topbar
-    const badge=document.createElement('span');
-    badge.textContent='Solo lectura';
-    badge.style.cssText='font-size:11px;background:rgba(241,29,140,0.15);color:var(--pink);border-radius:6px;padding:3px 10px;font-weight:500;';
-    document.querySelector('.topbar-right').prepend(badge);
+  // Cierra sesión de edición y vuelve a solo-lectura
+  function doLogout(){
+    lsDel(EDIT_KEY);
+    isReadOnly=true;
+    applyMode();
+    renderTable();
   }
 
-  function doLogout(){
-    if(autoRefreshInterval)clearInterval(autoRefreshInterval);
-    document.getElementById('adminScreen').style.display='none';
-    document.getElementById('loginScreen').style.display='flex';
-    document.getElementById('passwordInput').value='';
+  // Aplica el modo actual (botones, badge y permisos) en ambos sentidos
+  function applyMode(){
+    const editBtn=document.getElementById('editBtn');
+    const logoutBtn=document.getElementById('logoutBtn');
+    if(editBtn)   editBtn.style.display   = isReadOnly ? '' : 'none';
+    if(logoutBtn) logoutBtn.style.display = isReadOnly ? 'none' : '';
+    const gb=document.getElementById('gestionarBtn');
+    if(gb) gb.style.display = isReadOnly ? 'none' : '';
+
+    let badge=document.getElementById('modeBadge');
+    if(!badge){
+      badge=document.createElement('span');
+      badge.id='modeBadge';
+      badge.style.cssText='font-size:11px;border-radius:6px;padding:3px 10px;font-weight:600;';
+      document.querySelector('.topbar-right').prepend(badge);
+    }
+    if(isReadOnly){
+      badge.textContent='Solo lectura';
+      badge.style.background='rgba(241,29,140,0.15)';
+      badge.style.color='var(--pink)';
+    } else {
+      badge.textContent='Edición';
+      badge.style.background='rgba(25,148,50,0.15)';
+      badge.style.color='var(--green)';
+    }
   }
 
   let autoRefreshInterval=null;
