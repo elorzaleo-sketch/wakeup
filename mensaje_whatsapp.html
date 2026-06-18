@@ -117,6 +117,35 @@
   .loadbar input{ display:none; }
   .reset-link{ border:none; background:none; color:var(--muted); font-family:inherit; font-size:12px; cursor:pointer; text-decoration:underline; padding:0; }
   .reset-link:hover{ color:var(--pink); }
+
+  /* ===== Capacidades y pasajeros (solo para vos · no sale en el mensaje) ===== */
+  details.cfg{ border-color:rgba(93,180,201,.45); }
+  .cfg summary{ cursor:pointer; list-style:none; }
+  .cfg summary::-webkit-details-marker{ display:none; }
+  .cfg summary::after{ content:'▾'; margin-left:auto; color:var(--muted); transition:transform .2s; font-size:14px; }
+  details[open].cfg summary::after{ transform:rotate(180deg); }
+  .cfg > summary.title{ margin-bottom:0; }
+  .cfg-body{ margin-top:16px; }
+  .cfg-grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:8px; margin:6px 0 12px; }
+  .cfg-row{ display:flex; align-items:center; justify-content:space-between; gap:8px; background:#f8fbfc; border:1px solid var(--line); border-radius:10px; padding:6px 10px; min-width:0; }
+  .cfg-row span{ font-size:12.5px; font-weight:600; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .cfg-row input{ width:62px; min-width:62px; text-align:center; padding:6px; }
+  .cfg-total{ font-size:13px; color:var(--muted); margin-bottom:14px; }
+  .cfg-total strong{ color:var(--black); font-size:15px; }
+  .cfg-caps{ display:flex; gap:12px; flex-wrap:wrap; }
+  .cfg-note{ font-size:12px; color:var(--muted); margin:14px 0 0; line-height:1.5; }
+
+  .cap-badge{ display:inline-block; font-size:11px; font-weight:700; padding:2px 8px; border-radius:99px; margin-left:8px; vertical-align:middle; }
+  .cap-ok{ background:rgba(25,148,50,.14); color:var(--green); }
+  .cap-over{ background:rgba(241,29,140,.14); color:#b01069; }
+  .cap-warn{ display:flex; align-items:center; gap:7px; background:rgba(241,29,140,.1); color:#b01069; font-size:12.5px; font-weight:600; padding:7px 11px; border-radius:9px; margin:8px 0 0; }
+  .cap-input{ display:flex; gap:6px; align-items:center; }
+  .cap-input input{ flex:1; }
+  .cap-preset{ border:1px solid var(--line); background:#fff; color:var(--muted); font-family:inherit; font-size:11px; font-weight:600; padding:6px 9px; border-radius:9px; cursor:pointer; white-space:nowrap; }
+  .cap-preset:hover{ border-color:var(--cyan); color:#2b7a8c; }
+  .faltan{ font-size:12.5px; font-weight:600; padding:8px 11px; border-radius:9px; margin-top:4px; }
+  .faltan-pend{ background:rgba(217,130,12,.1); color:#b3690a; }
+  .faltan-ok{ background:rgba(25,148,50,.1); color:var(--green); }
 </style>
 </head>
 <body>
@@ -176,8 +205,24 @@
         <label class="filelbl">📊 Cargar actividades (Excel)<input type="file" id="xlsx" accept=".xlsx,.xls,.csv"></label>
         <span id="actcount"></span>
         <button id="resetacts" class="reset-link" type="button">recargar desde la base</button>
+        <button id="resetdraft" class="reset-link" type="button">↺ Reiniciar mensaje</button>
       </div>
     </div>
+
+    <details class="card cfg" id="cfgPanel" open>
+      <summary class="title"><span class="emoji">⚙️</span> Pasajeros y capacidades <span class="pill">solo para vos · no sale en el mensaje</span></summary>
+      <div class="cfg-body">
+        <label>Pasajeros por colegio</label>
+        <div class="cfg-grid" id="cfgCounts"></div>
+        <div class="cfg-total">Total de pasajeros: <strong id="cfgTotal">0</strong></div>
+        <div class="cfg-caps">
+          <div class="field" style="max-width:200px"><label>Capacidad del comedor</label><input type="number" min="0" inputmode="numeric" id="capComedor" placeholder="ej. 60"></div>
+          <div class="field" style="max-width:170px"><label>Micro grande (lugares)</label><input type="number" min="0" inputmode="numeric" id="capMicro" placeholder="ej. 50"></div>
+          <div class="field" style="max-width:170px"><label>Combi (lugares)</label><input type="number" min="0" inputmode="numeric" id="capCombi" placeholder="ej. 19"></div>
+        </div>
+        <p class="cfg-note">Cargá esto una vez. Con estos números, cada turno de comida y cada salida te avisan si te pasás de lugar. El comedor aplica a desayuno, almuerzo y cena; micro y combi llenan rápido el campo de cada salida. Nada de esto aparece en el mensaje de WhatsApp.</p>
+      </div>
+    </details>
 
     <div class="card" data-meal="desayuno">
       <div class="title"><span class="emoji">🌅</span> Desayuno <span class="pill">comida</span></div>
@@ -272,6 +317,76 @@ const state = {
   actNoche: {actividad:'', grupos:[{colegios:[], h:''}], detalles:'', obs:''},
 };
 
+/* ===== Capacidades y pasajeros (solo para vos, no sale en el mensaje) ===== */
+const config = { counts:{}, comedor:0, micro:50, combi:19 };
+const LS_KEY = 'wakeup_mensaje_v1';
+let ready = false;
+let loadedFromStorage = false;
+
+function totalAll(){ return COLEGIOS.reduce((s,c)=> s + (config.counts[c]||0), 0); }
+function colegiosCount(colegios){
+  if(!colegios || !colegios.length) return 0;
+  if(colegios.includes('Todos')) return totalAll();
+  return colegios.reduce((s,c)=> s + (config.counts[c]||0), 0);
+}
+function capBadge(used, cap){
+  if(!cap || cap<=0) return '';
+  const over = used>cap;
+  return `<span class="cap-badge ${over?'cap-over':'cap-ok'}">${used}/${cap}${over?' ⚠️':''}</span>`;
+}
+function capWarnHTML(used, cap, kind){
+  if(!cap || cap<=0 || used<=cap) return '';
+  const extra = used-cap;
+  const sug = kind==='grupo' ? 'sumá otra combi o pasá a un micro más grande' : 'conviene abrir otro turno';
+  return `<div class="cap-warn">⚠️ Te pasaste por ${extra} ${extra===1?'lugar':'lugares'} — ${sug}</div>`;
+}
+function faltantes(meal){
+  const assigned=new Set(); let todos=false;
+  state[meal].turnos.forEach(t=> t.colegios.forEach(c=>{ if(c==='Todos') todos=true; else assigned.add(c); }));
+  if(todos) return [];
+  return COLEGIOS.filter(c=> !assigned.has(c));
+}
+
+/* Persistencia local: borrador del mensaje + configuración */
+function persist(){ if(!ready) return; try{ localStorage.setItem(LS_KEY, JSON.stringify({state, config})); }catch(e){} }
+function loadSaved(){
+  try{
+    const raw=localStorage.getItem(LS_KEY); if(!raw) return;
+    const d=JSON.parse(raw);
+    if(d.config){ Object.assign(config, d.config); config.counts = d.config.counts || {}; }
+    if(d.state){ Object.assign(state, d.state); loadedFromStorage = true; }
+  }catch(e){ console.error(e); }
+}
+
+/* Panel de configuración */
+function rerenderCaps(){ ['desayuno','almuerzo','cena'].forEach(renderTurnos); ['actManana','actTarde','actNoche'].forEach(renderGrupos); }
+function refreshCfgTotal(){ const el=$('#cfgTotal'); if(el) el.textContent = totalAll(); }
+function renderCfgCounts(){
+  const cont=$('#cfgCounts'); if(!cont) return;
+  cont.innerHTML = COLEGIOS.map(c=>`<div class="cfg-row"><span title="${c}">${c}</span><input type="number" min="0" inputmode="numeric" data-cfgcount="${c}" value="${config.counts[c]||''}" placeholder="0"></div>`).join('');
+  cont.querySelectorAll('[data-cfgcount]').forEach(inp=> inp.addEventListener('input', e=>{
+    config.counts[e.target.dataset.cfgcount] = parseInt(e.target.value)||0;
+    refreshCfgTotal(); rerenderCaps(); persist();
+  }));
+}
+function resetDraft(){
+  if(!confirm('¿Reiniciar el mensaje del día?\n\nSe borran turnos, actividades, horarios y observaciones.\nLas cantidades por colegio y las capacidades se conservan.')) return;
+  state.fecha = '2026-08-15';
+  state.desayuno = {turnos:[{h:'',colegios:[]}], obs:''};
+  state.almuerzo = {turnos:[{h:'',colegios:[]}], obs:''};
+  state.cena     = {turnos:[{h:'',colegios:[]}], obs:''};
+  state.merienda = {h:'', obs:''};
+  ['actManana','actTarde','actNoche'].forEach(k=> state[k]={actividad:'',grupos:[{colegios:[],h:''}],detalles:'',obs:''});
+  fechaInput.value = state.fecha;
+  document.querySelectorAll('[data-obs]').forEach(t=> t.value='');
+  const mh=$('[data-merhorario]'); if(mh) mh.value='';
+  refreshDate();
+  ['desayuno','almuerzo','cena'].forEach(renderTurnos);
+  ['actManana','actTarde','actNoche'].forEach(renderActivity);
+  updatePreview(); persist();
+  toast('Mensaje reiniciado ✔');
+}
+
 const NUM = ['','1️⃣','2️⃣','3️⃣','4️⃣','5️⃣','6️⃣','7️⃣','8️⃣','9️⃣','🔟'];
 const numEmoji = n => NUM[n] || (n+'.');
 const $ = s => document.querySelector(s);
@@ -323,19 +438,28 @@ function renderTurnos(meal){
   const dup = blockConflicts(items);
   const cont = $('#'+meal+'-turnos'); cont.innerHTML = dup.size ? warnHTML() : '';
   items.forEach((t,i)=>{
+    const used = colegiosCount(t.colegios);
     const div=document.createElement('div'); div.className='item';
-    div.innerHTML = `<div class="item-head"><span class="name">Turno ${i+1}</span>
+    div.innerHTML = `<div class="item-head"><span class="name">Turno ${i+1}<span class="cap-slot">${capBadge(used, config.comedor)}</span></span>
         ${items.length>1?'<button class="del" title="Quitar turno">✕</button>':''}</div>
       <div class="turno-grid">
         <div class="hor"><label>Horario</label><input type="time" value="${t.h}"></div>
         <div class="cols">${colPickerMarkup(t.colegios, dup)}</div>
-      </div>`;
+      </div>${capWarnHTML(used, config.comedor, 'turno')}`;
     div.querySelector('input[type=time]').addEventListener('input', e=>{ t.h=e.target.value; updatePreview(); });
     wireColPicker(div.querySelector('.cols'), t, ()=>renderTurnos(meal));
     const del=div.querySelector('.del');
     if(del) del.addEventListener('click', ()=>{ items.splice(i,1); renderTurnos(meal); updatePreview(); });
     cont.appendChild(div);
   });
+  // Yapa: faltantes de la comida (todos los colegios tienen que comer)
+  if(items.some(t=>t.colegios.length)){
+    const falt = faltantes(meal);
+    const fdiv = document.createElement('div');
+    fdiv.className = 'faltan ' + (falt.length ? 'faltan-pend' : 'faltan-ok');
+    fdiv.innerHTML = falt.length ? `🧮 Faltan asignar: ${falt.join(', ')}` : '✅ Todos los colegios están asignados';
+    cont.appendChild(fdiv);
+  }
 }
 
 /* ===== Actividades ===== */
@@ -364,16 +488,31 @@ function renderActivity(key){
 }
 function renderGrupos(key){
   const a=state[key]; const dup=blockConflicts(a.grupos);
-  const cont=document.querySelector(`[data-act="${key}"] .grupos`); cont.innerHTML = dup.size ? warnHTML() : '';
+  const cont=document.querySelector(`[data-act="${key}"] .grupos`); if(!cont) return; cont.innerHTML = dup.size ? warnHTML() : '';
   a.grupos.forEach((g,i)=>{
+    const used = colegiosCount(g.colegios);
     const div=document.createElement('div'); div.className='item';
-    div.innerHTML = `<div class="item-head"><span class="name">Salida Grupo ${i+1}</span>
+    const presets = `${config.micro?`<button type="button" class="cap-preset" data-cap="${config.micro}">Micro ${config.micro}</button>`:''}${config.combi?`<button type="button" class="cap-preset" data-cap="${config.combi}">Combi ${config.combi}</button>`:''}`;
+    div.innerHTML = `<div class="item-head"><span class="name">Salida Grupo ${i+1}<span class="cap-slot">${capBadge(used, g.cap)}</span></span>
         ${a.grupos.length>1?'<button class="del" title="Quitar grupo">✕</button>':''}</div>
       <div class="cols">${colPickerMarkup(g.colegios, dup)}</div>
-      <div class="row" style="margin-top:8px"><div class="field" style="max-width:160px"><label>⏰ Horario</label>
-        <input type="time" class="ghor" value="${g.h}"></div></div>`;
+      <div class="warn-slot">${capWarnHTML(used, g.cap, 'grupo')}</div>
+      <div class="row" style="margin-top:8px">
+        <div class="field" style="max-width:160px"><label>⏰ Horario</label><input type="time" class="ghor" value="${g.h}"></div>
+        <div class="field" style="max-width:240px"><label>Lugares en el transporte</label>
+          <div class="cap-input"><input type="number" min="0" inputmode="numeric" class="gcap" value="${g.cap||''}" placeholder="0">${presets}</div>
+        </div>
+      </div>`;
     wireColPicker(div.querySelector('.cols'), g, ()=>renderGrupos(key));
     div.querySelector('.ghor').addEventListener('input', e=>{ g.h=e.target.value; updatePreview(); });
+    const gcap=div.querySelector('.gcap');
+    const refreshGcapVisual=()=>{
+      const u=colegiosCount(g.colegios);
+      div.querySelector('.cap-slot').innerHTML = capBadge(u, g.cap);
+      div.querySelector('.warn-slot').innerHTML = capWarnHTML(u, g.cap, 'grupo');
+    };
+    gcap.addEventListener('input', e=>{ g.cap=parseInt(e.target.value)||0; refreshGcapVisual(); persist(); });
+    div.querySelectorAll('.cap-preset').forEach(b=> b.addEventListener('click', ()=>{ g.cap=parseInt(b.dataset.cap)||0; gcap.value=g.cap; refreshGcapVisual(); persist(); }));
     const del=div.querySelector('.del');
     if(del) del.addEventListener('click', ()=>{ a.grupos.splice(i,1); renderGrupos(key); updatePreview(); });
     cont.appendChild(div);
@@ -489,8 +628,9 @@ function buildMessage(){
 }
 function updatePreview(){
   const msg=buildMessage(); const b=$('#bubble');
-  if(!msg){ b.innerHTML='<span class="ph">Completá los campos y el mensaje se arma solo…</span>'; return; }
-  b.innerHTML = msg.replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c])).replace(/\*(.+?)\*/g,'<strong>$1</strong>');
+  if(!msg){ b.innerHTML='<span class="ph">Completá los campos y el mensaje se arma solo…</span>'; }
+  else b.innerHTML = msg.replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c])).replace(/\*(.+?)\*/g,'<strong>$1</strong>');
+  persist();
 }
 
 /* ===== Copiar ===== */
@@ -498,13 +638,28 @@ function toast(t){ const el=$('#toast'); el.textContent=t; el.classList.add('sho
 $('#crear').addEventListener('click', ()=>{ const msg=buildMessage(); if(msg) navigator.clipboard.writeText(msg).then(()=>toast('Mensaje copiado ✔')); else toast('Todavía no hay nada que copiar'); });
 $('#copy').addEventListener('click', ()=>{ const msg=buildMessage(); if(msg) navigator.clipboard.writeText(msg).then(()=>toast('Copiado ✔')); });
 
+/* ===== Wiring de capacidades / persistencia ===== */
+$('#capComedor').addEventListener('input', e=>{ config.comedor=parseInt(e.target.value)||0; rerenderCaps(); persist(); });
+$('#capMicro').addEventListener('input', e=>{ config.micro=parseInt(e.target.value)||0; rerenderCaps(); persist(); });
+$('#capCombi').addEventListener('input', e=>{ config.combi=parseInt(e.target.value)||0; rerenderCaps(); persist(); });
+$('#resetdraft').addEventListener('click', resetDraft);
+
 /* ===== Init ===== */
+loadSaved();
+fechaInput.value = state.fecha || '2026-08-15';
+$('#capComedor').value = config.comedor || '';
+$('#capMicro').value = config.micro || '';
+$('#capCombi').value = config.combi || '';
+document.querySelectorAll('[data-obs]').forEach(t=> t.value = (state[t.dataset.obs] && state[t.dataset.obs].obs) || '');
+const _mh=$('[data-merhorario]'); if(_mh) _mh.value = state.merienda.h || '';
+renderCfgCounts(); refreshCfgTotal();
 ['desayuno','almuerzo','cena'].forEach(renderTurnos);
 ['actManana','actTarde','actNoche'].forEach(renderActivity);
-refreshDate(); refreshActCount(false); updatePreview();
+refreshDate(); refreshActCount(false);
+ready = true; updatePreview();
 (async ()=>{
   const ok = await fetchActs();
-  if(ok){ refreshSelectedDetails(); ['actManana','actTarde','actNoche'].forEach(renderActivity); refreshActCount(true); updatePreview(); }
+  if(ok){ if(!loadedFromStorage) refreshSelectedDetails(); ['actManana','actTarde','actNoche'].forEach(renderActivity); refreshActCount(true); updatePreview(); }
 })();
 </script>
 </body>
