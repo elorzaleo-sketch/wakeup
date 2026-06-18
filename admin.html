@@ -1043,6 +1043,13 @@
   }
 
 
+  // Saca tildes/diéresis, pasa a minúsculas y normaliza espacios.
+  function normalizar(t){
+    return (t||'')
+      .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+      .toLowerCase().trim().replace(/\s+/g,' ');
+  }
+
   // ── FALTANTES ──
   async function openFaltantes(){
     document.getElementById('faltantesOverlay').classList.add('open');
@@ -1056,13 +1063,19 @@
     }
 
     const registrados=allAlumnos.map(a=>({
-      apellido:(a.apellido||'').toLowerCase().trim(),
-      nombre:(a.nombre||'').toLowerCase().trim()
+      apellido:normalizar(a.apellido),
+      nombres:normalizar(a.nombre).split(' ').filter(Boolean)
     }));
 
-    const faltantes=pasajeros.filter(p=>
-      !registrados.some(r=>r.apellido===p.apellido.toLowerCase().trim()&&r.nombre===p.nombre.toLowerCase().trim())
-    );
+    // Falta = NO existe ningún registrado cuyo apellido coincida
+    // Y que comparta al menos un nombre de pila (sin tildes ni mayúsculas).
+    const faltantes=pasajeros.filter(p=>{
+      const apellido=normalizar(p.apellido);
+      const nombres=normalizar(p.nombre).split(' ').filter(Boolean);
+      return !registrados.some(r=>
+        r.apellido===apellido && r.nombres.some(n=>nombres.includes(n))
+      );
+    });
 
     if(faltantes.length===0){
       body.innerHTML=`<div class="presentes-ok">✓ ¡Todos los ${pasajeros.length} pasajeros completaron la ficha!</div>`;
