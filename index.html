@@ -212,6 +212,10 @@
   const COORDI_USER = "coordi";
   const COORDI_PASS = "Wakeupcoordi26!";
   /* ============================================================ */
+  const COORDI_KEY = "wakeup_coordi_session";
+  function lsGet(k){try{return localStorage.getItem(k);}catch(e){return null;}}
+  function lsSet(k,v){try{localStorage.setItem(k,v);}catch(e){}}
+  function lsDel(k){try{localStorage.removeItem(k);}catch(e){}}
 
   const coordiBtn = document.getElementById('coordiBtn');
   const views = {
@@ -225,12 +229,26 @@
     coordiBtn.classList.toggle('hide', name !== 'public');
   }
 
-  coordiBtn.addEventListener('click',()=>{
-    show('login');
-    document.getElementById('userInput').focus();
-  });
-  document.getElementById('backFromLogin').addEventListener('click',()=>{clearLogin();show('public');});
-  document.getElementById('logoutBtn').addEventListener('click',()=>{clearLogin();show('public');});
+  // Decide la vista según la URL (#accesos) y si ya hay sesión de coordi guardada en este equipo
+  function route(){
+    const wantCoordi = location.hash === '#accesos';
+    const logged = lsGet(COORDI_KEY) === '1';
+    if(wantCoordi){
+      if(logged){ show('internal'); }
+      else { show('login'); setTimeout(()=>document.getElementById('userInput').focus(),50); }
+    } else {
+      show('public');
+    }
+  }
+  window.addEventListener('hashchange', route);
+  route();
+
+  // "Acceso coordinadores": si ya hay sesión entra directo; si no, pide login
+  coordiBtn.addEventListener('click',()=>{ location.hash = '#accesos'; });
+
+  function goPublic(){ history.replaceState(null,'',location.pathname); show('public'); }
+  document.getElementById('backFromLogin').addEventListener('click',()=>{clearLogin();goPublic();});
+  document.getElementById('logoutBtn').addEventListener('click',()=>{lsDel(COORDI_KEY);clearLogin();goPublic();});
 
   function clearLogin(){
     document.getElementById('userInput').value='';
@@ -242,6 +260,7 @@
     const p = document.getElementById('passInput').value;
     if(u === COORDI_USER && p === COORDI_PASS){
       document.getElementById('loginError').textContent='';
+      lsSet(COORDI_KEY,'1');
       show('internal');
     }else{
       document.getElementById('loginError').textContent='Usuario o contraseña incorrectos.';
