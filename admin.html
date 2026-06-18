@@ -35,7 +35,8 @@
   .login-error{display:none;color:var(--pink);font-size:13px;margin-top:12px;}
 
   /* ADMIN */
-  #adminScreen{display:block;}
+  #adminScreen{display:none;}
+  #authScreen{display:none;align-items:center;justify-content:center;min-height:100vh;padding:20px;}
   .topbar{background:var(--surface);border-bottom:1px solid var(--border);padding:12px 28px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;}
   .topbar-left{display:flex;align-items:center;gap:12px;}
   .topbar-logo{width:36px;height:36px;flex-shrink:0;}
@@ -133,6 +134,37 @@
 <body>
 
 <!-- LOGIN -->
+<!-- AUTH (login real de Supabase) -->
+<div id="authScreen">
+  <div class="login-box">
+    <div class="login-logo">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 410.48 408.65">
+        <defs><style>.a0{fill:#f11d8c;fill-rule:evenodd}.a1{fill:#fff;fill-rule:evenodd}.a2{fill:#199432;fill-rule:evenodd}.a3{fill:#5db4c9;fill-rule:evenodd}</style></defs>
+        <path class="a1" d="M145.09,107.08c13.1,1.6,27.68,2.64,35.44,2.25,1.91-.09,20.62-1.8,17.03-7.14-5.29-7.88-15.08-9.75-23.88-8.52-9.4,1.31-19.47,6.38-28.59,13.41M102.21,141.98c4.62-13.58,12.11-24.36,21.93-33.72-2.65-.86-4.98-1.73-6.85-2.59-6.72-3.1-9.86-5.03-14.07-11.01,7.75,4.24,11.27,6.33,20.07,8.7,1.43.38,3.12.77,5.01,1.14,2.16-1.86,4.41-3.66,6.75-5.42,18.7-14.06,50.36-27.37,68.79-5.18,11.51,13.85-2.38,22.01-16.49,23.57-10.3,1.14-31.2-1.48-48.35-5.28-10.75,9.79-19.42,21.99-22.83,33.1-.91,3.86-4.78,6.25-8.64,5.33-3.86-.91-6.25-4.78-5.33-8.64Z"/>
+        <path class="a2" d="M196.87,105.41c-8.69,5.02-26.99,5.04-51.78,1.67,17.58-12.28,33.76-16.94,47.76-9.71,5.04,4,6.16,6.6,4.02,8.04"/>
+        <path class="a1" d="M250.83,141.2c-15.91,30.37-18.93,58.38-30.3,88.99-.77,2.07.7.6-1.56,3.59-1.54-4.75-1.15-4.06-.5-10.32,2.99-28.67,8.78-61.94,20.38-88.34,1.68-3.3,5.72-4.62,9.02-2.95,3.31,1.68,4.62,5.72,2.95,9.02"/>
+        <path class="a1" d="M264.34,225.04l.58,2.17c-15.16-9.04-30.58-18.21-45.96-26.85l-6.81-3.77c-3.32-2.38-5.22-1.32-5.84-5.05-.96-5.74,9.07-7.4,13.61-9.04,12.03-4.36,46.04-17.59,56.69-19.07l4.95-.11c-6.37,3.71-2.98,1.89-11.55,5.96-14.98,7.12-30.99,14.83-46.57,21.57,12.47,5.7,27.21,13.81,36.96,18.93,10.78,5.66,8.14,2.86,16.87,11.77.75,3.63-1.58,7.18-5.21,7.93-3.37.7-6.66-1.26-7.73-4.44"/>
+        <path class="a1" d="M151.33,219.29c11.82-6.56,34.75-59.39,42.22-62.27,7.74-2.99,7.19,12.06,7.51,16.1.99,12.41,1.46,22.41,4.91,34.62,1.51,5.34,2.7,8.24,2.57,13.75-3.69-5.1-7.85-14.34-9.84-20.47-3.03-9.36-3.97-18.92-5.51-28.04-6.31,11.42-12.21,25.28-18.16,36.04-5.22,9.44-9.24,16.94-18.54,22.66-3.42,1.42-7.35-.2-8.77-3.62-1.42-3.42.2-7.35,3.62-8.77"/>
+        <path class="a1" d="M173.11,258.7c-8.38,5.48-14.51,54.64-3.87,50.2,19.56-8.16,31.91-56.49,38.38-75.18,1.17-3.39,1.11-4.34,3.33-6.48v1.6c-1.32,19.63-11.52,59-22.59,75.11-11.86,17.25-30.53,24.81-35.41-.97-2.95-15.6-.39-45.18,13.24-55.76,3.18-1.91,7.3-.89,9.21,2.29,1.91,3.18.89,7.3-2.29,9.21"/>
+        <path class="a1" d="M289.54,170.69c8.04-9.36,16.42-20.16,20.14-26.39.92-1.54,9.3-16.97,3.28-16.95-8.88.03-15.41,6.67-19.02,14.15-3.86,7.99-5.14,18.46-4.41,29.19M294.44,222.16c-8.17-10.64-12.67-22.06-14.85-34.56-2.04,1.62-3.93,2.98-5.57,3.98-5.9,3.62-9.03,5.06-15.87,5.23,7.32-3.83,10.77-5.48,17.18-11.1,1.04-.91,2.21-2.03,3.49-3.31-.32-2.64-.56-5.33-.71-8.06-1.23-21.84,4.84-53.37,31.66-56.19,16.75-1.76,15.88,13.27,9.78,25.05-4.46,8.61-17.34,23.5-29.19,34.87,2.04,13.44,7.03,26.52,13.9,34.93,2.53,2.71,2.38,6.96-.34,9.49-2.71,2.53-6.96,2.38-9.49-.34Z"/>
+        <path class="a0" d="M315.11,129.55c-.6,9.36-10.09,23.61-25.57,41.14-.42-20.05,4.34-35.05,17.23-42.18,5.73-1.84,8.33-1.36,8.34,1.04"/>
+        <path class="a0" d="M263.42,285.92c6.46-5.93,7.43-20.35,8.74-28.57.69-4.33,1.92-18.55,4.48-21.79,7.17,2.55,8.49,27.97,8.69,34.66.35,11.98-.47,19.33-7.27,29.21-3.73,4.04-10.03,4.3-14.08.56-4.04-3.73-4.3-10.03-.56-14.08"/>
+        <path class="a0" d="M261.61,308.08c5.15.71,8.59,6.59,7.69,13.13-.9,6.54-5.81,11.27-10.96,10.56-5.15-.71-8.59-6.59-7.69-13.13.9-6.54,5.81-11.27,10.96-10.56"/>
+        <path class="a1" d="M111.27,166.97c-3.05,8.43-6.45,28.06-8.46,45.41,5.39-8.93,10.85-17.72,13.2-21.57,4.12-6.76,23.56-41.41,31.86-41.56,6.99-.12,7.58,6.6,4.86,12.26-7.34,15.25-5.38,8.53-10.54,25.51-1.51,4.95-4.23,13.69-6.75,22.54,1.68-2.81,3.43-5.64,5.3-8.54,6.25-9.69,42.83-65.85,51.85-62.42-15.96,14.35-41.34,59.81-52.5,80-2.36,4.27-6.55,13.35-8.73,16.92-2.7,4.43-7.6,7.28-10.63,2.01-1.95-3.4,1.36-19.49,5.15-34.81-11.08,19.67-24.25,43.08-26.29,45.2-2.98,3.08-8.57,2.49-11.52-.69-8.26-8.9,2.74-74.64,6.99-87.12,1.89-4.48,7.06-6.57,11.53-4.67,4.48,1.89,6.57,7.06,4.67,11.53"/>
+        <path class="a1" d="M224.17,289.52c4.14,4.35,10.15,3.53,16.76-3.33,13.55-14.07,8.29-30.07-2.69-42.44-3.83,9.78-8.03,25.87-10.41,33.65-1.11,3.64-2.31,7.77-3.65,12.12M189.75,318.08c11.86-3.67,31.17-78.74,40.42-88.42,9.25-9.68,19.12,5.59,23.37,12.78,12.2,20.68,5.61,49.82-17.85,56.41-5.67,1.59-10.3.38-13.71-2.49-5.28,15.76-12.79,32.62-25.39,39.31-4.86,1.89-10.32-.52-12.21-5.37-1.89-4.86.52-10.32,5.37-12.21Z"/>
+        <path class="a3" d="M298.76,347.6c-68.46,56.91-170.27,50.93-231.51-15.15-61.24-66.07-59.49-168.04,2.44-231.99-48.68,64.94-45.56,157.36,11.57,219,57.13,61.64,149.05,71.75,217.5,28.13"/>
+        <path class="a3" d="M340.79,308.19c61.93-63.95,63.68-165.92,2.44-231.99C281.99,10.12,180.18,4.14,111.72,61.05c68.45-43.62,160.36-33.5,217.5,28.14,57.13,61.64,60.25,154.06,11.57,219.01"/>
+      </svg>
+    </div>
+    <h1>Panel Admin</h1>
+    <p>Wake Up Viajes — Ingresá con tu cuenta de coordinador</p>
+    <input type="email" id="authEmail" placeholder="Email" autocomplete="username" autocapitalize="none" spellcheck="false">
+    <input type="password" id="authPass" placeholder="Contraseña" autocomplete="current-password" onkeydown="if(event.key==='Enter')doAuthLogin()">
+    <button class="login-btn" id="authBtn" onclick="doAuthLogin()">Ingresar</button>
+    <p class="login-error" id="authError">Email o contraseña incorrectos.</p>
+  </div>
+</div>
+
 <div id="loginScreen">
   <div class="login-box">
     <div class="login-logo">
@@ -193,7 +225,8 @@
       <span id="totalBadge" style="font-size:13px;color:var(--muted)"></span>
       <button class="logout-btn" onclick="recargarDatos()" id="refreshBtn">↻ Actualizar</button>
       <button class="logout-btn" id="editBtn" onclick="openEditPrompt()" style="border-color:var(--cyan);color:var(--cyan)">✏️ Editar</button>
-      <button class="logout-btn" id="logoutBtn" onclick="doLogout()" style="display:none">Cerrar sesión</button>
+      <button class="logout-btn" id="exitEditBtn" onclick="exitEdit()" style="display:none">Salir de edición</button>
+      <button class="logout-btn" id="signOutBtn" onclick="signOut()">Cerrar sesión</button>
     </div>
   </div>
 
@@ -428,16 +461,60 @@
   let sortField='apellido';
   let sortDir='asc';
 
-  // Arranque: entra directo en solo-lectura, salvo que ya se haya desbloqueado edición en este navegador
-  function initAdmin(){
+  // ── Sesión real (Supabase Auth) ──
+  // Al cargar, revisa si hay sesión iniciada. Sin sesión → pantalla de login.
+  async function checkSession(){
+    try{
+      const {data:{session}}=await db.auth.getSession();
+      if(session){ enterAdmin(); } else { showAuth(); }
+    }catch(e){ showAuth(); }
+  }
+  document.addEventListener('DOMContentLoaded',checkSession);
+
+  function showAuth(){
+    document.getElementById('authScreen').style.display='flex';
+    document.getElementById('adminScreen').style.display='none';
+    setTimeout(()=>{const el=document.getElementById('authEmail');if(el)el.focus();},50);
+  }
+
+  async function doAuthLogin(){
+    const email=document.getElementById('authEmail').value.trim();
+    const pass=document.getElementById('authPass').value;
+    const err=document.getElementById('authError');
+    const btn=document.getElementById('authBtn');
+    err.style.display='none';
+    if(btn){btn.disabled=true;btn.textContent='Ingresando...';}
+    const {error}=await db.auth.signInWithPassword({email,password:pass});
+    if(btn){btn.disabled=false;btn.textContent='Ingresar';}
+    if(error){ err.textContent='Email o contraseña incorrectos.'; err.style.display='block'; return; }
+    enterAdmin();
+  }
+
+  // Entra al panel (siempre arranca en solo-lectura, salvo edición desbloqueada en este navegador)
+  function enterAdmin(){
+    document.getElementById('authScreen').style.display='none';
+    document.getElementById('adminScreen').style.display='block';
     isReadOnly = (lsGet(EDIT_KEY)!=='1');
     applyMode();
-    loadAlumnos();
-    autoRefreshInterval=setInterval(recargarDatos,60000);
+    if(!panelStarted){
+      panelStarted=true;
+      loadAlumnos();
+      autoRefreshInterval=setInterval(recargarDatos,60000);
+    }
   }
-  document.addEventListener('DOMContentLoaded',initAdmin);
 
-  // Abre el modal que pide la contraseña para editar
+  // Cierra la sesión real y vuelve a la pantalla de login
+  async function signOut(){
+    lsDel(EDIT_KEY);
+    isReadOnly=true;
+    if(autoRefreshInterval){clearInterval(autoRefreshInterval);autoRefreshInterval=null;}
+    panelStarted=false;
+    try{ await db.auth.signOut(); }catch(e){}
+    document.getElementById('authPass').value='';
+    showAuth();
+  }
+
+  // ── Desbloqueo de edición (contraseña, sobre la sesión ya iniciada) ──
   function openEditPrompt(){
     document.getElementById('loginError').style.display='none';
     document.getElementById('passwordInput').value='';
@@ -448,7 +525,6 @@
     document.getElementById('loginScreen').style.display='none';
   }
 
-  // Verifica la clave y desbloquea edición (queda guardado en el navegador)
   function doLogin(){
     const val=document.getElementById('passwordInput').value;
     if(val===PASSWORD){
@@ -462,8 +538,8 @@
     }
   }
 
-  // Cierra sesión de edición y vuelve a solo-lectura
-  function doLogout(){
+  // Sale del modo edición y vuelve a solo-lectura (sigue con la sesión iniciada)
+  function exitEdit(){
     lsDel(EDIT_KEY);
     isReadOnly=true;
     applyMode();
@@ -473,9 +549,9 @@
   // Aplica el modo actual (botones, badge y permisos) en ambos sentidos
   function applyMode(){
     const editBtn=document.getElementById('editBtn');
-    const logoutBtn=document.getElementById('logoutBtn');
-    if(editBtn)   editBtn.style.display   = isReadOnly ? '' : 'none';
-    if(logoutBtn) logoutBtn.style.display = isReadOnly ? 'none' : '';
+    const exitEditBtn=document.getElementById('exitEditBtn');
+    if(editBtn)     editBtn.style.display     = isReadOnly ? '' : 'none';
+    if(exitEditBtn) exitEditBtn.style.display = isReadOnly ? 'none' : '';
     const gb=document.getElementById('gestionarBtn');
     if(gb) gb.style.display = isReadOnly ? 'none' : '';
 
@@ -496,6 +572,8 @@
       badge.style.color='var(--green)';
     }
   }
+
+  let panelStarted=false;
 
   let autoRefreshInterval=null;
 
