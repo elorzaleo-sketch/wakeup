@@ -811,17 +811,18 @@ async function saveConfig(clave, valor) {
 
 async function loadBtnConfig() {
   try {
-    const { data, error } = await supa.from('config_app').select('clave,valor').like('key', 'landing_%');
+    const { data, error } = await supa.from('config_app').select('clave,valor');
     if (error) throw error;
-    if (data && data.length > 0) {
+    const landingData = data ? data.filter(r => r.clave.startsWith('landing_')) : [];
+    if (landingData.length > 0) {
       // Hay config guardada — aplicarla
-      data.forEach(row => {
+      landingData.forEach(row => {
         const k = row.clave.replace('landing_', '');
         if (k in btnConfig) btnConfig[k] = row.valor == 1;
         if (k in fbtnConfig) fbtnConfig[k] = row.valor == 1;
       });
     } else {
-      // Primera vez: no hay nada guardado → insertar todos como true
+      // Primera vez: no hay filas landing_ → insertar todos como true
       // Primera vez: guardar todos como visibles
       for (const b of [...PASAJERO_BTNS, ...FAMILIA_BTNS]) {
         await saveConfig('landing_' + b.id, 1);
@@ -1010,10 +1011,11 @@ const FAMILIA_MENU_ITEMS = [
 
 async function loadFamiliaMenuConfig() {
   try {
-    const { data, error } = await supa.from('config_app').select('clave,valor').like('key', 'landing_%');
+    const { data, error } = await supa.from('config_app').select('clave,valor');
     if (error) throw error;
-    if (data && data.length > 0) {
-      data.forEach(row => {
+    const ldData = data ? data.filter(r => r.clave.startsWith('landing_')) : [];
+    if (ldData.length > 0) {
+      ldData.forEach(row => {
         const k = row.clave.replace('landing_', '');
         if (k in fbtnConfig) fbtnConfig[k] = row.valor == 1;
       });
