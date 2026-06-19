@@ -73,6 +73,15 @@ select option{background:#1a2224;}
 .toast.show{transform:translateX(-50%) translateY(0);opacity:1;}
 .error{color:#ff5fae;font-size:.82rem;margin:8px 0;}
 @media(max-width:400px){.thumb-grid{grid-template-columns:repeat(3,1fr);}}
+
+.frow-btn{padding:5px 10px;border-radius:8px;border:1.5px solid var(--line);background:transparent;
+  color:var(--muted);font-family:'Outfit',sans-serif;font-size:.76rem;font-weight:600;cursor:pointer;
+  text-decoration:none;white-space:nowrap;transition:.15s;}
+.frow-btn:hover{border-color:var(--cyan);color:var(--text);}
+.frow-btn.cyan{color:var(--cyan);border-color:rgba(93,180,201,.4);}
+.frow-btn.cyan:hover{border-color:var(--cyan);}
+.frow-btn.danger{color:#ff5fae;border-color:rgba(255,95,174,.3);}
+.frow-btn.danger:hover{border-color:#ff5fae;}
 </style>
 </head>
 <body>
@@ -121,7 +130,11 @@ function filterFichas(){
         <span class="fr-nombre">${f.nombre_pasajero}</span>
         <span class="fr-fecha">${fecha}</span>
       </span>
-      <a href="${f.url_pdf}" target="_blank" rel="noopener">⬇️ Ver PDF</a>
+      <div style="display:flex;gap:6px;flex:0 0 auto;align-items:center;">
+        <a href="${f.url_pdf}" target="_blank" rel="noopener" class="frow-btn">👁️ Ver</a>
+        <a href="${f.url_pdf}" download="${f.nombre_pasajero}.pdf" class="frow-btn cyan">⬇️ Bajar</a>
+        <button type="button" class="frow-btn danger" onclick="deleteFicha('${f.id}','${f.nombre_pasajero}')">🗑️</button>
+      </div>
     </div>`;
   }).join('');
 }
@@ -141,6 +154,14 @@ document.getElementById('btnDescTodo').addEventListener('click',()=>{
   });
   showToast(`Descargando ${allFichas.length} fichas…`);
 });
+
+async function deleteFicha(id, nombre){
+  if(!confirm('¿Eliminar la ficha de ' + nombre + '?')) return;
+  const {error} = await supa.from('fichas_salud').delete().eq('id', id);
+  if(error){ showToast('Error al eliminar.'); return; }
+  showToast('Ficha eliminada ✓');
+  loadFichas();
+}
 
 loadFichas();
 </script>
