@@ -264,14 +264,27 @@ textarea{resize:vertical;min-height:80px;}
     </div>
   </div>
 
-  <p class="section-label" style="margin-top:6px;">Foto de la ficha (frente y dorso)</p>
-  <div class="drop-zone" id="dropZone">
-    <input type="file" id="fichaFiles" accept="image/*" multiple capture="environment">
-    <div class="dz-icon">📷</div>
-    <div class="dz-txt">Tocá para sacar fotos o elegir imágenes</div>
-    <div class="dz-hint">Podés subir hasta 2 imágenes (frente y dorso)</div>
+  <p class="section-label" style="margin-top:6px;">Foto de la ficha</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+    <div>
+      <p style="font-size:.75rem;color:var(--muted);margin-bottom:6px;text-align:center;">Frente</p>
+      <div class="drop-zone" id="dropZoneFrente" style="padding:16px;">
+        <input type="file" id="fichaFrente" accept="image/*" capture="environment">
+        <div class="dz-icon" style="font-size:1.4rem;">📷</div>
+        <div class="dz-txt" style="font-size:.8rem;">Tocá para sacar foto</div>
+      </div>
+      <img id="prevFrente" style="display:none;width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:10px;margin-top:6px;border:1px solid var(--line);">
+    </div>
+    <div>
+      <p style="font-size:.75rem;color:var(--muted);margin-bottom:6px;text-align:center;">Dorso</p>
+      <div class="drop-zone" id="dropZoneDorso" style="padding:16px;">
+        <input type="file" id="fichaDorso" accept="image/*" capture="environment">
+        <div class="dz-icon" style="font-size:1.4rem;">📷</div>
+        <div class="dz-txt" style="font-size:.8rem;">Tocá para sacar foto</div>
+      </div>
+      <img id="prevDorso" style="display:none;width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:10px;margin-top:6px;border:1px solid var(--line);">
+    </div>
   </div>
-  <div class="previews" id="fichaPreviewGrid" style="display:none;"></div>
 
   <div style="margin-top:16px;">
     <div class="progress-bar" id="fichaProgress" style="display:none;"><div class="progress-fill" id="fichaFill"></div></div>
@@ -540,33 +553,31 @@ function cardHTML(b){
 /* ============================================================
    CARGAR FICHA — fotos → PDF → Supabase Storage
    ============================================================ */
-let fichaImgs = [];
+let fichaImgFrente = null, fichaImgDorso = null;
 
-const dropZone = document.getElementById('dropZone');
-const fichaFiles = document.getElementById('fichaFiles');
-const previewGrid = document.getElementById('fichaPreviewGrid');
+document.getElementById('fichaFrente').addEventListener('change', e=>{
+  const f = e.target.files[0];
+  if(!f) return;
+  fichaImgFrente = f;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    const img = document.getElementById('prevFrente');
+    img.src = ev.target.result; img.style.display='block';
+  };
+  reader.readAsDataURL(f);
+});
 
-fichaFiles.addEventListener('change', e=>{ handleFiles(e.target.files); });
-dropZone.addEventListener('dragover', e=>{ e.preventDefault(); dropZone.classList.add('over'); });
-dropZone.addEventListener('dragleave', ()=>dropZone.classList.remove('over'));
-dropZone.addEventListener('drop', e=>{ e.preventDefault(); dropZone.classList.remove('over'); handleFiles(e.dataTransfer.files); });
-
-function handleFiles(files){
-  const imgs = Array.from(files).filter(f=>f.type.startsWith('image/')).slice(0,2);
-  fichaImgs = imgs;
-  if(!imgs.length) return;
-  previewGrid.style.display='grid';
-  previewGrid.innerHTML='';
-  imgs.forEach((f,i)=>{
-    const reader=new FileReader();
-    reader.onload=ev=>{
-      const div=document.createElement('div');
-      div.innerHTML=`<img class="preview-img" src="${ev.target.result}"><div class="preview-label">${i===0?'Frente':'Dorso'}</div>`;
-      previewGrid.appendChild(div);
-    };
-    reader.readAsDataURL(f);
-  });
-}
+document.getElementById('fichaDorso').addEventListener('change', e=>{
+  const f = e.target.files[0];
+  if(!f) return;
+  fichaImgDorso = f;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    const img = document.getElementById('prevDorso');
+    img.src = ev.target.result; img.style.display='block';
+  };
+  reader.readAsDataURL(f);
+});
 
 document.getElementById('btnSubirFicha').addEventListener('click', async ()=>{
   const apellido = document.getElementById('fichaApellido').value.trim();
@@ -577,7 +588,7 @@ document.getElementById('btnSubirFicha').addEventListener('click', async ()=>{
   errEl.textContent=''; succEl.style.display='none';
 
   if(!apellido || !nombreInput){ errEl.textContent='Completá apellido y nombre del pasajero.'; return; }
-  if(!fichaImgs.length){ errEl.textContent='Seleccioná al menos una foto de la ficha.'; return; }
+  if(!fichaImgFrente){ errEl.textContent='Subí al menos la foto del frente de la ficha.'; return; }
 
   const btn = document.getElementById('btnSubirFicha');
   btn.disabled=true; btn.textContent='Procesando…';
@@ -587,7 +598,8 @@ document.getElementById('btnSubirFicha').addEventListener('click', async ()=>{
 
   try {
     // Leer imágenes como dataURL
-    const dataUrls = await Promise.all(fichaImgs.map(f=>new Promise(res=>{
+    const imgs = [fichaImgFrente, fichaImgDorso].filter(Boolean);
+    const dataUrls = await Promise.all(imgs.map(f=>new Promise(res=>{
       const r=new FileReader(); r.onload=ev=>res(ev.target.result); r.readAsDataURL(f);
     })));
 
@@ -638,10 +650,13 @@ document.getElementById('btnSubirFicha').addEventListener('click', async ()=>{
     btn.textContent='✓ Enviada';
     // Reset
     setTimeout(()=>{
-      fichaImgs=[]; previewGrid.innerHTML=''; previewGrid.style.display='none';
+      fichaImgFrente=null; fichaImgDorso=null;
       document.getElementById('fichaApellido').value='';
       document.getElementById('fichaNombreInput').value='';
-      document.getElementById('fichaFiles').value='';
+      document.getElementById('fichaFrente').value='';
+      document.getElementById('fichaDorso').value='';
+      document.getElementById('prevFrente').style.display='none';
+      document.getElementById('prevDorso').style.display='none';
       btn.disabled=false; btn.innerHTML='Generar PDF y enviar <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="width:17px;height:17px"><path d="M22 2L11 13"/><path d="M22 2 15 22 11 13 2 9l20-7z"/></svg>';
       prog.style.display='none'; fill.style.width='0%';
     }, 3000);
@@ -787,7 +802,8 @@ document.getElementById('btnEnviarEncuestaFam').addEventListener('click', async 
 
   const payload={
     nombre, como_se_entero:efEntero,
-    contento:efContento, recomendaria:efRecFam,
+    estrellas_organizacion:efStarsOrg||null,
+    recomendaria:efRecFam,
     comentario:document.getElementById('efComentario').value.trim(),
     recomendacion:document.getElementById('efRecomendacion').value.trim(),
     created_at: new Date().toISOString()
