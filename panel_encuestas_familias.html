@@ -73,6 +73,24 @@ select option{background:#1a2224;}
 .toast.show{transform:translateX(-50%) translateY(0);opacity:1;}
 .error{color:#ff5fae;font-size:.82rem;margin:8px 0;}
 @media(max-width:400px){.thumb-grid{grid-template-columns:repeat(3,1fr);}}
+
+.ef-card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px 20px;margin-bottom:12px;}
+.card-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px;}
+.card-nombre{font-weight:700;font-size:1rem;}
+.card-fecha{font-size:.75rem;color:var(--muted);}
+.ef-field{margin-bottom:9px;}
+.ef-label{font-size:.7rem;font-weight:600;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:3px;}
+.ef-val{font-size:.9rem;line-height:1.55;}
+.badge{display:inline-block;padding:3px 10px;border-radius:99px;font-size:.75rem;font-weight:600;
+  background:rgba(93,180,201,.15);color:var(--cyan);border:1px solid rgba(93,180,201,.25);}
+.divider{border:none;border-top:1px solid var(--line);margin:10px 0;}
+.filter-bar{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;}
+.filter-btn{padding:6px 14px;border-radius:99px;border:1.5px solid var(--line);background:transparent;
+  color:var(--muted);font-family:'Outfit',sans-serif;font-size:.8rem;font-weight:600;cursor:pointer;transition:.15s;}
+.filter-btn.active{border-color:var(--cyan);color:var(--text);background:rgba(93,180,201,.1);}
+.stat{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;text-align:center;margin-bottom:6px;}
+.stat .val{font-family:'Bricolage Grotesque',sans-serif;font-size:2rem;font-weight:800;color:var(--cyan);}
+.stat .lbl{font-size:.78rem;color:var(--muted);margin-top:4px;}
 </style>
 </head>
 <body>
@@ -81,9 +99,14 @@ select option{background:#1a2224;}
   <a href="/#accesos">← Volver</a>
 </div>
 <div class="container">
-  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:8px;">
-    <p class="section-title" style="margin:0;">Respuestas de familias</p>
-    <span id="efCount" style="font-size:.8rem;color:var(--muted);"></span>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px;">
+    <div class="stat"><div class="val" id="statTotal">—</div><div class="lbl">Respuestas</div></div>
+    <div class="stat"><div class="val" id="statRec" style="color:var(--green);">—</div><div class="lbl">Recomendarían</div></div>
+  </div>
+  <div class="filter-bar">
+    <button class="filter-btn active" type="button" onclick="setFiltro('todas',this)">Todas</button>
+    <button class="filter-btn" type="button" onclick="setFiltro('con-comentario',this)">Con comentario</button>
+    <button class="filter-btn" type="button" onclick="setFiltro('recomendaria',this)">Lo recomendarían</button>
   </div>
   <div id="encuestasFamList"><div style="color:var(--muted);font-size:.88rem;text-align:center;padding:16px;">Cargando…</div></div>
 </div>
@@ -96,22 +119,46 @@ let toastT;
 function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove('show'),2800);}
 </script>
 <script>
+let allEfData=[], filtroActivo='todas';
+
+function setFiltro(f, btn){
+  filtroActivo=f;
+  document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  renderEfCards();
+}
+
+function renderEfCards(){
+  const el=document.getElementById('encuestasFamList');
+  let data=[...allEfData];
+  if(filtroActivo==='con-comentario') data=data.filter(r=>r.comentario||r.recomendacion);
+  if(filtroActivo==='recomendaria') data=data.filter(r=>r.recomendaria&&r.recomendaria.startsWith('sí'));
+  if(!data.length){el.innerHTML='<div style="color:var(--muted);font-size:.88rem;text-align:center;padding:20px;">No hay respuestas con ese filtro.</div>';return;}
+  const stars=n=>n?'★'.repeat(n)+'☆'.repeat(5-n):'—';
+  el.innerHTML=data.map(r=>`<div class="ef-card">
+      <div class="card-head">
+        <span class="card-nombre">${r.nombre||'Anónimo'}</span>
+        <span class="card-fecha">${new Date(r.created_at).toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric'})}</span>
+      </div>
+      ${r.estrellas_organizacion?`<div class="ef-field"><div class="ef-label">Organización</div><div class="ef-val" style="color:#f5c842;letter-spacing:2px;">${stars(r.estrellas_organizacion)}</div></div>`:''}
+      ${r.como_se_entero?`<div class="ef-field"><div class="ef-label">Cómo se enteró</div><div class="ef-val badge">${r.como_se_entero}</div></div>`:''}
+      ${r.recomendaria?`<div class="ef-field"><div class="ef-label">¿Recomendaría?</div><div class="ef-val badge">${r.recomendaria}</div></div>`:''}
+      ${r.comentario?`<hr class="divider"><div class="ef-field"><div class="ef-label">Comentario</div><div class="ef-val">${r.comentario}</div></div>`:''}
+      ${r.recomendacion?`<div class="ef-field"><div class="ef-label">Qué le diría a otras familias</div><div class="ef-val" style="font-style:italic;">"${r.recomendacion}"</div></div>`:''}
+    </div>`).join('');
+}
+
 async function loadEncuestasFam(){
   const {data}=await supa.from('encuestas_familias').select('*').order('created_at',{ascending:false});
   const el=document.getElementById('encuestasFamList');
-  document.getElementById('efCount').textContent=data?.length?`${data.length} respuesta${data.length!==1?'s':''}`:'';
-  if(!data||!data.length){el.innerHTML='<div style="color:var(--muted);font-size:.88rem;text-align:center;padding:20px;">Aún no hay encuestas.</div>';return;}
-  el.innerHTML=data.map(r=>{
-    return `<div class="ef-card">
-      <div class="ef-nombre">${r.nombre||'Anónimo'}</div>
-      ${r.como_se_entero?`<div class="ef-field"><div class="ef-label">Cómo se enteró</div><div class="ef-val">${r.como_se_entero}</div></div>`:''}
-      ${r.contento?`<div class="ef-field"><div class="ef-label">¿Volvió contento?</div><div class="ef-val">${r.contento}</div></div>`:''}
-      ${r.recomendaria?`<div class="ef-field"><div class="ef-label">¿Recomendaría?</div><div class="ef-val">${r.recomendaria}</div></div>`:''}
-      ${r.comentario?`<div class="ef-field"><div class="ef-label">Comentario</div><div class="ef-val">${r.comentario}</div></div>`:''}
-      ${r.recomendacion?`<div class="ef-field"><div class="ef-label">Qué le diría a otras familias</div><div class="ef-val" style="font-style:italic;">"${r.recomendacion}"</div></div>`:''}
-      <div style="font-size:.72rem;color:var(--muted);margin-top:8px;">${new Date(r.created_at).toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'})}</div>
-    </div>`;
-  }).join('');
+  if(!data||!data.length){el.innerHTML='<div style="color:var(--muted);font-size:.88rem;text-align:center;padding:20px;">Aún no hay encuestas.</div>';
+    document.getElementById('statTotal').textContent='0';
+    return;}
+  allEfData=data;
+  document.getElementById('statTotal').textContent=data.length;
+  const rec=data.filter(r=>r.recomendaria&&r.recomendaria.startsWith('sí')).length;
+  document.getElementById('statRec').textContent=data.length?Math.round(rec/data.length*100)+'%':'—';
+  renderEfCards();
 }
 loadEncuestasFam();
 </script>
