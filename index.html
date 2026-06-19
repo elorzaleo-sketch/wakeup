@@ -676,7 +676,7 @@
 const COORDI_USER = "coordi";
 const COORDI_PASS = "Wakeupcoordi26!";
 const PASS_PASAJERO = "wuegresados26!";
-const PASS_FAMILIA  = "wufamilias26!";
+const PASS_FAMILIA  = "wuefamilias26!";
 
 /* ============================================================
    SUPABASE
@@ -794,22 +794,22 @@ function renderPasajeroGrid() {
    ============================================================ */
 async function loadBtnConfig() {
   try {
-    const { data, error } = await supa.from('config_app').select('key,value').like('key', 'landing_%');
+    const { data, error } = await supa.from('config_app').select('clave,valor').like('key', 'landing_%');
     if (error) throw error;
     if (data && data.length > 0) {
       // Hay config guardada — aplicarla
       data.forEach(row => {
-        const k = row.key.replace('landing_', '');
-        if (k in btnConfig) btnConfig[k] = row.value === 'true' || row.value === true;
-        if (k in fbtnConfig) fbtnConfig[k] = row.value === 'true' || row.value === true;
+        const k = row.clave.replace('landing_', '');
+        if (k in btnConfig) btnConfig[k] = row.valor === 'true' || row.valor === true;
+        if (k in fbtnConfig) fbtnConfig[k] = row.valor === 'true' || row.valor === true;
       });
     } else {
       // Primera vez: no hay nada guardado → insertar todos como true
       const allBtns = [
-        ...PASAJERO_BTNS.map(b => ({ key: 'landing_' + b.id, value: 'true' })),
-        ...FAMILIA_BTNS.map(b => ({ key: 'landing_' + b.id, value: 'true' }))
+        ...PASAJERO_BTNS.map(b => ({ clave: 'landing_' + b.id, valor: 'true' })),
+        ...FAMILIA_BTNS.map(b => ({ clave: 'landing_' + b.id, valor: 'true' }))
       ];
-      await supa.from('config_app').upsert(allBtns, { onConflict: 'key' });
+      await supa.from('config_app').upsert(allBtns, { onConflict: 'clave' });
       PASAJERO_BTNS.forEach(b => btnConfig[b.id] = true);
       FAMILIA_BTNS.forEach(b => fbtnConfig[b.id] = true);
     }
@@ -829,7 +829,7 @@ async function toggleBtn(id, val) {
   renderPasajeroGrid();
   renderCtrlPanel();
   try {
-    await supa.from('config_app').upsert({ key: 'landing_' + id, value: String(val) }, { onConflict: 'key' });
+    await supa.from('config_app').upsert({ clave: 'landing_' + id, valor: String(val) }, { onConflict: 'clave' });
   } catch(e) {}
   showToast(val ? 'Botón activado ✓' : 'Botón desactivado');
 }
@@ -838,7 +838,7 @@ async function toggleFamiliaBtn(id, val) {
   fbtnConfig[id] = val;
   renderCtrlPanel();
   try {
-    await supa.from('config_app').upsert({ key: 'landing_' + id, value: String(val) }, { onConflict: 'key' });
+    await supa.from('config_app').upsert({ clave: 'landing_' + id, valor: String(val) }, { onConflict: 'clave' });
   } catch(e) {}
   showToast(val ? 'Botón activado ✓' : 'Botón desactivado');
 }
@@ -994,12 +994,12 @@ const FAMILIA_MENU_ITEMS = [
 
 async function loadFamiliaMenuConfig() {
   try {
-    const { data, error } = await supa.from('config_app').select('key,value').like('key', 'landing_%');
+    const { data, error } = await supa.from('config_app').select('clave,valor').like('key', 'landing_%');
     if (error) throw error;
     if (data && data.length > 0) {
       data.forEach(row => {
-        const k = row.key.replace('landing_', '');
-        if (k in fbtnConfig) fbtnConfig[k] = row.value === 'true' || row.value === true;
+        const k = row.clave.replace('landing_', '');
+        if (k in fbtnConfig) fbtnConfig[k] = row.valor === 'true' || row.valor === true;
       });
     } else {
       // Sin config guardada: mostrar todo
