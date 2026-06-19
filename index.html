@@ -792,6 +792,23 @@ function renderPasajeroGrid() {
 /* ============================================================
    PANEL DE CONTROL — toggles para coordi
    ============================================================ */
+async function saveConfig(clave, valor) {
+  // Intenta UPDATE primero
+  const { data: upData, error: upErr } = await supa
+    .from('config_app')
+    .update({ valor })
+    .eq('clave', clave)
+    .select();
+  if (upErr) throw upErr;
+  // Si no actualizó ninguna fila, hace INSERT
+  if (!upData || upData.length === 0) {
+    const { error: inErr } = await supa
+      .from('config_app')
+      .insert({ clave, valor });
+    if (inErr) throw inErr;
+  }
+}
+
 async function loadBtnConfig() {
   try {
     const { data, error } = await supa.from('config_app').select('clave,valor').like('key', 'landing_%');
@@ -805,11 +822,10 @@ async function loadBtnConfig() {
       });
     } else {
       // Primera vez: no hay nada guardado → insertar todos como true
-      const allBtns = [
-        ...PASAJERO_BTNS.map(b => ({ clave: 'landing_' + b.id, valor: 1 })),
-        ...FAMILIA_BTNS.map(b => ({ clave: 'landing_' + b.id, valor: 1 }))
-      ];
-      await supa.from('config_app').upsert(allBtns, { onConflict: 'clave' });
+      // Primera vez: guardar todos como visibles
+      for (const b of [...PASAJERO_BTNS, ...FAMILIA_BTNS]) {
+        await saveConfig('landing_' + b.id, 1);
+      }
       PASAJERO_BTNS.forEach(b => btnConfig[b.id] = true);
       FAMILIA_BTNS.forEach(b => fbtnConfig[b.id] = true);
     }
@@ -829,8 +845,8 @@ async function toggleBtn(id, val) {
   renderPasajeroGrid();
   renderCtrlPanel();
   try {
-    await supa.from('config_app').upsert({ clave: 'landing_' + id, valor: val ? 1 : 0 }, { onConflict: 'clave' });
-  } catch(e) {}
+    await saveConfig('landing_' + id, val ? 1 : 0);
+  } catch(e) { console.error('toggleBtn error:', e); }
   showToast(val ? 'Botón activado ✓' : 'Botón desactivado');
 }
 
@@ -838,8 +854,8 @@ async function toggleFamiliaBtn(id, val) {
   fbtnConfig[id] = val;
   renderCtrlPanel();
   try {
-    await supa.from('config_app').upsert({ clave: 'landing_' + id, valor: val ? 1 : 0 }, { onConflict: 'clave' });
-  } catch(e) {}
+    await saveConfig('landing_' + id, val ? 1 : 0);
+  } catch(e) { console.error('toggleFamiliaBtn error:', e); }
   showToast(val ? 'Botón activado ✓' : 'Botón desactivado');
 }
 
