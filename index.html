@@ -520,29 +520,34 @@
             </div>
           </div>
 
-          <!-- Feedback libre -->
+          <!-- Feedback libre (viene de la sección anterior) -->
           <div class="survey-q">
             <span class="q-label">Contanos todo 💬</span>
             <p style="font-size:.8rem;color:var(--muted);margin-bottom:8px;">Tu opinión del viaje, lo que sentiste, lo que viviste. Podés extenderte todo lo que quieras.</p>
             <textarea id="feedbackLibre" placeholder="Escribí todo lo que quieras contar sobre el viaje…" rows="5"></textarea>
           </div>
 
-          <!-- Lo mejor -->
+        <div class="survey-wrap" id="surveyForm">
+
+          <!-- Nombre -->
           <div class="survey-q">
-            <span class="q-label">¿Qué fue lo mejor del viaje? (elegí hasta 3)</span>
-            <div class="tag-wrap" id="tagsMejor">
-              <button class="tag-btn" type="button" data-v="las excursiones">⛷️ Las excursiones</button>
-              <button class="tag-btn" type="button" data-v="las noches">🎉 Las noches</button>
-              <button class="tag-btn" type="button" data-v="el grupo">🤝 El grupo</button>
-              <button class="tag-btn" type="button" data-v="la comida">🍽️ La comida</button>
-              <button class="tag-btn" type="button" data-v="el paisaje">🏔️ El paisaje</button>
-              <button class="tag-btn" type="button" data-v="los coordis">💛 Los coordis</button>
-              <button class="tag-btn" type="button" data-v="el hotel">🏨 El hotel</button>
-              <button class="tag-btn" type="button" data-v="todo">✨ ¡Todo!</button>
+            <span class="q-label">Tu nombre</span>
+            <input type="text" id="encuestaNombre" placeholder="¿Cómo te llamás?" autocomplete="given-name" style="width:100%;font-family:'Outfit',sans-serif;font-size:1rem;padding:13px 15px;border:1.5px solid var(--line);border-radius:12px;background:rgba(255,255,255,.04);color:var(--text);transition:border-color .15s,box-shadow .15s;">
+          </div>
+
+          <!-- Estrellas -->
+          <div class="survey-q">
+            <span class="q-label">¿Cuántas estrellas le das al viaje?</span>
+            <div class="stars" id="starsRow" role="group" aria-label="Calificación">
+              <span class="star" data-v="1" role="button" tabindex="0" aria-label="1 estrella">★</span>
+              <span class="star" data-v="2" role="button" tabindex="0" aria-label="2 estrellas">★</span>
+              <span class="star" data-v="3" role="button" tabindex="0" aria-label="3 estrellas">★</span>
+              <span class="star" data-v="4" role="button" tabindex="0" aria-label="4 estrellas">★</span>
+              <span class="star" data-v="5" role="button" tabindex="0" aria-label="5 estrellas">★</span>
             </div>
           </div>
 
-          <!-- Volvería -->
+          <!-- Feedback libre -->
           <div class="survey-q">
             <span class="q-label">¿Lo recomendarías a otros?</span>
             <div class="option-grid" id="optRecomendar">
@@ -655,6 +660,12 @@
         <a class="access" href="/mensaje_whatsapp.html">
           <span class="dot"></span>
           <span class="txt"><b>Mensajes de WhatsApp</b><span>Generador de mensajes diarios</span></span>
+          <span class="arrow">→</span>
+        </a>
+
+        <a class="access" id="btnVerEncuestas" href="/encuestas.html">
+          <span class="dot"></span>
+          <span class="txt"><b>Encuestas · Mi experiencia</b><span id="encuestasCount">Ver respuestas</span></span>
           <span class="arrow">→</span>
         </a>
 
@@ -871,9 +882,12 @@ document.getElementById('optRecomendar').addEventListener('click', e => {
 
 // Enviar encuesta
 document.getElementById('enviarEncuesta').addEventListener('click', async () => {
+  const nombre = document.getElementById('encuestaNombre').value.trim();
+  if (!nombre) { document.getElementById('errorEncuesta').textContent = 'Escribí tu nombre antes de enviar.'; return; }
   if (!surveyRating) { document.getElementById('errorEncuesta').textContent = 'Dale una calificación con estrellas antes de enviar.'; return; }
   document.getElementById('errorEncuesta').textContent = '';
   const payload = {
+    nombre: document.getElementById('encuestaNombre').value.trim(),
     estrellas: surveyRating,
     feedback_libre: document.getElementById('feedbackLibre').value.trim(),
     lo_mejor: surveyMejor.join(', '),
