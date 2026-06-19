@@ -83,7 +83,7 @@ select option{background:#1a2224;}
 <div class="container">
   <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
     <p class="section-title" style="margin:0;">Fichas recibidas</p>
-    <button class="btn btn-outline" id="btnDescTodo" type="button" style="width:auto;padding:8px 16px;font-size:.82rem;">⬇️ Abrir todas</button>
+    <button class="btn btn-outline" id="btnDescTodo" type="button" style="width:auto;padding:8px 16px;font-size:.82rem;">⬇️ Descargar todo</button>
   </div>
   <div class="search-bar">
     <span class="si">🔍</span>
@@ -128,8 +128,18 @@ function filterFichas(){
 
 document.getElementById('btnDescTodo').addEventListener('click',()=>{
   if(!allFichas.length){showToast('No hay fichas aún.');return;}
-  allFichas.forEach((f,i)=>setTimeout(()=>window.open(f.url_pdf,'_blank'),i*400));
-  showToast(`Abriendo ${allFichas.length} fichas…`);
+  allFichas.forEach((f,i)=>{
+    setTimeout(()=>{
+      const a=document.createElement('a');
+      a.href=f.url_pdf;
+      a.download=f.nombre_pasajero+'.pdf';
+      a.target='_blank';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    },i*600);
+  });
+  showToast(`Descargando ${allFichas.length} fichas…`);
 });
 
 loadFichas();
