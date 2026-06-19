@@ -676,7 +676,7 @@
 const COORDI_USER = "coordi";
 const COORDI_PASS = "Wakeupcoordi26!";
 const PASS_PASAJERO = "wuegresados26!";
-const PASS_FAMILIA  = "wuefamilias26!";
+const PASS_FAMILIA  = "wufamilias26!";
 
 /* ============================================================
    SUPABASE
@@ -800,14 +800,14 @@ async function loadBtnConfig() {
       // Hay config guardada — aplicarla
       data.forEach(row => {
         const k = row.clave.replace('landing_', '');
-        if (k in btnConfig) btnConfig[k] = row.valor === 'true' || row.valor === true;
-        if (k in fbtnConfig) fbtnConfig[k] = row.valor === 'true' || row.valor === true;
+        if (k in btnConfig) btnConfig[k] = row.valor == 1;
+        if (k in fbtnConfig) fbtnConfig[k] = row.valor == 1;
       });
     } else {
       // Primera vez: no hay nada guardado → insertar todos como true
       const allBtns = [
-        ...PASAJERO_BTNS.map(b => ({ clave: 'landing_' + b.id, valor: 'true' })),
-        ...FAMILIA_BTNS.map(b => ({ clave: 'landing_' + b.id, valor: 'true' }))
+        ...PASAJERO_BTNS.map(b => ({ clave: 'landing_' + b.id, valor: 1 })),
+        ...FAMILIA_BTNS.map(b => ({ clave: 'landing_' + b.id, valor: 1 }))
       ];
       await supa.from('config_app').upsert(allBtns, { onConflict: 'clave' });
       PASAJERO_BTNS.forEach(b => btnConfig[b.id] = true);
@@ -829,7 +829,7 @@ async function toggleBtn(id, val) {
   renderPasajeroGrid();
   renderCtrlPanel();
   try {
-    await supa.from('config_app').upsert({ clave: 'landing_' + id, valor: String(val) }, { onConflict: 'clave' });
+    await supa.from('config_app').upsert({ clave: 'landing_' + id, valor: val ? 1 : 0 }, { onConflict: 'clave' });
   } catch(e) {}
   showToast(val ? 'Botón activado ✓' : 'Botón desactivado');
 }
@@ -838,7 +838,7 @@ async function toggleFamiliaBtn(id, val) {
   fbtnConfig[id] = val;
   renderCtrlPanel();
   try {
-    await supa.from('config_app').upsert({ clave: 'landing_' + id, valor: String(val) }, { onConflict: 'clave' });
+    await supa.from('config_app').upsert({ clave: 'landing_' + id, valor: val ? 1 : 0 }, { onConflict: 'clave' });
   } catch(e) {}
   showToast(val ? 'Botón activado ✓' : 'Botón desactivado');
 }
@@ -999,7 +999,7 @@ async function loadFamiliaMenuConfig() {
     if (data && data.length > 0) {
       data.forEach(row => {
         const k = row.clave.replace('landing_', '');
-        if (k in fbtnConfig) fbtnConfig[k] = row.valor === 'true' || row.valor === true;
+        if (k in fbtnConfig) fbtnConfig[k] = row.valor == 1;
       });
     } else {
       // Sin config guardada: mostrar todo
