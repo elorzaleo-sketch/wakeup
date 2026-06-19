@@ -456,7 +456,7 @@ function show(id){
 function goMenu(){ show('viewMenu'); }
 
 // Init
-if(lsGet(SESS_KEY)==='1'){ renderMenu(); show('viewMenu'); }
+if(lsGet(SESS_KEY)==='1'){ loadFamiliaConfig(); show('viewMenu'); }
 
 /* ── LOGIN ── */
 function attemptLogin(){
@@ -464,7 +464,7 @@ function attemptLogin(){
   if(p === PASS){
     lsSet(SESS_KEY,'1');
     document.getElementById('loginError').textContent='';
-    renderMenu();
+    loadFamiliaConfig();
     show('viewMenu');
   } else {
     document.getElementById('loginError').textContent='Clave incorrecta.';
@@ -485,10 +485,22 @@ document.getElementById('logoutBtn').addEventListener('click', ()=>{
 });
 
 /* ── MENÚ ── */
+async function loadFamiliaConfig(){
+  try {
+    const { data } = await supa.from('config_app').select('key,value').like('key', 'landing_fbtn%');
+    if(data) data.forEach(row=>{
+      const k = row.key.replace('landing_','');
+      const btn = MENU_BTNS.find(b=>b.id===k);
+      if(btn) btn.visible = (row.value==='true'||row.value===true);
+    });
+  } catch(e) { /* silencioso */ }
+  renderMenu();
+}
+
 function renderMenu(){
   const grid = document.getElementById('menuGrid');
   grid.innerHTML = '';
-  MENU_BTNS.forEach(b=>{
+  MENU_BTNS.filter(b=>b.visible!==false).forEach(b=>{
     if(b.type==='download'){
       const a = document.createElement('a');
       a.className=`action-card ${b.color}`;
