@@ -600,11 +600,7 @@
         <h2 class="panel-head">Familias 👪</h2>
         <p class="panel-sub">Información y documentación del viaje.</p>
         <div class="action-grid" id="gridFamilia">
-          <!-- próximamente -->
-          <div style="text-align:center;padding:30px 0;color:var(--muted);font-size:.9rem;">
-            <div style="font-size:1.8rem;margin-bottom:10px;">🔜</div>
-            Esta sección estará disponible próximamente.
-          </div>
+          <!-- generado por JS según config -->
         </div>
         <button class="back" id="backFromSectionFamilia" type="button">← Salir</button>
       </section>
@@ -680,7 +676,7 @@
 const COORDI_USER = "coordi";
 const COORDI_PASS = "Wakeupcoordi26!";
 const PASS_PASAJERO = "wuegresados26!";
-const PASS_FAMILIA  = "wuefamilias26!";
+const PASS_FAMILIA  = "wufamilias26!";
 
 /* ============================================================
    SUPABASE
@@ -967,6 +963,45 @@ document.querySelectorAll('.tip-toggle').forEach(btn => {
 });
 
 /* ============================================================
+   FAMILIA MENU CONFIG (para el index)
+   ============================================================ */
+const FAMILIA_MENU_ITEMS = [
+  { id:"fbtn_descargar_ficha", label:"Descargar ficha de salud", icon:"⬇️", sub:"Descargá el formulario para completar", color:"card-cyan",    type:"link", href:"/familias.html#descargar" },
+  { id:"fbtn_cargar_ficha",    label:"Cargar ficha de salud",    icon:"📤", sub:"Subí la ficha completada y firmada",  color:"card-magenta", type:"link", href:"/familias.html#cargar" },
+  { id:"fbtn_doc_salida",      label:"Documentación para la salida", icon:"📋", sub:"Todo lo que necesitás tener listo", color:"card-green",   type:"link", href:"/familias.html#docsalida" },
+  { id:"fbtn_resumen",         label:"Resumen del día",          icon:"📸", sub:"Fotos, videos y novedades del viaje", color:"card-cyan",    type:"link", href:"/familias.html#resumen" },
+  { id:"fbtn_encuesta_fam",    label:"Tu opinión",               icon:"💬", sub:"Contanos cómo viviste el viaje",      color:"card-magenta", type:"link", href:"/familias.html#encuesta" },
+];
+
+async function loadFamiliaMenuConfig() {
+  try {
+    const { data } = await supa.from('config_app').select('key,value').like('key', 'landing_fbtn%');
+    if (data) data.forEach(row => {
+      const k = row.key.replace('landing_', '');
+      if (k in fbtnConfig) fbtnConfig[k] = row.value === 'true' || row.value === true;
+    });
+  } catch(e) { /* silencioso */ }
+  renderFamiliaGrid();
+}
+
+function renderFamiliaGrid() {
+  const grid = document.getElementById('gridFamilia');
+  grid.innerHTML = '';
+  const visibles = FAMILIA_MENU_ITEMS.filter(b => fbtnConfig[b.id] !== false);
+  if (!visibles.length) {
+    grid.innerHTML = '<p style="color:var(--muted);text-align:center;padding:20px 0;">No hay secciones habilitadas aún.</p>';
+    return;
+  }
+  visibles.forEach(b => {
+    const a = document.createElement('a');
+    a.className = `action-card ${b.color}`;
+    a.href = b.href;
+    a.innerHTML = `<span class="ac-icon">${b.icon}</span><span class="ac-txt"><span class="ac-title">${b.label}</span><span class="ac-sub">${b.sub}</span></span><span class="ac-arrow">→</span>`;
+    grid.appendChild(a);
+  });
+}
+
+/* ============================================================
    NAVEGACIÓN DE VISTAS
    ============================================================ */
 const COORDI_KEY = "wakeup_coordi_session";
@@ -994,12 +1029,12 @@ function route() {
     return;
   }
   if (hash === '#pasajero') {
-    if (lsGet(PASAJERO_KEY) === '1') { renderPasajeroGrid(); show('viewPasajero'); }
+    if (lsGet(PASAJERO_KEY) === '1') { loadBtnConfig().then(() => show('viewPasajero')); }
     else show('viewLoginPasajero');
     return;
   }
   if (hash === '#familia') {
-    lsGet(FAMILIA_KEY) === '1' ? show('viewFamilia') : show('viewLoginFamilia');
+    lsGet(FAMILIA_KEY) === '1' ? (loadFamiliaMenuConfig().then(()=>show('viewFamilia'))) : show('viewLoginFamilia');
     return;
   }
   show('viewLanding');
@@ -1028,8 +1063,7 @@ function attemptPasajero() {
   if (p === PASS_PASAJERO) {
     lsSet(PASAJERO_KEY,'1');
     document.getElementById('errorPasajero').textContent = '';
-    renderPasajeroGrid();
-    show('viewPasajero');
+    loadBtnConfig().then(() => show('viewPasajero'));
   } else {
     document.getElementById('errorPasajero').textContent = 'Clave incorrecta.';
     document.getElementById('passPasajero').focus();
@@ -1044,7 +1078,7 @@ function attemptFamilia() {
   if (p === PASS_FAMILIA) {
     lsSet(FAMILIA_KEY,'1');
     document.getElementById('errorFamilia').textContent = '';
-    show('viewFamilia');
+    loadFamiliaMenuConfig().then(() => show('viewFamilia'));
   } else {
     document.getElementById('errorFamilia').textContent = 'Clave incorrecta.';
     document.getElementById('passFamilia').focus();
