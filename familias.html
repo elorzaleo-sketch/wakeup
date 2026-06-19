@@ -158,12 +158,22 @@ textarea{resize:vertical;min-height:80px;}
 .star:hover{transform:scale(1.15);}
 
 /* ── LIGHTBOX ── */
-#lightbox{display:none;position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:999;
+#lightbox{display:none;position:fixed;inset:0;background:rgba(0,0,0,.94);z-index:999;
   align-items:center;justify-content:center;padding:20px;}
 #lightbox.open{display:flex;}
-#lightbox img{max-width:100%;max-height:90dvh;border-radius:12px;object-fit:contain;}
+#lightbox img{max-width:100%;max-height:85dvh;border-radius:10px;object-fit:contain;user-select:none;}
 #lightbox .lb-close{position:fixed;top:16px;right:16px;background:rgba(255,255,255,.15);border:none;
-  color:#fff;font-size:1.5rem;width:40px;height:40px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+  color:#fff;font-size:1.5rem;width:40px;height:40px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:2;}
+.lb-nav{position:fixed;top:50%;transform:translateY(-50%);background:rgba(255,255,255,.12);border:none;
+  color:#fff;font-size:2.2rem;width:48px;height:64px;border-radius:10px;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;transition:background .15s;z-index:2;}
+.lb-nav:hover{background:rgba(255,255,255,.25);}
+.lb-prev{left:10px;}
+.lb-next{right:10px;}
+.lb-nav:disabled{opacity:.2;cursor:default;}
+.lb-counter{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);
+  color:rgba(255,255,255,.6);font-size:.82rem;background:rgba(0,0,0,.4);
+  padding:4px 12px;border-radius:99px;}
 
 /* ── TOAST ── */
 .toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(80px);
@@ -346,13 +356,15 @@ textarea{resize:vertical;min-height:80px;}
 
 
 
+
     <div class="survey-q">
-      <span class="q-label">¿Tu hijo/a volvió contento/a?</span>
-      <div class="option-grid" id="optContento">
-        <button class="opt-btn" type="button" data-v="sí, muy contento">Sí, muy contento/a 🎉</button>
-        <button class="opt-btn" type="button" data-v="sí, contento">Sí, contento/a</button>
-        <button class="opt-btn" type="button" data-v="más o menos">Más o menos</button>
-        <button class="opt-btn" type="button" data-v="no tanto">No tanto</button>
+      <span class="q-label">¿Cómo calificarías la organización general del viaje?</span>
+      <div class="stars" id="starsOrg" role="group">
+        <span class="star" data-v="1" role="button" tabindex="0">★</span>
+        <span class="star" data-v="2" role="button" tabindex="0">★</span>
+        <span class="star" data-v="3" role="button" tabindex="0">★</span>
+        <span class="star" data-v="4" role="button" tabindex="0">★</span>
+        <span class="star" data-v="5" role="button" tabindex="0">★</span>
       </div>
     </div>
 
@@ -397,7 +409,10 @@ textarea{resize:vertical;min-height:80px;}
 <!-- Lightbox -->
 <div id="lightbox">
   <button class="lb-close" id="lbClose">✕</button>
+  <button class="lb-nav lb-prev" id="lbPrev">‹</button>
   <img id="lbImg" src="" alt="">
+  <button class="lb-nav lb-next" id="lbNext">›</button>
+  <div class="lb-counter" id="lbCounter"></div>
 </div>
 
 <!-- Toast -->
@@ -669,7 +684,9 @@ async function loadResumenes(){
     const el = document.createElement('div');
     el.className='resumen-day';
     const bodyId=`rb-${r.id}`;
-    const fotosHTML = r.fotos?.length ? `<div class="foto-grid">${r.fotos.map(url=>`<img src="${url}" alt="foto" onclick="openLightbox('${url}')" loading="lazy">`).join('')}</div>` : '';
+    const _fotos = r.fotos || [];
+    window['_lb_'+r.id] = _fotos;
+    const fotosHTML = _fotos.length ? `<div class="foto-grid">${_fotos.map(url=>`<img src="${url}" alt="foto" onclick="openLightbox('${url}',window['_lb_'+'${r.id}'])" loading="lazy">`).join('')}</div>` : '';
     const videosHTML = r.videos?.length ? r.videos.map(url=>`<div class="video-wrap"><video controls playsinline preload="metadata" src="${url}"></video></div>`).join('') : '';
 
     el.innerHTML=`
@@ -740,7 +757,7 @@ async function addComment(resumenId){
 /* ============================================================
    ENCUESTA FAMILIAS
    ============================================================ */
-let efEntero='', efContento='', efRecFam='';
+let efStarsOrg=0, efEntero='', efRecFam='';
 
 function setupStars(groupId, setFn){
   const row = document.getElementById(groupId);
@@ -759,7 +776,7 @@ function setupOpts(groupId, setFn){
   });
 }
 setupOpts('optEntero',  v=>efEntero=v);
-setupOpts('optContento',v=>efContento=v);
+setupStars('starsOrg', v=>efStarsOrg=v);
 setupOpts('optRecFam',  v=>efRecFam=v);
 
 document.getElementById('btnEnviarEncuestaFam').addEventListener('click', async ()=>{
@@ -789,14 +806,45 @@ document.getElementById('btnEnviarEncuestaFam').addEventListener('click', async 
 });
 
 /* ============================================================
-   LIGHTBOX
+   LIGHTBOX CON NAVEGACIÓN
    ============================================================ */
-function openLightbox(url){
-  document.getElementById('lbImg').src=url;
+let lbUrls=[], lbIdx=0;
+
+function openLightbox(url, urls){
+  lbUrls = urls || [url];
+  lbIdx = lbUrls.indexOf(url);
+  if(lbIdx < 0) lbIdx = 0;
+  showLbImage();
   document.getElementById('lightbox').classList.add('open');
 }
+
+function showLbImage(){
+  document.getElementById('lbImg').src = lbUrls[lbIdx];
+  document.getElementById('lbCounter').textContent = lbUrls.length > 1 ? `${lbIdx+1} / ${lbUrls.length}` : '';
+  document.getElementById('lbPrev').disabled = lbIdx === 0;
+  document.getElementById('lbNext').disabled = lbIdx === lbUrls.length - 1;
+}
+
+document.getElementById('lbPrev').addEventListener('click', e=>{ e.stopPropagation(); if(lbIdx>0){lbIdx--;showLbImage();} });
+document.getElementById('lbNext').addEventListener('click', e=>{ e.stopPropagation(); if(lbIdx<lbUrls.length-1){lbIdx++;showLbImage();} });
 document.getElementById('lbClose').addEventListener('click',()=>document.getElementById('lightbox').classList.remove('open'));
 document.getElementById('lightbox').addEventListener('click',e=>{ if(e.target===e.currentTarget) e.currentTarget.classList.remove('open'); });
+
+// Swipe táctil
+let lbTouchX=0;
+document.getElementById('lightbox').addEventListener('touchstart',e=>{ lbTouchX=e.touches[0].clientX; },{passive:true});
+document.getElementById('lightbox').addEventListener('touchend',e=>{
+  const dx = e.changedTouches[0].clientX - lbTouchX;
+  if(Math.abs(dx)>50){ if(dx<0&&lbIdx<lbUrls.length-1){lbIdx++;showLbImage();} else if(dx>0&&lbIdx>0){lbIdx--;showLbImage();} }
+},{passive:true});
+
+// Teclado
+document.addEventListener('keydown',e=>{
+  if(!document.getElementById('lightbox').classList.contains('open')) return;
+  if(e.key==='ArrowRight'&&lbIdx<lbUrls.length-1){lbIdx++;showLbImage();}
+  if(e.key==='ArrowLeft'&&lbIdx>0){lbIdx--;showLbImage();}
+  if(e.key==='Escape') document.getElementById('lightbox').classList.remove('open');
+});
 
 /* ============================================================
    TOAST
