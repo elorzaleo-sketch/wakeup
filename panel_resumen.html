@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Resumen del día · Coordis</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+<style>
+:root{--cyan:#5DB4C9;--magenta:#F11D8C;--green:#199432;--ink:#080808;--text:#fff;--muted:#98a6aa;--line:rgba(255,255,255,.13);--card:rgba(255,255,255,.04);--card2:rgba(255,255,255,.07);}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Outfit',sans-serif;color:var(--text);background:var(--ink);min-height:100dvh;
+  background-image:radial-gradient(60% 40% at 50% 0%,rgba(93,180,201,.08) 0%,transparent 60%);}
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid rgba(255,255,255,.1);}
+.topbar h1{font-family:'Bricolage Grotesque',sans-serif;font-size:1.1rem;font-weight:700;}
+.topbar a{color:var(--muted);font-size:.83rem;text-decoration:none;}
+.topbar a:hover{color:var(--text);}
+.container{max-width:700px;margin:0 auto;padding:20px 20px 80px;}
+.field{margin-bottom:14px;}
+label{display:block;font-size:.8rem;font-weight:600;margin:0 0 5px;color:var(--muted);}
+input[type=text],input[type=date],textarea,select{width:100%;font-family:'Outfit',sans-serif;font-size:.95rem;padding:12px 14px;border:1.5px solid var(--line);border-radius:11px;background:rgba(255,255,255,.04);color:var(--text);transition:border-color .15s;}
+input::placeholder,textarea::placeholder{color:#5e6b6f;}
+input:focus,textarea:focus,select:focus{outline:none;border-color:var(--cyan);box-shadow:0 0 0 3px rgba(93,180,201,.15);}
+textarea{resize:vertical;}
+select option{background:#1a2224;}
+.section-title{font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.14em;color:var(--muted);margin:20px 0 10px;}
+.btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;cursor:pointer;font-family:'Outfit',sans-serif;font-weight:600;font-size:.97rem;padding:14px 20px;border-radius:12px;border:none;color:#fff;transition:transform .15s,box-shadow .2s;margin-top:6px;}
+.btn-cyan{background:var(--cyan);box-shadow:0 10px 24px -8px rgba(93,180,201,.5);}
+.btn-cyan:hover{transform:translateY(-1px);}
+.btn-outline{background:transparent;border:1.5px solid var(--line);color:var(--muted);box-shadow:none;}
+.btn-outline:hover{border-color:var(--cyan);color:var(--text);transform:none;}
+.btn:disabled{opacity:.5;cursor:not-allowed;transform:none!important;}
+.emoji-bar{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0;}
+.emoji-btn{padding:5px 9px;border-radius:8px;border:1px solid var(--line);background:var(--card);cursor:pointer;font-size:1.1rem;transition:background .15s;}
+.emoji-btn:hover{background:var(--card2);}
+.upload-zone{border:2px dashed var(--line);border-radius:12px;padding:22px;text-align:center;cursor:pointer;position:relative;transition:border-color .2s,background .2s;}
+.upload-zone:hover,.upload-zone.over{border-color:var(--cyan);background:rgba(93,180,201,.04);}
+.upload-zone input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;}
+.upload-zone .uz-ico{font-size:1.8rem;margin-bottom:6px;}
+.upload-zone p{font-size:.85rem;color:var(--muted);}
+.upload-zone small{font-size:.75rem;color:#5e6b6f;}
+.thumb-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:10px;}
+.thumb{position:relative;aspect-ratio:1;border-radius:8px;overflow:hidden;border:1px solid var(--line);}
+.thumb img,.thumb video{width:100%;height:100%;object-fit:cover;}
+.thumb .rm{position:absolute;top:3px;right:3px;background:rgba(0,0,0,.7);border:none;color:#fff;width:20px;height:20px;border-radius:50%;font-size:.7rem;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+.progress-bar{height:4px;background:rgba(255,255,255,.08);border-radius:99px;margin:8px 0;overflow:hidden;}
+.progress-fill{height:100%;background:var(--cyan);border-radius:99px;transition:width .3s;width:0%;}
+.resumen-item{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px;margin-bottom:8px;}
+.resumen-item .ri-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;flex-wrap:wrap;gap:6px;}
+.resumen-item .ri-fecha{font-weight:600;font-size:.92rem;}
+.ri-btn{padding:5px 12px;border-radius:8px;border:1.5px solid var(--line);background:transparent;color:var(--muted);font-family:'Outfit',sans-serif;font-size:.78rem;font-weight:600;cursor:pointer;}
+.ri-btn:hover{border-color:var(--cyan);color:var(--text);}
+.resumen-item .ri-preview{font-size:.84rem;color:var(--muted);line-height:1.5;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;}
+.search-bar{position:relative;margin-bottom:12px;}
+.search-bar input{padding-left:36px;}
+.search-bar .si{position:absolute;left:11px;top:50%;transform:translateY(-50%);color:var(--muted);}
+.ficha-row{display:flex;align-items:center;gap:12px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-bottom:8px;}
+.ficha-row .fr-ico{font-size:1.2rem;flex:0 0 auto;}
+.ficha-row .fr-txt{flex:1;min-width:0;}
+.ficha-row .fr-nombre{font-weight:600;font-size:.92rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.ficha-row .fr-fecha{font-size:.74rem;color:var(--muted);margin-top:2px;}
+.ficha-row a{color:var(--cyan);font-size:.8rem;font-weight:600;text-decoration:none;white-space:nowrap;}
+.ficha-row a:hover{text-decoration:underline;}
+.ef-card{background:var(--card);border:1px solid var(--line);border-radius:13px;padding:16px;margin-bottom:10px;}
+.ef-nombre{font-weight:700;font-size:.95rem;margin-bottom:10px;}
+.ef-field{margin-bottom:8px;}
+.ef-label{font-size:.7rem;font-weight:600;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:2px;}
+.ef-val{font-size:.88rem;}
+.toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(80px);background:#1e2e31;border:1px solid rgba(93,180,201,.3);border-radius:12px;padding:10px 18px;font-size:.86rem;color:var(--text);transition:transform .3s cubic-bezier(.34,1.56,.64,1),opacity .3s;opacity:0;z-index:99;pointer-events:none;}
+.toast.show{transform:translateX(-50%) translateY(0);opacity:1;}
+.error{color:#ff5fae;font-size:.82rem;margin:8px 0;}
+@media(max-width:400px){.thumb-grid{grid-template-columns:repeat(3,1fr);}}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <h1>📸 Resumen del día</h1>
+  <a href="/#accesos">← Volver</a>
+</div>
+<div class="container">
+
+  <p class="section-title">Crear / editar resumen</p>
+
+  <div class="field">
+    <label>Día del viaje</label>
+    <select id="rdFecha">
+      <option value="">— Seleccioná el día —</option>
+      <option value="2026-08-15">Día 1 · Sábado 15 de agosto</option>
+      <option value="2026-08-16">Día 2 · Domingo 16 de agosto</option>
+      <option value="2026-08-17">Día 3 · Lunes 17 de agosto</option>
+      <option value="2026-08-18">Día 4 · Martes 18 de agosto</option>
+      <option value="2026-08-19">Día 5 · Miércoles 19 de agosto</option>
+      <option value="2026-08-20">Día 6 · Jueves 20 de agosto</option>
+      <option value="2026-08-21">Día 7 · Viernes 21 de agosto</option>
+      <option value="2026-08-22">Día 8 · Sábado 22 de agosto</option>
+    </select>
+  </div>
+
+  <div class="field">
+    <label>Título del día (opcional)</label>
+    <input type="text" id="rdTitulo" placeholder="Ej: ¡Primer día en la nieve! ❄️">
+  </div>
+
+  <div class="field">
+    <label>Texto del resumen</label>
+    <div class="emoji-bar" id="emojiBar">
+      <button class="emoji-btn" type="button" data-e="❄️">❄️</button>
+      <button class="emoji-btn" type="button" data-e="🏔️">🏔️</button>
+      <button class="emoji-btn" type="button" data-e="⛷️">⛷️</button>
+      <button class="emoji-btn" type="button" data-e="🎿">🎿</button>
+      <button class="emoji-btn" type="button" data-e="🌟">🌟</button>
+      <button class="emoji-btn" type="button" data-e="🎉">🎉</button>
+      <button class="emoji-btn" type="button" data-e="❤️">❤️</button>
+      <button class="emoji-btn" type="button" data-e="🔥">🔥</button>
+      <button class="emoji-btn" type="button" data-e="😄">😄</button>
+      <button class="emoji-btn" type="button" data-e="🤩">🤩</button>
+      <button class="emoji-btn" type="button" data-e="🌨️">🌨️</button>
+      <button class="emoji-btn" type="button" data-e="🎭">🎭</button>
+    </div>
+    <textarea id="rdTexto" rows="6" placeholder="Contá qué pasó hoy en el viaje…"></textarea>
+  </div>
+
+  <div class="field">
+    <label>Fotos (máx. 10)</label>
+    <div class="upload-zone" id="fotoZone">
+      <input type="file" id="fotoFiles" accept="image/*" multiple capture="environment">
+      <div class="uz-ico">📷</div>
+      <p>Tocá para agregar fotos</p>
+      <small>Hasta 10 fotos · JPG/PNG</small>
+    </div>
+    <div class="thumb-grid" id="fotoThumbs"></div>
+  </div>
+
+  <div class="field">
+    <label>Videos (máx. 2)</label>
+    <div class="upload-zone" id="videoZone">
+      <input type="file" id="videoFiles" accept="video/*" multiple capture="environment">
+      <div class="uz-ico">🎬</div>
+      <p>Tocá para agregar videos</p>
+      <small>Hasta 2 videos · MP4/MOV</small>
+    </div>
+    <div class="thumb-grid" id="videoThumbs"></div>
+  </div>
+
+  <div class="progress-bar" id="rdProgress" style="display:none;"><div class="progress-fill" id="rdFill"></div></div>
+  <p class="error" id="rdError"></p>
+  <button class="btn btn-cyan" id="btnPublicar" type="button">Publicar resumen 🚀</button>
+
+  <p class="section-title" style="margin-top:28px;">Resúmenes publicados</p>
+  <div id="resumenesPublicados"><div style="color:var(--muted);font-size:.88rem;text-align:center;padding:16px;">Cargando…</div></div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+const SUPA_URL="https://mzousqdahqterfawhwsz.supabase.co", SUPA_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im16b3VzcWRhaHF0ZXJmYXdod3N6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA1MTc4MzUsImV4cCI6MjA5NjA5MzgzNX0.EdSlcRdLD75OdYlwtZGLVgL_PGpJysWb_MKvuwGgj5Y";
+const supa=supabase.createClient(SUPA_URL,SUPA_KEY);
+let toastT;
+function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove('show'),2800);}
+</script>
+<script>
+let rdFotos=[],rdVideos=[];
+
+document.getElementById('emojiBar').addEventListener('click',e=>{
+  const btn=e.target.closest('.emoji-btn'); if(!btn) return;
+  const ta=document.getElementById('rdTexto');
+  const pos=ta.selectionStart, v=ta.value;
+  ta.value=v.slice(0,pos)+btn.dataset.e+v.slice(pos);
+  ta.selectionStart=ta.selectionEnd=pos+btn.dataset.e.length;
+  ta.focus();
+});
+
+document.getElementById('fotoFiles').addEventListener('change',e=>addFotos(e.target.files));
+document.getElementById('videoFiles').addEventListener('change',e=>addVideos(e.target.files));
+
+function addFotos(files){
+  rdFotos=[...rdFotos,...Array.from(files).filter(f=>f.type.startsWith('image/'))].slice(0,10);
+  renderThumbs('fotoThumbs',rdFotos,'foto');
+}
+function addVideos(files){
+  rdVideos=[...rdVideos,...Array.from(files).filter(f=>f.type.startsWith('video/'))].slice(0,2);
+  renderThumbs('videoThumbs',rdVideos,'video');
+}
+function renderThumbs(gridId,files,type){
+  const grid=document.getElementById(gridId); grid.innerHTML='';
+  files.forEach((f,i)=>{
+    const url=URL.createObjectURL(f);
+    const div=document.createElement('div'); div.className='thumb';
+    div.innerHTML=type==='foto'
+      ?`<img src="${url}" alt=""><button class="rm" onclick="removeFile('${type}',${i})">✕</button>`
+      :`<video src="${url}" muted playsinline></video><button class="rm" onclick="removeFile('${type}',${i})">✕</button>`;
+    grid.appendChild(div);
+  });
+}
+function removeFile(type,i){
+  if(type==='foto'){rdFotos.splice(i,1);renderThumbs('fotoThumbs',rdFotos,'foto');}
+  else{rdVideos.splice(i,1);renderThumbs('videoThumbs',rdVideos,'video');}
+}
+
+document.getElementById('btnPublicar').addEventListener('click',async()=>{
+  const fecha=document.getElementById('rdFecha').value;
+  const texto=document.getElementById('rdTexto').value.trim();
+  const titulo=document.getElementById('rdTitulo').value.trim();
+  const errEl=document.getElementById('rdError');
+  errEl.textContent='';
+  if(!fecha){errEl.textContent='Seleccioná el día.';return;}
+  if(!texto&&!rdFotos.length){errEl.textContent='Escribí algo o subí al menos una foto.';return;}
+
+  const btn=document.getElementById('btnPublicar');
+  btn.disabled=true; btn.textContent='Publicando…';
+  const prog=document.getElementById('rdProgress'); prog.style.display='block';
+  const fill=document.getElementById('rdFill'); fill.style.width='10%';
+
+  try{
+    const fotoUrls=[],videoUrls=[];
+    const total=rdFotos.length+rdVideos.length;
+    let done=0;
+    for(const f of rdFotos){
+      const name=`${fecha}/${Date.now()}_${f.name.replace(/\s/g,'_')}`;
+      const {error}=await supa.storage.from('resumenes').upload(name,f,{contentType:f.type});
+      if(error) throw error;
+      const {data}=supa.storage.from('resumenes').getPublicUrl(name);
+      fotoUrls.push(data.publicUrl);
+      done++; fill.style.width=`${10+Math.round(done/total*70)}%`;
+    }
+    for(const v of rdVideos){
+      const name=`${fecha}/vid_${Date.now()}_${v.name.replace(/\s/g,'_')}`;
+      const {error}=await supa.storage.from('resumenes').upload(name,v,{contentType:v.type});
+      if(error) throw error;
+      const {data}=supa.storage.from('resumenes').getPublicUrl(name);
+      videoUrls.push(data.publicUrl);
+      done++; fill.style.width=`${10+Math.round(done/total*70)}%`;
+    }
+    fill.style.width='85%';
+    const payload={fecha,titulo:titulo||null,texto:texto||null,fotos:fotoUrls,videos:videoUrls,updated_at:new Date().toISOString()};
+    const {error:dbErr}=await supa.from('resumenes_dia').upsert(payload,{onConflict:'fecha'});
+    if(dbErr) throw dbErr;
+    fill.style.width='100%';
+    showToast('¡Resumen publicado! Las familias ya pueden verlo ✓');
+    document.getElementById('rdFecha').value='';
+    document.getElementById('rdTitulo').value='';
+    document.getElementById('rdTexto').value='';
+    rdFotos=[]; rdVideos=[];
+    document.getElementById('fotoThumbs').innerHTML='';
+    document.getElementById('videoThumbs').innerHTML='';
+    btn.disabled=false; btn.textContent='Publicar resumen 🚀';
+    setTimeout(()=>{prog.style.display='none';fill.style.width='0%';},1000);
+    loadResumenesPublicados();
+  }catch(e){
+    errEl.textContent='Error al publicar: '+e.message;
+    btn.disabled=false; btn.textContent='Publicar resumen 🚀';
+    prog.style.display='none';
+  }
+});
+
+async function loadResumenesPublicados(){
+  const el=document.getElementById('resumenesPublicados');
+  const {data}=await supa.from('resumenes_dia').select('*').order('fecha',{ascending:false});
+  if(!data||!data.length){el.innerHTML='<div style="color:var(--muted);font-size:.86rem;text-align:center;padding:12px;">Aún no hay resúmenes publicados.</div>';return;}
+  el.innerHTML=data.map(r=>`
+    <div class="resumen-item">
+      <div class="ri-head">
+        <span class="ri-fecha">${r.fecha}</span>
+        <div style="display:flex;gap:6px;">
+          <button class="ri-btn" type="button" onclick="editResumen('${r.fecha}')">✏️ Editar</button>
+          <button class="ri-btn" type="button" onclick="deleteResumen('${r.id}','${r.fecha}')" style="color:#ff5fae;">🗑️</button>
+        </div>
+      </div>
+      <div class="ri-preview">${r.texto||'(sin texto)'}</div>
+      <div style="font-size:.74rem;color:var(--muted);margin-top:5px;">${r.fotos?.length||0} fotos · ${r.videos?.length||0} videos</div>
+    </div>`).join('');
+}
+
+function editResumen(fecha){
+  document.getElementById('rdFecha').value=fecha;
+  supa.from('resumenes_dia').select('*').eq('fecha',fecha).single().then(r=>{
+    if(r.data){
+      document.getElementById('rdTitulo').value=r.data.titulo||'';
+      document.getElementById('rdTexto').value=r.data.texto||'';
+      showToast('Editando el resumen del '+fecha+'. Publicá para guardar.');
+      window.scrollTo(0,0);
+    }
+  });
+}
+
+async function deleteResumen(id,fecha){
+  if(!confirm(`¿Eliminar el resumen del ${fecha}?`)) return;
+  await supa.from('resumenes_dia').delete().eq('id',id);
+  showToast('Resumen eliminado');
+  loadResumenesPublicados();
+}
+
+loadResumenesPublicados();
+</script>
+</body>
+</html>

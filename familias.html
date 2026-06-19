@@ -243,9 +243,15 @@ textarea{resize:vertical;min-height:80px;}
   <h2 class="panel-head">📤 Cargar ficha médica</h2>
   <p class="panel-sub">Completá los datos y subí las fotos de la ficha firmada.</p>
 
-  <div class="field">
-    <label for="fichaNombre">Nombre y apellido del pasajero</label>
-    <input type="text" id="fichaNombre" placeholder="Ej: Valentina García" autocomplete="off">
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+    <div class="field" style="margin-bottom:0;">
+      <label for="fichaApellido">Apellido</label>
+      <input type="text" id="fichaApellido" placeholder="Ej: García" autocomplete="off">
+    </div>
+    <div class="field" style="margin-bottom:0;">
+      <label for="fichaNombreInput">Nombre</label>
+      <input type="text" id="fichaNombreInput" placeholder="Ej: Valentina" autocomplete="off">
+    </div>
   </div>
 
   <p class="section-label" style="margin-top:6px;">Foto de la ficha (frente y dorso)</p>
@@ -324,8 +330,8 @@ textarea{resize:vertical;min-height:80px;}
   <div class="survey-wrap" id="encuestaFamForm">
 
     <div class="survey-q">
-      <span class="q-label">Tu nombre y el de tu hijo/a</span>
-      <input type="text" id="efNombre" placeholder="Ej: María García (mamá de Valentina)">
+      <span class="q-label">Nombre de tu hijo/a</span>
+      <input type="text" id="efNombre" placeholder="Ej: Valentina García">
     </div>
 
     <div class="survey-q">
@@ -338,27 +344,7 @@ textarea{resize:vertical;min-height:80px;}
       </div>
     </div>
 
-    <div class="survey-q">
-      <span class="q-label">¿Cómo calificarías la comunicación con los coordis?</span>
-      <div class="stars" id="starsComun" role="group">
-        <span class="star" data-v="1" role="button" tabindex="0">★</span>
-        <span class="star" data-v="2" role="button" tabindex="0">★</span>
-        <span class="star" data-v="3" role="button" tabindex="0">★</span>
-        <span class="star" data-v="4" role="button" tabindex="0">★</span>
-        <span class="star" data-v="5" role="button" tabindex="0">★</span>
-      </div>
-    </div>
 
-    <div class="survey-q">
-      <span class="q-label">¿Cómo calificarías la organización general del viaje?</span>
-      <div class="stars" id="starsOrg" role="group">
-        <span class="star" data-v="1" role="button" tabindex="0">★</span>
-        <span class="star" data-v="2" role="button" tabindex="0">★</span>
-        <span class="star" data-v="3" role="button" tabindex="0">★</span>
-        <span class="star" data-v="4" role="button" tabindex="0">★</span>
-        <span class="star" data-v="5" role="button" tabindex="0">★</span>
-      </div>
-    </div>
 
     <div class="survey-q">
       <span class="q-label">¿Tu hijo/a volvió contento/a?</span>
@@ -568,12 +554,14 @@ function handleFiles(files){
 }
 
 document.getElementById('btnSubirFicha').addEventListener('click', async ()=>{
-  const nombre = document.getElementById('fichaNombre').value.trim();
+  const apellido = document.getElementById('fichaApellido').value.trim();
+  const nombreInput = document.getElementById('fichaNombreInput').value.trim();
+  const nombre = apellido && nombreInput ? apellido + ', ' + nombreInput : '';
   const errEl = document.getElementById('fichaError');
   const succEl = document.getElementById('fichaSuccess');
   errEl.textContent=''; succEl.style.display='none';
 
-  if(!nombre){ errEl.textContent='Escribí el nombre del pasajero.'; return; }
+  if(!apellido || !nombreInput){ errEl.textContent='Completá apellido y nombre del pasajero.'; return; }
   if(!fichaImgs.length){ errEl.textContent='Seleccioná al menos una foto de la ficha.'; return; }
 
   const btn = document.getElementById('btnSubirFicha');
@@ -636,7 +624,8 @@ document.getElementById('btnSubirFicha').addEventListener('click', async ()=>{
     // Reset
     setTimeout(()=>{
       fichaImgs=[]; previewGrid.innerHTML=''; previewGrid.style.display='none';
-      document.getElementById('fichaNombre').value='';
+      document.getElementById('fichaApellido').value='';
+      document.getElementById('fichaNombreInput').value='';
       document.getElementById('fichaFiles').value='';
       btn.disabled=false; btn.innerHTML='Generar PDF y enviar <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="width:17px;height:17px"><path d="M22 2L11 13"/><path d="M22 2 15 22 11 13 2 9l20-7z"/></svg>';
       prog.style.display='none'; fill.style.width='0%';
@@ -751,7 +740,7 @@ async function addComment(resumenId){
 /* ============================================================
    ENCUESTA FAMILIAS
    ============================================================ */
-let efStarsComun=0, efStarsOrg=0, efEntero='', efContento='', efRecFam='';
+let efEntero='', efContento='', efRecFam='';
 
 function setupStars(groupId, setFn){
   const row = document.getElementById(groupId);
@@ -761,8 +750,6 @@ function setupStars(groupId, setFn){
     row.querySelectorAll('.star').forEach(st=>st.classList.toggle('lit',parseInt(st.dataset.v)<=v));
   });
 }
-setupStars('starsComun', v=>efStarsComun=v);
-setupStars('starsOrg',   v=>efStarsOrg=v);
 
 function setupOpts(groupId, setFn){
   document.getElementById(groupId).addEventListener('click', e=>{
@@ -783,8 +770,6 @@ document.getElementById('btnEnviarEncuestaFam').addEventListener('click', async 
 
   const payload={
     nombre, como_se_entero:efEntero,
-    estrellas_comunicacion:efStarsComun||null,
-    estrellas_organizacion:efStarsOrg||null,
     contento:efContento, recomendaria:efRecFam,
     comentario:document.getElementById('efComentario').value.trim(),
     recomendacion:document.getElementById('efRecomendacion').value.trim(),
