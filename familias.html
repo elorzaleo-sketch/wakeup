@@ -421,7 +421,7 @@ textarea{resize:vertical;min-height:80px;}
 /* ============================================================
    CONFIG
    ============================================================ */
-const PASS = "wuefamilias26!";
+const PASS = "wufamilias26!";
 const SESS_KEY = "wakeup_familia_session";
 const SUPA_URL = "https://mzousqdahqterfawhwsz.supabase.co";
 const SUPA_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im16b3VzcWRhaHFlcnRlZmF3aHdzeiIsInJvbGUiOiJhbm9uIiwiaWF0IjoxNzQ0ODM5NjkxLCJleHAiOjIwNjA0MTU2OTF9.RG-TNGwzp7YHr_fcrXtTQ1DMvOD_-4hP2_V71Y1au_I";
@@ -495,7 +495,7 @@ async function loadFamiliaConfig(){
       data.forEach(row=>{
         const k = row.clave.replace('landing_','');
         const btn = MENU_BTNS.find(b=>b.id===k);
-        if(btn) btn.visible = (row.valor==='true'||row.valor===true);
+        if(btn) btn.visible = (row.valor == 1);
       });
     } else {
       // Sin config guardada aún: mostrar todo
