@@ -696,7 +696,7 @@ const FAMILIA_BTNS = [
   { id:"fbtn_encuesta_fam",    label:"Tu opinión",               icon:"💬" },
 ];
 let fbtnConfig = {};
-FAMILIA_BTNS.forEach(b => fbtnConfig[b.id] = true);
+FAMILIA_BTNS.forEach(b => fbtnConfig[b.id] = false);
 
 /* ============================================================
    CONFIGURACIÓN DE BOTONES PASAJERO
@@ -754,7 +754,7 @@ const PASAJERO_BTNS = [
 
 /* Estado de visibilidad de botones (default: todos activos) */
 let btnConfig = {};
-PASAJERO_BTNS.forEach(b => btnConfig[b.id] = true);
+PASAJERO_BTNS.forEach(b => btnConfig[b.id] = false);
 
 /* ============================================================
    SECCIÓN PASAJERO — renderizar cards
@@ -794,14 +794,33 @@ function renderPasajeroGrid() {
    ============================================================ */
 async function loadBtnConfig() {
   try {
-    const { data } = await supa.from('config_app').select('key,value').like('key', 'landing_%');
-    if (data) data.forEach(row => {
-      const k = row.key.replace('landing_', '');
-      if (k in btnConfig) btnConfig[k] = row.value === 'true' || row.value === true;
-      if (k in fbtnConfig) fbtnConfig[k] = row.value === 'true' || row.value === true;
-    });
-  } catch(e) { /* silencioso */ }
+    const { data, error } = await supa.from('config_app').select('key,value').like('key', 'landing_%');
+    if (error) throw error;
+    if (data && data.length > 0) {
+      // Hay config guardada — aplicarla
+      data.forEach(row => {
+        const k = row.key.replace('landing_', '');
+        if (k in btnConfig) btnConfig[k] = row.value === 'true' || row.value === true;
+        if (k in fbtnConfig) fbtnConfig[k] = row.value === 'true' || row.value === true;
+      });
+    } else {
+      // Primera vez: no hay nada guardado → insertar todos como true
+      const allBtns = [
+        ...PASAJERO_BTNS.map(b => ({ key: 'landing_' + b.id, value: 'true' })),
+        ...FAMILIA_BTNS.map(b => ({ key: 'landing_' + b.id, value: 'true' }))
+      ];
+      await supa.from('config_app').upsert(allBtns, { onConflict: 'key' });
+      PASAJERO_BTNS.forEach(b => btnConfig[b.id] = true);
+      FAMILIA_BTNS.forEach(b => fbtnConfig[b.id] = true);
+    }
+  } catch(e) {
+    console.error('loadBtnConfig error:', e);
+    // Si falla Supabase, mostrar todo
+    PASAJERO_BTNS.forEach(b => btnConfig[b.id] = true);
+    FAMILIA_BTNS.forEach(b => fbtnConfig[b.id] = true);
+  }
   renderPasajeroGrid();
+  renderFamiliaGrid();
   renderCtrlPanel();
 }
 
@@ -975,12 +994,22 @@ const FAMILIA_MENU_ITEMS = [
 
 async function loadFamiliaMenuConfig() {
   try {
-    const { data } = await supa.from('config_app').select('key,value').like('key', 'landing_fbtn%');
-    if (data) data.forEach(row => {
-      const k = row.key.replace('landing_', '');
-      if (k in fbtnConfig) fbtnConfig[k] = row.value === 'true' || row.value === true;
-    });
-  } catch(e) { /* silencioso */ }
+    const { data, error } = await supa.from('config_app').select('key,value').like('key', 'landing_%');
+    if (error) throw error;
+    if (data && data.length > 0) {
+      data.forEach(row => {
+        const k = row.key.replace('landing_', '');
+        if (k in fbtnConfig) fbtnConfig[k] = row.value === 'true' || row.value === true;
+      });
+    } else {
+      // Sin config guardada: mostrar todo
+      FAMILIA_BTNS.forEach(b => fbtnConfig[b.id] = true);
+    }
+  } catch(e) {
+    console.error('loadFamiliaMenuConfig error:', e);
+    // Si falla Supabase, mostrar todo igual
+    FAMILIA_BTNS.forEach(b => fbtnConfig[b.id] = true);
+  }
   renderFamiliaGrid();
 }
 
