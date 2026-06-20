@@ -9,6 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <style>
 :root{--cyan:#5DB4C9;--magenta:#F11D8C;--green:#199432;--ink:#080808;--text:#fff;--muted:#98a6aa;--line:rgba(255,255,255,.13);--card:rgba(255,255,255,.04);--card2:rgba(255,255,255,.07);}
 *{box-sizing:border-box;margin:0;padding:0;}
@@ -139,20 +140,33 @@ function filterFichas(){
   }).join('');
 }
 
-document.getElementById('btnDescTodo').addEventListener('click',()=>{
+document.getElementById('btnDescTodo').addEventListener('click', async ()=>{
   if(!allFichas.length){showToast('No hay fichas aún.');return;}
-  allFichas.forEach((f,i)=>{
-    setTimeout(()=>{
-      const a=document.createElement('a');
-      a.href=f.url_pdf;
-      a.download=f.nombre_pasajero+'.pdf';
-      a.target='_blank';
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-    },i*600);
-  });
-  showToast(`Descargando ${allFichas.length} fichas…`);
+  const btn = document.getElementById('btnDescTodo');
+  btn.disabled=true; btn.textContent='Preparando ZIP…';
+  try{
+    const zip = new JSZip();
+    for(let i=0; i<allFichas.length; i++){
+      const f = allFichas[i];
+      btn.textContent = `Descargando ${i+1}/${allFichas.length}…`;
+      const res = await fetch(f.url_pdf);
+      const blob = await res.blob();
+      zip.file(f.nombre_pasajero.replace(/[^a-zA-Z0-9áéíóúÁÉÍÓÚñÑ ,_-]/g,'_') + '.pdf', blob);
+    }
+    btn.textContent='Generando ZIP…';
+    const zipBlob = await zip.generateAsync({type:'blob'});
+    const url = URL.createObjectURL(zipBlob);
+    const a = document.createElement('a');
+    a.href=url; a.download='fichas_medicas.zip';
+    document.body.appendChild(a); a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    showToast('ZIP descargado ✓');
+  }catch(e){
+    showToast('Error al generar ZIP.');
+    console.error(e);
+  }
+  btn.disabled=false; btn.textContent='⬇️ Descargar todo';
 });
 
 document.getElementById('fichasList').addEventListener('click', async e=>{
