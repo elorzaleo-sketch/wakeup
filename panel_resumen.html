@@ -106,19 +106,99 @@ select option{background:#1a2224;}
 
   <div class="field">
     <label>Texto del resumen</label>
-    <div class="emoji-bar" id="emojiBar">
-      <button class="emoji-btn" type="button" data-e="❄️">❄️</button>
-      <button class="emoji-btn" type="button" data-e="🏔️">🏔️</button>
-      <button class="emoji-btn" type="button" data-e="⛷️">⛷️</button>
-      <button class="emoji-btn" type="button" data-e="🎿">🎿</button>
-      <button class="emoji-btn" type="button" data-e="🌟">🌟</button>
-      <button class="emoji-btn" type="button" data-e="🎉">🎉</button>
-      <button class="emoji-btn" type="button" data-e="❤️">❤️</button>
-      <button class="emoji-btn" type="button" data-e="🔥">🔥</button>
-      <button class="emoji-btn" type="button" data-e="😄">😄</button>
-      <button class="emoji-btn" type="button" data-e="🤩">🤩</button>
-      <button class="emoji-btn" type="button" data-e="🌨️">🌨️</button>
-      <button class="emoji-btn" type="button" data-e="🎭">🎭</button>
+    <div id="emojiBar" style="display:flex;flex-direction:column;gap:8px;margin:8px 0;">
+      <p style="font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:var(--muted);margin:0;">Bariloche & nieve</p>
+      <div style="display:flex;flex-wrap:wrap;gap:5px;">
+        <button class="emoji-btn" type="button" data-e="❄️">❄️</button>
+        <button class="emoji-btn" type="button" data-e="🏔️">🏔️</button>
+        <button class="emoji-btn" type="button" data-e="⛷️">⛷️</button>
+        <button class="emoji-btn" type="button" data-e="🎿">🎿</button>
+        <button class="emoji-btn" type="button" data-e="🌨️">🌨️</button>
+        <button class="emoji-btn" type="button" data-e="🗻">🗻</button>
+        <button class="emoji-btn" type="button" data-e="🌲">🌲</button>
+        <button class="emoji-btn" type="button" data-e="🏕️">🏕️</button>
+        <button class="emoji-btn" type="button" data-e="🌊">🌊</button>
+        <button class="emoji-btn" type="button" data-e="🛷">🛷</button>
+        <button class="emoji-btn" type="button" data-e="🧊">🧊</button>
+        <button class="emoji-btn" type="button" data-e="🌬️">🌬️</button>
+      </div>
+      <p style="font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:var(--muted);margin:0;">Clima</p>
+      <div style="display:flex;flex-wrap:wrap;gap:5px;">
+        <button class="emoji-btn" type="button" data-e="☀️">☀️</button>
+        <button class="emoji-btn" type="button" data-e="⛅">⛅</button>
+        <button class="emoji-btn" type="button" data-e="☁️">☁️</button>
+        <button class="emoji-btn" type="button" data-e="🌧️">🌧️</button>
+        <button class="emoji-btn" type="button" data-e="⛄">⛄</button>
+        <button class="emoji-btn" type="button" data-e="🌤️">🌤️</button>
+        <button class="emoji-btn" type="button" data-e="🌙">🌙</button>
+        <button class="emoji-btn" type="button" data-e="⭐">⭐</button>
+        <button class="emoji-btn" type="button" data-e="🌟">🌟</button>
+        <button class="emoji-btn" type="button" data-e="🌈">🌈</button>
+      </div>
+      <p style="font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:var(--muted);margin:0;">Caritas</p>
+      <div style="display:flex;flex-wrap:wrap;gap:5px;">
+        <button class="emoji-btn" type="button" data-e="😄">😄</button>
+        <button class="emoji-btn" type="button" data-e="😊">😊</button>
+        <button class="emoji-btn" type="button" data-e="🤩">🤩</button>
+        <button class="emoji-btn" type="button" data-e="😍">😍</button>
+        <button class="emoji-btn" type="button" data-e="🥳">🥳</button>
+        <button class="emoji-btn" type="button" data-e="😎">😎</button>
+        <button class="emoji-btn" type="button" data-e="🤗">🤗</button>
+        <button class="emoji-btn" type="button" data-e="😂">😂</button>
+        <button class="emoji-btn" type="button" data-e="🥺">🥺</button>
+        <button class="emoji-btn" type="button" data-e="😴">😴</button>
+        <button class="emoji-btn" type="button" data-e="🥶">🥶</button>
+        <button class="emoji-btn" type="button" data-e="🤯">🤯</button>
+      </div>
+      <p style="font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:var(--muted);margin:0;">Corazones & manitos</p>
+      <div style="display:flex;flex-wrap:wrap;gap:5px;">
+        <button class="emoji-btn" type="button" data-e="❤️">❤️</button>
+        <button class="emoji-btn" type="button" data-e="🧡">🧡</button>
+        <button class="emoji-btn" type="button" data-e="💛">💛</button>
+        <button class="emoji-btn" type="button" data-e="💚">💚</button>
+        <button class="emoji-btn" type="button" data-e="💙">💙</button>
+        <button class="emoji-btn" type="button" data-e="💜">💜</button>
+        <button class="emoji-btn" type="button" data-e="🩷">🩷</button>
+        <button class="emoji-btn" type="button" data-e="🤍">🤍</button>
+        <button class="emoji-btn" type="button" data-e="👏">👏</button>
+        <button class="emoji-btn" type="button" data-e="🙌">🙌</button>
+        <button class="emoji-btn" type="button" data-e="👍">👍</button>
+        <button class="emoji-btn" type="button" data-e="🤝">🤝</button>
+        <button class="emoji-btn" type="button" data-e="✌️">✌️</button>
+        <button class="emoji-btn" type="button" data-e="🤙">🤙</button>
+        <button class="emoji-btn" type="button" data-e="💪">💪</button>
+        <button class="emoji-btn" type="button" data-e="🫶">🫶</button>
+      </div>
+      <p style="font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:var(--muted);margin:0;">Emociones & celebración</p>
+      <div style="display:flex;flex-wrap:wrap;gap:5px;">
+        <button class="emoji-btn" type="button" data-e="🎉">🎉</button>
+        <button class="emoji-btn" type="button" data-e="🥂">🥂</button>
+        <button class="emoji-btn" type="button" data-e="🎊">🎊</button>
+        <button class="emoji-btn" type="button" data-e="🔥">🔥</button>
+        <button class="emoji-btn" type="button" data-e="✨">✨</button>
+        <button class="emoji-btn" type="button" data-e="💫">💫</button>
+        <button class="emoji-btn" type="button" data-e="🎭">🎭</button>
+        <button class="emoji-btn" type="button" data-e="🎶">🎶</button>
+        <button class="emoji-btn" type="button" data-e="🕺">🕺</button>
+        <button class="emoji-btn" type="button" data-e="💃">💃</button>
+        <button class="emoji-btn" type="button" data-e="🎤">🎤</button>
+        <button class="emoji-btn" type="button" data-e="🌙">🌙</button>
+      </div>
+      <p style="font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:var(--muted);margin:0;">Comida</p>
+      <div style="display:flex;flex-wrap:wrap;gap:5px;">
+        <button class="emoji-btn" type="button" data-e="🍕">🍕</button>
+        <button class="emoji-btn" type="button" data-e="🍝">🍝</button>
+        <button class="emoji-btn" type="button" data-e="🥩">🥩</button>
+        <button class="emoji-btn" type="button" data-e="🍗">🍗</button>
+        <button class="emoji-btn" type="button" data-e="🥗">🥗</button>
+        <button class="emoji-btn" type="button" data-e="🍰">🍰</button>
+        <button class="emoji-btn" type="button" data-e="🧇">🧇</button>
+        <button class="emoji-btn" type="button" data-e="☕">☕</button>
+        <button class="emoji-btn" type="button" data-e="🧉">🧉</button>
+        <button class="emoji-btn" type="button" data-e="🍫">🍫</button>
+        <button class="emoji-btn" type="button" data-e="🍵">🍵</button>
+        <button class="emoji-btn" type="button" data-e="🫗">🫗</button>
+      </div>
     </div>
     <textarea id="rdTexto" rows="6" placeholder="Contá qué pasó hoy en el viaje…"></textarea>
   </div>
