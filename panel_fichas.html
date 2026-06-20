@@ -132,7 +132,7 @@ function filterFichas(){
       </span>
       <div style="display:flex;gap:6px;flex:0 0 auto;align-items:center;">
         <a href="${f.url_pdf}" target="_blank" rel="noopener" class="frow-btn">👁️ Ver</a>
-        <a href="${f.url_pdf}" download="${f.nombre_pasajero}.pdf" class="frow-btn cyan">⬇️ Bajar</a>
+        <button type="button" class="frow-btn cyan dl-btn" data-url="${f.url_pdf}" data-nombre="${f.nombre_pasajero}">⬇️ Bajar</button>
         <button type="button" class="frow-btn danger del-btn" data-id="${f.id}" data-nombre="${f.nombre_pasajero}">🗑️</button>
       </div>
     </div>`;
@@ -156,6 +156,22 @@ document.getElementById('btnDescTodo').addEventListener('click',()=>{
 });
 
 document.getElementById('fichasList').addEventListener('click', async e=>{
+  // Descarga via blob
+  const dlBtn = e.target.closest('.dl-btn');
+  if(dlBtn){
+    dlBtn.disabled=true; dlBtn.textContent='…';
+    try{
+      const res=await fetch(dlBtn.dataset.url);
+      const blob=await res.blob();
+      const url=URL.createObjectURL(blob);
+      const a=document.createElement('a');
+      a.href=url; a.download=dlBtn.dataset.nombre+'.pdf';
+      document.body.appendChild(a); a.click();
+      document.body.removeChild(a); URL.revokeObjectURL(url);
+    }catch(err){showToast('Error al descargar.');}
+    dlBtn.disabled=false; dlBtn.textContent='⬇️ Bajar';
+    return;
+  }
   const btn = e.target.closest('.del-btn');
   if(!btn) return;
   const id = btn.dataset.id;
