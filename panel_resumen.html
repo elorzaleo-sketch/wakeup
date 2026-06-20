@@ -12,7 +12,7 @@
 <style>
 :root{--cyan:#5DB4C9;--magenta:#F11D8C;--green:#199432;--ink:#080808;--text:#fff;--muted:#98a6aa;--line:rgba(255,255,255,.13);--card:rgba(255,255,255,.04);--card2:rgba(255,255,255,.07);}
 *{box-sizing:border-box;margin:0;padding:0;}
-body{font-family:'Outfit',sans-serif;color:var(--text);background:var(--ink);min-height:100dvh;
+body{font-family:'Outfit',sans-serif;color:var(--text);background:var(--ink);min-height:100dvh;overflow-x:hidden;
   background-image:radial-gradient(60% 40% at 50% 0%,rgba(93,180,201,.08) 0%,transparent 60%);}
 .topbar{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid rgba(255,255,255,.1);}
 .topbar h1{font-family:'Bricolage Grotesque',sans-serif;font-size:1.1rem;font-weight:700;}
@@ -34,7 +34,7 @@ select option{background:#1a2224;}
 .btn-outline:hover{border-color:var(--cyan);color:var(--text);transform:none;}
 .btn:disabled{opacity:.5;cursor:not-allowed;transform:none!important;}
 .emoji-bar{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0;}
-.emoji-btn{padding:5px 9px;border-radius:8px;border:1px solid var(--line);background:var(--card);cursor:pointer;font-size:1.1rem;transition:background .15s;}
+.emoji-btn{padding:4px 7px;border-radius:8px;border:1px solid var(--line);background:var(--card);cursor:pointer;font-size:1rem;transition:background .15s;flex-shrink:0;}
 .emoji-btn:hover{background:var(--card2);}
 .upload-zone{border:2px dashed var(--line);border-radius:12px;padding:22px;text-align:center;cursor:pointer;position:relative;transition:border-color .2s,background .2s;}
 .upload-zone:hover,.upload-zone.over{border-color:var(--cyan);background:rgba(93,180,201,.04);}
@@ -106,7 +106,10 @@ select option{background:#1a2224;}
 
   <div class="field">
     <label>Texto del resumen</label>
-    <details id="emojiDetails" open style="margin:8px 0;">
+    
+    </div>
+    <textarea id="rdTexto" rows="6" placeholder="Contá qué pasó hoy en el viaje…" spellcheck="true" lang="es" autocorrect="on" autocapitalize="sentences"></textarea>
+    <details id="emojiDetails" open style="margin:8px 0;max-width:100%;overflow:hidden;">
       <summary style="cursor:pointer;font-size:.8rem;font-weight:600;color:var(--muted);list-style:none;display:flex;align-items:center;gap:6px;padding:4px 0;user-select:none;">
         <span id="emojiChevron" style="transition:transform .2s;display:inline-block;">▼</span>
         Emojis
@@ -187,8 +190,6 @@ select option{background:#1a2224;}
         <button class="emoji-btn" type="button" data-e="🫗">🫗</button>
       </div>
     </details>
-    </div>
-    <textarea id="rdTexto" rows="6" placeholder="Contá qué pasó hoy en el viaje…" spellcheck="true" lang="es" autocorrect="on" autocapitalize="sentences"></textarea>
   </div>
 
   <div class="field">
