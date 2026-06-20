@@ -141,6 +141,7 @@ function renderEfCards(){
         <span class="card-fecha">${new Date(r.created_at).toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric'})}</span>
       </div>
       ${r.estrellas_organizacion?`<div class="ef-field"><div class="ef-label">Organización</div><div class="ef-val" style="color:#f5c842;letter-spacing:2px;">${stars(r.estrellas_organizacion)}</div></div>`:''}
+      ${r.estrellas_experiencia?`<div class="ef-field"><div class="ef-label">Experiencia general</div><div class="ef-val" style="color:#f5c842;letter-spacing:2px;">${stars(r.estrellas_experiencia)}</div></div>`:''}
       ${r.como_se_entero?`<div class="ef-field"><div class="ef-label">Cómo se enteró</div><div class="ef-val badge">${r.como_se_entero}</div></div>`:''}
       ${r.recomendaria?`<div class="ef-field"><div class="ef-label">¿Recomendaría?</div><div class="ef-val badge">${r.recomendaria}</div></div>`:''}
       ${r.comentario?`<hr class="divider"><div class="ef-field"><div class="ef-label">Comentario</div><div class="ef-val">${r.comentario}</div></div>`:''}
