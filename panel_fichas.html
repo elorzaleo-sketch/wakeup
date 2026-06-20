@@ -133,7 +133,7 @@ function filterFichas(){
       <div style="display:flex;gap:6px;flex:0 0 auto;align-items:center;">
         <a href="${f.url_pdf}" target="_blank" rel="noopener" class="frow-btn">👁️ Ver</a>
         <a href="${f.url_pdf}" download="${f.nombre_pasajero}.pdf" class="frow-btn cyan">⬇️ Bajar</a>
-        <button type="button" class="frow-btn danger" onclick="deleteFicha('${f.id}','${f.nombre_pasajero}')">🗑️</button>
+        <button type="button" class="frow-btn danger del-btn" data-id="${f.id}" data-nombre="${f.nombre_pasajero}">🗑️</button>
       </div>
     </div>`;
   }).join('');
@@ -155,13 +155,23 @@ document.getElementById('btnDescTodo').addEventListener('click',()=>{
   showToast(`Descargando ${allFichas.length} fichas…`);
 });
 
-async function deleteFicha(id, nombre){
+document.getElementById('fichasList').addEventListener('click', async e=>{
+  const btn = e.target.closest('.del-btn');
+  if(!btn) return;
+  const id = btn.dataset.id;
+  const nombre = btn.dataset.nombre;
   if(!confirm('¿Eliminar la ficha de ' + nombre + '?')) return;
+  btn.disabled = true;
   const {error} = await supa.from('fichas_salud').delete().eq('id', id);
-  if(error){ showToast('Error al eliminar.'); return; }
+  if(error){
+    console.error('Error eliminando ficha:', error);
+    showToast('Error: ' + error.message);
+    btn.disabled = false;
+    return;
+  }
   showToast('Ficha eliminada ✓');
   loadFichas();
-}
+});
 
 loadFichas();
 </script>
