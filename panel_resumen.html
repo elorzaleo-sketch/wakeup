@@ -106,9 +106,12 @@ select option{background:#1a2224;}
 
   <div class="field">
     <label>Texto del resumen</label>
-    <div id="emojiBar" style="display:flex;flex-direction:column;gap:8px;margin:8px 0;">
-      <p style="font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:var(--muted);margin:0;">Bariloche & nieve</p>
-      <div style="display:flex;flex-wrap:wrap;gap:5px;">
+    <details id="emojiDetails" open style="margin:8px 0;">
+      <summary style="cursor:pointer;font-size:.8rem;font-weight:600;color:var(--muted);list-style:none;display:flex;align-items:center;gap:6px;padding:4px 0;user-select:none;">
+        <span id="emojiChevron" style="transition:transform .2s;display:inline-block;">▼</span>
+        Emojis
+      </summary>
+      <div style="display:flex;flex-wrap:wrap;gap:5px;margin-top:8px;" id="emojiBar">
         <button class="emoji-btn" type="button" data-e="❄️">❄️</button>
         <button class="emoji-btn" type="button" data-e="🏔️">🏔️</button>
         <button class="emoji-btn" type="button" data-e="⛷️">⛷️</button>
@@ -121,9 +124,6 @@ select option{background:#1a2224;}
         <button class="emoji-btn" type="button" data-e="🛷">🛷</button>
         <button class="emoji-btn" type="button" data-e="🧊">🧊</button>
         <button class="emoji-btn" type="button" data-e="🌬️">🌬️</button>
-      </div>
-      <p style="font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:var(--muted);margin:0;">Clima</p>
-      <div style="display:flex;flex-wrap:wrap;gap:5px;">
         <button class="emoji-btn" type="button" data-e="☀️">☀️</button>
         <button class="emoji-btn" type="button" data-e="⛅">⛅</button>
         <button class="emoji-btn" type="button" data-e="☁️">☁️</button>
@@ -134,9 +134,6 @@ select option{background:#1a2224;}
         <button class="emoji-btn" type="button" data-e="⭐">⭐</button>
         <button class="emoji-btn" type="button" data-e="🌟">🌟</button>
         <button class="emoji-btn" type="button" data-e="🌈">🌈</button>
-      </div>
-      <p style="font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:var(--muted);margin:0;">Caritas</p>
-      <div style="display:flex;flex-wrap:wrap;gap:5px;">
         <button class="emoji-btn" type="button" data-e="😄">😄</button>
         <button class="emoji-btn" type="button" data-e="😊">😊</button>
         <button class="emoji-btn" type="button" data-e="🤩">🤩</button>
@@ -149,9 +146,6 @@ select option{background:#1a2224;}
         <button class="emoji-btn" type="button" data-e="😴">😴</button>
         <button class="emoji-btn" type="button" data-e="🥶">🥶</button>
         <button class="emoji-btn" type="button" data-e="🤯">🤯</button>
-      </div>
-      <p style="font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:var(--muted);margin:0;">Corazones & manitos</p>
-      <div style="display:flex;flex-wrap:wrap;gap:5px;">
         <button class="emoji-btn" type="button" data-e="❤️">❤️</button>
         <button class="emoji-btn" type="button" data-e="🧡">🧡</button>
         <button class="emoji-btn" type="button" data-e="💛">💛</button>
@@ -168,9 +162,6 @@ select option{background:#1a2224;}
         <button class="emoji-btn" type="button" data-e="🤙">🤙</button>
         <button class="emoji-btn" type="button" data-e="💪">💪</button>
         <button class="emoji-btn" type="button" data-e="🫶">🫶</button>
-      </div>
-      <p style="font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:var(--muted);margin:0;">Emociones & celebración</p>
-      <div style="display:flex;flex-wrap:wrap;gap:5px;">
         <button class="emoji-btn" type="button" data-e="🎉">🎉</button>
         <button class="emoji-btn" type="button" data-e="🥂">🥂</button>
         <button class="emoji-btn" type="button" data-e="🎊">🎊</button>
@@ -182,10 +173,6 @@ select option{background:#1a2224;}
         <button class="emoji-btn" type="button" data-e="🕺">🕺</button>
         <button class="emoji-btn" type="button" data-e="💃">💃</button>
         <button class="emoji-btn" type="button" data-e="🎤">🎤</button>
-        <button class="emoji-btn" type="button" data-e="🌙">🌙</button>
-      </div>
-      <p style="font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:var(--muted);margin:0;">Comida</p>
-      <div style="display:flex;flex-wrap:wrap;gap:5px;">
         <button class="emoji-btn" type="button" data-e="🍕">🍕</button>
         <button class="emoji-btn" type="button" data-e="🍝">🍝</button>
         <button class="emoji-btn" type="button" data-e="🥩">🥩</button>
@@ -199,8 +186,9 @@ select option{background:#1a2224;}
         <button class="emoji-btn" type="button" data-e="🍵">🍵</button>
         <button class="emoji-btn" type="button" data-e="🫗">🫗</button>
       </div>
+    </details>
     </div>
-    <textarea id="rdTexto" rows="6" placeholder="Contá qué pasó hoy en el viaje…"></textarea>
+    <textarea id="rdTexto" rows="6" placeholder="Contá qué pasó hoy en el viaje…" spellcheck="true" lang="es" autocorrect="on" autocapitalize="sentences"></textarea>
   </div>
 
   <div class="field">
@@ -243,8 +231,16 @@ function showToast(msg){const t=document.getElementById('toast');t.textContent=m
 <script>
 let rdFotos=[],rdVideos=[];
 
-document.getElementById('emojiBar').addEventListener('click',e=>{
-  const btn=e.target.closest('.emoji-btn'); if(!btn) return;
+document.getElementById('emojiDetails').addEventListener('toggle', e=>{
+  document.getElementById('emojiChevron').style.transform = e.target.open ? 'rotate(0deg)' : 'rotate(-90deg)';
+});
+
+document.getElementById('emojiDetails').addEventListener('toggle', e=>{
+  document.getElementById('emojiChev').style.transform = e.target.open ? 'rotate(0deg)' : 'rotate(-90deg)';
+});
+
+document.getElementById('emojiDetails').addEventListener('click',e=>{
+  const btn=e.target.closest('.emoji-btn'); if(!btn||e.target.closest('summary')) return;
   const ta=document.getElementById('rdTexto');
   const pos=ta.selectionStart, v=ta.value;
   ta.value=v.slice(0,pos)+btn.dataset.e+v.slice(pos);
