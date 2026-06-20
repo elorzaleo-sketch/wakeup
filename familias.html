@@ -382,6 +382,17 @@ textarea{resize:vertical;min-height:80px;}
     </div>
 
     <div class="survey-q">
+      <span class="q-label">¿Cómo fue tu experiencia general con Wake Up?</span>
+      <div class="stars" id="starsExp" role="group">
+        <span class="star" data-v="1" role="button" tabindex="0">★</span>
+        <span class="star" data-v="2" role="button" tabindex="0">★</span>
+        <span class="star" data-v="3" role="button" tabindex="0">★</span>
+        <span class="star" data-v="4" role="button" tabindex="0">★</span>
+        <span class="star" data-v="5" role="button" tabindex="0">★</span>
+      </div>
+    </div>
+
+    <div class="survey-q">
       <span class="q-label">¿Recomendarías Wake Up a otras familias?</span>
       <div class="option-grid" id="optRecFam">
         <button class="opt-btn" type="button" data-v="sí, sin dudarlo">Sí, sin dudarlo 🙌</button>
@@ -597,11 +608,19 @@ document.getElementById('btnSubirFicha').addEventListener('click', async ()=>{
   prog.style.display='block'; fill.style.width='20%';
 
   try {
-    // Leer imágenes como dataURL
+    // Leer imágenes respetando orientación EXIF via canvas
     const imgs = [fichaImgFrente, fichaImgDorso].filter(Boolean);
-    const dataUrls = await Promise.all(imgs.map(f=>new Promise(res=>{
-      const r=new FileReader(); r.onload=ev=>res(ev.target.result); r.readAsDataURL(f);
-    })));
+
+    async function fileToCanvas(file) {
+      const bitmap = await createImageBitmap(file);
+      const canvas = document.createElement('canvas');
+      canvas.width = bitmap.width;
+      canvas.height = bitmap.height;
+      canvas.getContext('2d').drawImage(bitmap, 0, 0);
+      return canvas.toDataURL('image/jpeg', 0.85);
+    }
+
+    const dataUrls = await Promise.all(imgs.map(f => fileToCanvas(f)));
 
     fill.style.width='50%';
 
@@ -612,12 +631,11 @@ document.getElementById('btnSubirFicha').addEventListener('click', async ()=>{
 
     dataUrls.forEach((url, i)=>{
       if(i>0) doc.addPage();
-      // Calcular dimensiones manteniendo aspect ratio
-      const img=new Image(); img.src=url;
-      const iw=img.naturalWidth||800, ih=img.naturalHeight||600;
-      const ratio=Math.min((pgW-20)/iw, (pgH-30)/ih);
-      const w=iw*ratio, h=ih*ratio;
-      const x=(pgW-w)/2, y=20;
+      const tmpImg = new Image(); tmpImg.src = url;
+      const iw = tmpImg.naturalWidth || 800, ih = tmpImg.naturalHeight || 600;
+      const ratio = Math.min((pgW-20)/iw, (pgH-30)/ih);
+      const w = iw*ratio, h = ih*ratio;
+      const x = (pgW-w)/2, y = 20;
       doc.addImage(url,'JPEG',x,y,w,h,undefined,'MEDIUM');
       doc.setFontSize(9); doc.setTextColor(120);
       doc.text(`Ficha médica - ${nombre} - ${i===0?'Frente':'Dorso'}`, pgW/2, 12, {align:'center'});
@@ -772,7 +790,7 @@ async function addComment(resumenId){
 /* ============================================================
    ENCUESTA FAMILIAS
    ============================================================ */
-let efStarsOrg=0, efEntero='', efRecFam='';
+let efStarsOrg=0, efStarsExp=0, efEntero='', efRecFam='';
 
 function setupStars(groupId, setFn){
   const row = document.getElementById(groupId);
@@ -792,6 +810,7 @@ function setupOpts(groupId, setFn){
 }
 setupOpts('optEntero',  v=>efEntero=v);
 setupStars('starsOrg', v=>efStarsOrg=v);
+setupStars('starsExp', v=>efStarsExp=v);
 setupOpts('optRecFam',  v=>efRecFam=v);
 
 document.getElementById('btnEnviarEncuestaFam').addEventListener('click', async ()=>{
@@ -803,6 +822,7 @@ document.getElementById('btnEnviarEncuestaFam').addEventListener('click', async 
   const payload={
     nombre, como_se_entero:efEntero,
     estrellas_organizacion:efStarsOrg||null,
+    estrellas_experiencia:efStarsExp||null,
     recomendaria:efRecFam,
     comentario:document.getElementById('efComentario').value.trim(),
     recomendacion:document.getElementById('efRecomendacion').value.trim(),
