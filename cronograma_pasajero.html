@@ -42,6 +42,16 @@ body{font-family:'Outfit',sans-serif;color:var(--text);background:var(--ink);min
 .loading{text-align:center;padding:40px;color:var(--muted);font-size:.95rem;}
 .fuera-rango{text-align:center;padding:40px 0;color:var(--muted);}
 .fuera-rango .ei{font-size:2.5rem;margin-bottom:12px;}
+
+/* Mensaje del día */
+.msg-dia-wrap{background:#0b141a;border-radius:14px;overflow:hidden;margin-bottom:18px;box-shadow:0 4px 20px rgba(0,0,0,.35);}
+.msg-dia-top{background:#1f2c33;padding:10px 14px;display:flex;align-items:center;gap:9px;}
+.msg-dia-avatar{width:30px;height:30px;border-radius:50%;background:var(--green);display:flex;align-items:center;justify-content:center;font-size:14px;flex:0 0 auto;}
+.msg-dia-name{font-size:.82rem;font-weight:600;color:#cfe9d6;}
+.msg-dia-body{padding:12px 14px 14px;}
+.msg-bubble{background:#1f2c33;border-radius:0 10px 10px 10px;padding:9px 12px;font-size:.88rem;line-height:1.6;color:#e9edef;white-space:pre-wrap;word-break:break-word;display:inline-block;max-width:100%;}
+.msg-bubble strong{color:#fff;}
+.msg-empty{font-size:.83rem;color:var(--muted);font-style:italic;padding:4px 0;}
 </style>
 </head>
 <body>
@@ -147,6 +157,20 @@ function toggleDay(head){
   head.nextElementSibling.classList.toggle('open');
 }
 
+function mensajeDiaHTML(){
+  if(!mensajeDia) return '<div style="margin-bottom:16px;"><p class="msg-empty">No hay mensaje publicado aún para hoy.</p></div>';
+  const textoHTML = mensajeDia.texto
+    .replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]))
+    .replace(/\*(.+?)\*/g,'<strong>$1</strong>');
+  return `<div class="msg-dia-wrap">
+    <div class="msg-dia-top">
+      <div class="msg-dia-avatar">🏔️</div>
+      <div class="msg-dia-name">Mensaje de hoy · Wake Up</div>
+    </div>
+    <div class="msg-dia-body"><div class="msg-bubble">${textoHTML}</div></div>
+  </div>`;
+}
+
 function render(){
   const hoy = diaHoy();
   const el = document.getElementById('cronoContent');
@@ -161,21 +185,25 @@ function render(){
       </div>`;
       return;
     }
-    el.innerHTML = dayCardHTML(hoy, true, true);
+    el.innerHTML = mensajeDiaHTML() + dayCardHTML(hoy, true, true);
   } else {
     el.innerHTML = DIAS.map(d => dayCardHTML(d, d.fecha===(hoy?.fecha||''), d.fecha===(hoy?.fecha||''))).join('');
   }
 }
 
+const _supaMsg = supabase.createClient('https://mzousqdahqterfawhwsz.supabase.co','eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im16b3VzcWRhaHF0ZXJmYXdod3N6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA1MTc4MzUsImV4cCI6MjA5NjA5MzgzNX0.EdSlcRdLD75OdYlwtZGLVgL_PGpJysWb_MKvuwGgj5Y');
+let mensajeDia = null;
+
 async function load(){
   try{
-    const {data, error} = await sb.from('cronograma').select('data').eq('id','general').single();
-    if(error) throw error;
-    if(data?.data?.data) cronoData = data.data.data;
+    const [cronoRes, msgRes] = await Promise.all([
+      sb.from('cronograma').select('data').eq('id','general').single(),
+      _supaMsg.from('mensaje_dia').select('*').order('updated_at',{ascending:false}).limit(1)
+    ]);
+    if(cronoRes.data?.data?.data) cronoData = cronoRes.data.data.data;
+    if(msgRes.data?.length) mensajeDia = msgRes.data[0];
   } catch(e){
-    console.error('Error cargando cronograma:', e);
-    document.getElementById('cronoContent').innerHTML = '<div class="loading">No se pudo cargar el cronograma.</div>';
-    return;
+    console.error('Error:', e);
   }
   render();
 }

@@ -70,6 +70,11 @@ select option{background:#1a2224;}
 .coment-btn:hover{border-color:var(--cyan);color:var(--text);}
 .coment-btn.danger{color:#ff5fae;border-color:rgba(255,95,174,.3);}
 .coment-btn.danger:hover{border-color:#ff5fae;}
+.coment-btn.like{color:#f5c842;border-color:rgba(245,200,66,.25);}
+.coment-btn.like.activo{background:rgba(245,200,66,.15);border-color:#f5c842;}
+.coment-btn.like{color:#f5c842;border-color:rgba(245,200,66,.3);}
+.coment-btn.like:hover{border-color:#f5c842;}
+.coment-btn.like.activo{background:rgba(245,200,66,.15);border-color:#f5c842;}
 @media(max-width:400px){.thumb-grid{grid-template-columns:repeat(3,1fr);}}
 </style>
 </head>
@@ -329,20 +334,27 @@ function closeModal(){
 async function loadModalComents(resumenId){
   const el=document.getElementById('modalComentsList');
   el.innerHTML='<div style="color:var(--muted);text-align:center;padding:16px;">Cargando…</div>';
-  const {data}=await supa.from('comentarios_resumen').select('*').eq('resumen_id',resumenId).order('created_at');
+  const {data}=await supa.from('comentarios_resumen').select('*').eq('resumen_id',resumenId).order('destacado',{ascending:false}).order('created_at',{ascending:true});
   if(!data||!data.length){el.innerHTML='<div style="color:var(--muted);text-align:center;padding:16px;">No hay comentarios aún.</div>';return;}
   el.innerHTML=data.map(c=>`
-    <div class="coment-card ${c.oculto?'oculto':''}">
+    <div class="coment-card ${c.oculto?'oculto':''}" style="${c.destacado?'border-color:#f5c842;border-left:3px solid #f5c842;':''}">
       <div class="coment-body">
-        <div class="coment-nombre">${c.nombre}</div>
+        <div class="coment-nombre">${c.nombre} ${c.destacado?'<span style="font-size:.7rem;color:#f5c842;margin-left:4px;">👍 destacado</span>':''}</div>
         <div class="coment-txt">${c.comentario}</div>
-        <div class="coment-fecha">${new Date(c.created_at).toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})}</div>
       </div>
       <div class="coment-actions">
+        <button class="coment-btn like ${c.destacado?'activo':''}" type="button" onclick="toggleDestacado('${c.id}',${!!c.destacado})" title="Destacar">👍</button>
         <button class="coment-btn" type="button" onclick="toggleOculto('${c.id}',${!!c.oculto})">${c.oculto?'👁️ Mostrar':'🚫 Ocultar'}</button>
         <button class="coment-btn danger" type="button" onclick="deleteComent('${c.id}')">🗑️ Eliminar</button>
       </div>
     </div>`).join('');
+}
+
+async function toggleDestacado(id, estaDestacado){
+  const {error} = await supa.from('comentarios_resumen').update({destacado: !estaDestacado}).eq('id', id);
+  if(error){showToast('Error.');return;}
+  showToast(!estaDestacado ? '👍 Destacado' : 'Destacado removido');
+  loadModalComents(currentResumenId);
 }
 
 async function toggleOculto(id,estaOculto){

@@ -353,6 +353,8 @@ textarea{resize:vertical;min-height:80px;}
 
   <div class="survey-wrap" id="encuestaFamForm">
 
+    <p style="font-size:.85rem;color:var(--muted);line-height:1.6;text-align:center;padding:4px 8px 10px;border-bottom:1px solid var(--line);margin-bottom:4px;">💬 Mientras más respondas y nos cuentes, más nos ayuda para seguir creciendo.</p>
+
     <div class="survey-q">
       <span class="q-label">Nombre de tu hijo/a</span>
       <input type="text" id="efNombre" placeholder="Ej: Valentina García">
@@ -404,7 +406,7 @@ textarea{resize:vertical;min-height:80px;}
     </div>
 
     <div class="survey-q">
-      <span class="q-label">Comentarios libres (opcional)</span>
+      <span class="q-label">Comentarios libres</span>
       <p style="font-size:.78rem;color:var(--muted);margin-bottom:7px;">Todo lo que quieras contarnos: qué estuvo bien, qué mejoraría, o cualquier cosa que sientas.</p>
       <textarea id="efComentario" placeholder="Escribí lo que quieras…" rows="4"></textarea>
     </div>
@@ -813,13 +815,12 @@ function toggleResumen(btn, bodyId){
 async function loadComments(resumenId){
   const el = document.getElementById(`coments-${resumenId}`);
   if(!el) return;
-  const { data } = await supa.from('comentarios_resumen').select('*').eq('resumen_id', resumenId).eq('oculto', false).order('created_at');
+  const { data } = await supa.from('comentarios_resumen').select('*').eq('resumen_id', resumenId).eq('oculto', false).order('destacado',{ascending:false}).order('created_at',{ascending:true});
   if(!data||!data.length){ el.innerHTML='<div style="color:var(--muted);font-size:.82rem;">Sé el primero en comentar 👇</div>'; return; }
   el.innerHTML = data.map(c=>`
     <div class="comentario-item">
       <div class="comentario-nombre">${c.nombre}</div>
       <div class="comentario-txt">${c.comentario}</div>
-      <div class="comentario-fecha">${new Date(c.created_at).toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})}</div>
     </div>`).join('');
 }
 
