@@ -351,7 +351,7 @@ document.getElementById('btnPublicar').addEventListener('click',async()=>{
     /* ── MODERACIÓN DE COMENTARIOS ── */
 let currentResumenId = null;
 
-async function openComents(resumenId, fecha) {
+window.openComents = async function(resumenId, fecha) {
   currentResumenId = resumenId;
   document.getElementById('modalTitle').textContent = `Comentarios · ${fecha}`;
   document.getElementById('modalComents').style.display = 'block';
@@ -359,7 +359,7 @@ async function openComents(resumenId, fecha) {
   await loadModalComents(resumenId);
 }
 
-function closeModal() {
+window.closeModal = function() {
   document.getElementById('modalComents').style.display = 'none';
   document.body.style.overflow = '';
 }
@@ -386,7 +386,7 @@ async function loadModalComents(resumenId) {
     </div>`).join('');
 }
 
-async function toggleOculto(id, estaOculto) {
+window.toggleOculto = async function(id, estaOculto) {
   const nuevoEstado = !estaOculto;
   const { error } = await supa.from('comentarios_resumen').update({ oculto: nuevoEstado }).eq('id', id);
   if (error) { showToast('Error al actualizar.'); return; }
@@ -394,7 +394,7 @@ async function toggleOculto(id, estaOculto) {
   await loadModalComents(currentResumenId);
 }
 
-async function deleteComent(id) {
+window.deleteComent = async function(id) {
   if (!confirm('¿Eliminar este comentario? No se puede deshacer.')) return;
   const { error } = await supa.from('comentarios_resumen').delete().eq('id', id);
   if (error) { showToast('Error al eliminar.'); return; }
