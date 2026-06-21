@@ -220,13 +220,13 @@
     transition:transform .15s,background .15s;
   }
   .access:hover,.access:focus-visible{transform:translateY(-2px);background:var(--card-hover);}
-  .access:nth-of-type(1){border-left:4px solid var(--cyan);}
-  .access:nth-of-type(2){border-left:4px solid var(--green);}
-  .access:nth-of-type(3){border-left:4px solid var(--magenta);}
   .access .dot{width:9px;height:9px;border-radius:50%;flex:0 0 auto;}
-  .access:nth-of-type(1) .dot{background:var(--cyan);}
-  .access:nth-of-type(2) .dot{background:var(--green);}
-  .access:nth-of-type(3) .dot{background:var(--magenta);}
+  .access.ac-cyan{border-left:4px solid var(--cyan);}
+  .access.ac-cyan .dot{background:var(--cyan);}
+  .access.ac-green{border-left:4px solid var(--green);}
+  .access.ac-green .dot{background:var(--green);}
+  .access.ac-magenta{border-left:4px solid var(--magenta);}
+  .access.ac-magenta .dot{background:var(--magenta);}
   .access .txt{flex:1;}
   .access .txt b{display:block;font-size:.97rem;font-weight:600;}
   .access .txt span{display:block;font-size:.79rem;color:var(--muted);margin-top:2px;}
@@ -629,38 +629,38 @@
         <h2 class="panel-head">Accesos internos</h2>
         <p class="panel-sub">Elegí la herramienta.</p>
 
-        <a class="access" href="/admin.html">
+        <a class="access ac-cyan" href="/admin.html">
           <span class="dot"></span>
           <span class="txt"><b>Inscripciones</b><span>Panel de administración</span></span>
           <span class="arrow">→</span>
         </a>
-        <a class="access" href="/cronograma-general.html">
+        <a class="access ac-green" href="/cronograma-general.html">
           <span class="dot"></span>
           <span class="txt"><b>Cronograma general</b><span>Grilla de actividades del viaje</span></span>
           <span class="arrow">→</span>
         </a>
-        <a class="access" href="/mensaje_whatsapp.html">
+        <a class="access ac-magenta" href="/mensaje_whatsapp.html">
           <span class="dot"></span>
           <span class="txt"><b>Mensajes de WhatsApp</b><span>Generador de mensajes diarios</span></span>
           <span class="arrow">→</span>
         </a>
 
-        <a class="access" id="btnVerEncuestas" href="/encuestas.html">
+        <a class="access ac-cyan" id="btnVerEncuestas" href="/encuestas.html">
           <span class="dot"></span>
           <span class="txt"><b>Encuestas · Mi experiencia</b><span>Ver respuestas de pasajeros</span></span>
           <span class="arrow">→</span>
         </a>
-        <a class="access" href="/panel_resumen.html">
+        <a class="access ac-green" href="/panel_resumen.html">
           <span class="dot"></span>
           <span class="txt"><b>Resumen del día</b><span>Crear y publicar el resumen para familias</span></span>
           <span class="arrow">→</span>
         </a>
-        <a class="access" href="/panel_fichas.html">
+        <a class="access ac-magenta" href="/panel_fichas.html">
           <span class="dot"></span>
           <span class="txt"><b>Fichas médicas</b><span>Ver y descargar las fichas recibidas</span></span>
           <span class="arrow">→</span>
         </a>
-        <a class="access" href="/panel_encuestas_familias.html">
+        <a class="access ac-cyan" href="/panel_encuestas_familias.html">
           <span class="dot"></span>
           <span class="txt"><b>Encuestas familias</b><span>Respuestas de padres y madres</span></span>
           <span class="arrow">→</span>
@@ -759,6 +759,24 @@ const PASAJERO_BTNS = [
     type: "action",
     action: "experiencia",
     color: "card-magenta"
+  },
+  {
+    id: "btn_mensaje_dia",
+    label: "Mensaje del día",
+    icon: "📋",
+    sub: "Novedades y programa de hoy",
+    type: "link",
+    href: "/mensaje_dia.html",
+    color: "card-cyan"
+  },
+  {
+    id: "btn_cronograma",
+    label: "Cronograma del viaje",
+    icon: "🗓️",
+    sub: "Actividades día por día",
+    type: "link",
+    href: "/cronograma_pasajero.html",
+    color: "card-green"
   }
 ];
 
