@@ -287,6 +287,7 @@
       <div class="actions">
         <button class="btn primary" id="crear">Crear mensaje</button>
         <button class="btn ghost" id="copy" title="Copiar">📋</button>
+        <button class="btn ghost" id="publicarWeb" title="Publicar en la web para pasajeros" style="background:rgba(93,180,201,.15);border-color:rgba(93,180,201,.4);color:#5DB4C9;">🌐 Publicar</button>
       </div>
     </div>
   </div>
@@ -775,6 +776,22 @@ function updatePreview(){
 /* ===== Copiar ===== */
 function toast(t){ const el=$('#toast'); el.textContent=t; el.classList.add('show'); setTimeout(()=>el.classList.remove('show'),1800); }
 $('#crear').addEventListener('click', ()=>{ const msg=buildMessage(); if(msg) navigator.clipboard.writeText(msg).then(()=>toast('Mensaje copiado ✔')); else toast('Todavía no hay nada que copiar'); });
+
+/* ===== Publicar en la web ===== */
+const _supa = supabase.createClient('https://mzousqdahqterfawhwsz.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im16b3VzcWRhaHF0ZXJmYXdod3N6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA1MTc4MzUsImV4cCI6MjA5NjA5MzgzNX0.EdSlcRdLD75OdYlwtZGLVgL_PGpJysWb_MKvuwGgj5Y');
+$('#publicarWeb').addEventListener('click', async () => {
+  const msg = buildMessage();
+  if(!msg){ toast('No hay mensaje para publicar'); return; }
+  const btn = $('#publicarWeb');
+  btn.disabled=true; btn.textContent='Publicando…';
+  try {
+    await _supa.from('mensaje_dia').delete().neq('id','00000000-0000-0000-0000-000000000000');
+    const {error} = await _supa.from('mensaje_dia').insert({texto:msg, fecha:state.fecha||null});
+    if(error) throw error;
+    toast('✓ Publicado para los pasajeros');
+  } catch(e) { toast('Error: '+e.message); console.error(e); }
+  btn.disabled=false; btn.textContent='🌐 Publicar';
+});
 $('#copy').addEventListener('click', ()=>{ const msg=buildMessage(); if(msg) navigator.clipboard.writeText(msg).then(()=>toast('Copiado ✔')); });
 
 /* ===== Wiring de capacidades / persistencia ===== */
