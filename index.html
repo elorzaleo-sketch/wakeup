@@ -635,20 +635,19 @@
           <span class="txt"><b>Inscripciones</b><span>Panel de administración</span></span>
           <span class="arrow">→</span>
         </a>
-        <a class="access ac-green" href="/cronograma-general.html">
+        <a class="access ac-green" href="/panel_fichas.html">
+          <span class="dot"></span>
+          <span class="txt"><b>Fichas médicas</b><span>Ver y descargar las fichas recibidas</span></span>
+          <span class="arrow">→</span>
+        </a>
+        <a class="access ac-magenta" href="/cronograma-general.html">
           <span class="dot"></span>
           <span class="txt"><b>Cronograma general</b><span>Grilla de actividades del viaje</span></span>
           <span class="arrow">→</span>
         </a>
-        <a class="access ac-magenta" href="/mensaje_whatsapp.html">
+        <a class="access ac-cyan" href="/mensaje_whatsapp.html">
           <span class="dot"></span>
           <span class="txt"><b>Mensajes de WhatsApp</b><span>Generador de mensajes diarios</span></span>
-          <span class="arrow">→</span>
-        </a>
-
-        <a class="access ac-cyan" id="btnVerEncuestas" href="/encuestas.html">
-          <span class="dot"></span>
-          <span class="txt"><b>Encuestas · Mi experiencia</b><span>Ver respuestas de pasajeros</span></span>
           <span class="arrow">→</span>
         </a>
         <a class="access ac-green" href="/panel_resumen.html">
@@ -656,9 +655,9 @@
           <span class="txt"><b>Resumen del día</b><span>Crear y publicar el resumen para familias</span></span>
           <span class="arrow">→</span>
         </a>
-        <a class="access ac-magenta" href="/panel_fichas.html">
+        <a class="access ac-magenta" id="btnVerEncuestas" href="/encuestas.html">
           <span class="dot"></span>
-          <span class="txt"><b>Fichas médicas</b><span>Ver y descargar las fichas recibidas</span></span>
+          <span class="txt"><b>Encuesta egresados</b><span>Ver respuestas de pasajeros</span></span>
           <span class="arrow">→</span>
         </a>
         <a class="access ac-cyan" href="/panel_encuestas_familias.html">
@@ -734,6 +733,15 @@ const PASAJERO_BTNS = [
     external: true
   },
   {
+    id: "btn_tips",
+    label: "Tips e info",
+    icon: "💡",
+    sub: "Qué llevar, documentación y más",
+    type: "action",
+    action: "tips",
+    color: "card-cyan"
+  },
+  {
     id: "btn_subir_fotos",
     label: "Compartir fotos",
     icon: "📤",
@@ -744,13 +752,13 @@ const PASAJERO_BTNS = [
     external: true
   },
   {
-    id: "btn_tips",
-    label: "Tips e info",
-    icon: "💡",
-    sub: "Qué llevar, documentación y más",
-    type: "action",
-    action: "tips",
-    color: "card-cyan"
+    id: "btn_cronograma",
+    label: "Cronograma del viaje",
+    icon: "🗓️",
+    sub: "Actividades día por día",
+    type: "link",
+    href: "/cronograma_pasajero.html",
+    color: "card-green"
   },
   {
     id: "btn_experiencia",
@@ -760,24 +768,6 @@ const PASAJERO_BTNS = [
     type: "action",
     action: "experiencia",
     color: "card-magenta"
-  },
-  {
-    id: "btn_mensaje_dia",
-    label: "Mensaje del día",
-    icon: "📋",
-    sub: "Novedades y programa de hoy",
-    type: "link",
-    href: "/mensaje_dia.html",
-    color: "card-cyan"
-  },
-  {
-    id: "btn_cronograma",
-    label: "Cronograma del viaje",
-    icon: "🗓️",
-    sub: "Actividades día por día",
-    type: "link",
-    href: "/cronograma_pasajero.html",
-    color: "card-green"
   }
 ];
 
