@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cronograma · Wake Up Bariloche 2026</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+<style>
+:root{--cyan:#5DB4C9;--magenta:#F11D8C;--green:#199432;--ink:#080808;--text:#fff;--muted:#98a6aa;--line:rgba(255,255,255,.12);--card:rgba(255,255,255,.04);}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Outfit',sans-serif;color:var(--text);background:var(--ink);min-height:100dvh;
+  background-image:radial-gradient(70% 40% at 50% 0%,rgba(93,180,201,.09) 0%,transparent 60%);}
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--line);}
+.topbar a{color:var(--muted);font-size:.83rem;text-decoration:none;}
+.container{max-width:520px;margin:0 auto;padding:16px 20px 60px;}
+
+/* Toggle hoy / completo */
+.toggle-bar{display:flex;gap:6px;background:rgba(255,255,255,.05);border-radius:12px;padding:4px;margin-bottom:20px;}
+.toggle-btn{flex:1;padding:8px;border:none;border-radius:9px;background:transparent;color:var(--muted);font-family:'Outfit',sans-serif;font-size:.85rem;font-weight:600;cursor:pointer;transition:.15s;}
+.toggle-btn.active{background:var(--card);color:var(--text);box-shadow:0 1px 4px rgba(0,0,0,.3);}
+
+/* Día card */
+.day-card{background:var(--card);border:1px solid var(--line);border-radius:16px;margin-bottom:12px;overflow:hidden;}
+.day-card.hoy{border-color:var(--cyan);box-shadow:0 0 0 1px rgba(93,180,201,.3);}
+.day-head{padding:14px 16px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;}
+.day-head .dn{font-family:'Bricolage Grotesque',sans-serif;font-size:1rem;font-weight:700;}
+.day-head .df{font-size:.8rem;color:var(--muted);margin-top:2px;}
+.day-head .hoy-badge{background:var(--cyan);color:#000;font-size:.68rem;font-weight:700;padding:3px 8px;border-radius:99px;}
+.day-head .chev{color:var(--muted);transition:transform .25s;}
+.day-head.open .chev{transform:rotate(180deg);}
+.day-body{display:none;border-top:1px solid var(--line);padding:12px 16px;}
+.day-body.open{display:block;}
+
+/* Turnos */
+.turno{display:flex;gap:10px;margin-bottom:10px;}
+.turno:last-child{margin-bottom:0;}
+.turno-label{font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);width:56px;flex:0 0 auto;padding-top:2px;}
+.turno-acts{flex:1;}
+.act-item{display:flex;align-items:center;gap:8px;background:rgba(255,255,255,.05);border-radius:9px;padding:8px 10px;margin-bottom:5px;}
+.act-item:last-child{margin-bottom:0;}
+.act-emoji{font-size:1rem;flex:0 0 auto;}
+.act-name{font-size:.88rem;}
+.act-hora{font-size:.75rem;color:var(--muted);}
+.empty-act{font-size:.82rem;color:var(--muted);font-style:italic;padding:4px 0;}
+.loading{text-align:center;padding:40px;color:var(--muted);}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <span style="font-size:1rem;font-weight:600;">🗓️ Cronograma</span>
+  <a href="javascript:history.back()">← Volver</a>
+</div>
+<div class="container">
+  <div class="toggle-bar">
+    <button class="toggle-btn active" id="btnHoy" type="button" onclick="setVista('hoy')">📍 Hoy</button>
+    <button class="toggle-btn" id="btnTodo" type="button" onclick="setVista('todo')">📅 Todo el viaje</button>
+  </div>
+  <div id="cronoContent"><div class="loading">Cargando cronograma…</div></div>
+</div>
+<script>
+const supa = supabase.createClient('https://mzousqdahqterfawhwsz.supabase.co','eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im16b3VzcWRhaHF0ZXJmYXdod3N6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA1MTc4MzUsImV4cCI6MjA5NjA5MzgzNX0.EdSlcRdLD75OdYlwtZGLVgL_PGpJysWb_MKvuwGgj5Y');
+
+const ACTIVITIES = [
+  {id:1,name:"Circuito Chico, Punto Panorámico",emoji:"🚌"},{id:2,name:"Adventure City Tour",emoji:"🏙️"},
+  {id:3,name:"Ski",emoji:"🏂"},{id:4,name:"Piedras Blancas De Día",emoji:"❄️"},
+  {id:5,name:"Adventure Day (Tom Wesley)",emoji:"🎒"},{id:6,name:"Canopy",emoji:"🌲"},
+  {id:7,name:"Extremos Encantado",emoji:"🧗"},{id:8,name:"Trekking",emoji:"🥾"},
+  {id:9,name:"Chocolatería",emoji:"🍫"},{id:10,name:"Aventura en el cerro",emoji:"🛵"},
+  {id:11,name:"Noche Fluo en pileta",emoji:"🏊"},{id:12,name:"Fiesta Wake Up",emoji:"🎉"},
+  {id:13,name:"Fourtrack",emoji:"🏎️"},{id:14,name:"Sala de Escape",emoji:"🔒"},
+  {id:15,name:"Noche Bowling",emoji:"🎳"},{id:16,name:"Cena de Gala",emoji:"🍽️"},
+  {id:17,name:"Piedras Blancas De Noche",emoji:"🌜"},{id:18,name:"Centro libre / compras",emoji:"🛍️"},
+  {id:19,name:"Llegada al hotel",emoji:"🏨"},{id:20,name:"Salida del hotel",emoji:"🏨"},
+];
+const ACT = Object.fromEntries(ACTIVITIES.map(a=>[a.id,a]));
+
+const DIAS = [
+  {n:1,fecha:'2026-08-15',label:'Día 1',desc:'Sábado 15 de agosto'},
+  {n:2,fecha:'2026-08-16',label:'Día 2',desc:'Domingo 16 de agosto'},
+  {n:3,fecha:'2026-08-17',label:'Día 3',desc:'Lunes 17 de agosto'},
+  {n:4,fecha:'2026-08-18',label:'Día 4',desc:'Martes 18 de agosto'},
+  {n:5,fecha:'2026-08-19',label:'Día 5',desc:'Miércoles 19 de agosto'},
+  {n:6,fecha:'2026-08-20',label:'Día 6',desc:'Jueves 20 de agosto'},
+  {n:7,fecha:'2026-08-21',label:'Día 7',desc:'Viernes 21 de agosto'},
+  {n:8,fecha:'2026-08-22',label:'Día 8',desc:'Sábado 22 de agosto'},
+];
+
+const TURNOS = [
+  {key:'manana',label:'Mañana'},
+  {key:'tarde',label:'Tarde'},
+  {key:'noche',label:'Noche'},
+];
+
+let cronoData = null;
+let vista = 'hoy';
+
+// Detectar qué día del viaje es hoy
+function diaHoy(){
+  const today = new Date().toISOString().slice(0,10);
+  return DIAS.find(d=>d.fecha===today) || null;
+}
+
+function setVista(v){
+  vista=v;
+  document.getElementById('btnHoy').classList.toggle('active',v==='hoy');
+  document.getElementById('btnTodo').classList.toggle('active',v==='todo');
+  render();
+}
+
+function actHTML(slots){
+  if(!slots||!slots.length) return '<div class="empty-act">Sin actividad</div>';
+  const filled = slots.filter(s=>s.act);
+  if(!filled.length) return '<div class="empty-act">Sin actividad</div>';
+  return filled.map(s=>{
+    const a = ACT[s.act];
+    if(!a) return '';
+    const horaStr = (s.salida||s.llegada) ? `<span class="act-hora">${s.salida?'Salida '+s.salida:''}${s.salida&&s.llegada?' · ':''}${s.llegada?'Regreso '+s.llegada:''}</span>` : '';
+    return `<div class="act-item"><span class="act-emoji">${a.emoji}</span><span class="act-name">${a.name}</span>${horaStr}</div>`;
+  }).join('');
+}
+
+function dayCardHTML(dia, data, isHoy, defaultOpen){
+  const d = data?.[dia.n] || {};
+  const headClass = defaultOpen ? 'day-head open' : 'day-head';
+  const bodyClass = defaultOpen ? 'day-body open' : 'day-body';
+  return `
+    <div class="day-card ${isHoy?'hoy':''}">
+      <div class="${headClass}" onclick="toggleDay(this)">
+        <div>
+          <div class="dn">${dia.label}</div>
+          <div class="df">${dia.desc}</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          ${isHoy?'<span class="hoy-badge">HOY</span>':''}
+          <span class="chev">▼</span>
+        </div>
+      </div>
+      <div class="${bodyClass}">
+        ${TURNOS.map(t=>`
+          <div class="turno">
+            <div class="turno-label">${t.label}</div>
+            <div class="turno-acts">${actHTML(d[t.key])}</div>
+          </div>`).join('')}
+      </div>
+    </div>`;
+}
+
+function toggleDay(head){
+  head.classList.toggle('open');
+  head.nextElementSibling.classList.toggle('open');
+}
+
+function render(){
+  if(!cronoData){document.getElementById('cronoContent').innerHTML='<div class="loading">Cargando…</div>';return;}
+  const hoy = diaHoy();
+  const el = document.getElementById('cronoContent');
+
+  if(vista==='hoy'){
+    if(!hoy){
+      // Fuera del rango del viaje
+      const esBefore = new Date() < new Date('2026-08-15');
+      el.innerHTML=`<div style="text-align:center;padding:40px 0;color:var(--muted);">
+        <div style="font-size:2rem;margin-bottom:10px;">${esBefore?'🏔️':'✈️'}</div>
+        <p>${esBefore?'El viaje empieza el 15 de agosto. ¡Ya falta poco!':'El viaje ya terminó. ¡Gracias por viajar con Wake Up!'}</p>
+        <button onclick="setVista('todo')" type="button" style="margin-top:14px;padding:10px 20px;border-radius:10px;border:1.5px solid var(--line);background:transparent;color:var(--muted);font-family:Outfit,sans-serif;font-size:.88rem;cursor:pointer;">Ver cronograma completo</button>
+      </div>`;
+      return;
+    }
+    el.innerHTML = dayCardHTML(hoy, cronoData, true, true);
+  } else {
+    el.innerHTML = DIAS.map(d=>dayCardHTML(d,cronoData,d.fecha===(hoy?.fecha||''),d.fecha===(hoy?.fecha||''))).join('');
+  }
+}
+
+async function load(){
+  const {data} = await supa.from('actividades').select('*').order('dia');
+  if(data){
+    // Reconstruir estructura: {dia: {manana:[...], tarde:[...], noche:[...]}}
+    cronoData={};
+    data.forEach(row=>{
+      if(!cronoData[row.dia]) cronoData[row.dia]={};
+      if(!cronoData[row.dia][row.turno]) cronoData[row.dia][row.turno]=[];
+      cronoData[row.dia][row.turno].push({act:row.actividad_id,salida:row.salida,llegada:row.llegada});
+    });
+  } else {
+    cronoData={};
+  }
+  render();
+}
+
+load();
+</script>
+</body>
+</html>

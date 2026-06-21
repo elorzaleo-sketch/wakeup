@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mensaje del día · Wake Up</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+<style>
+:root{--cyan:#5DB4C9;--magenta:#F11D8C;--green:#199432;--ink:#080808;--text:#fff;--muted:#98a6aa;--line:rgba(255,255,255,.12);}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Outfit',sans-serif;color:var(--text);background:var(--ink);min-height:100dvh;
+  background-image:radial-gradient(70% 40% at 50% 0%,rgba(93,180,201,.09) 0%,transparent 60%);}
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;}
+.topbar a{color:var(--muted);font-size:.83rem;text-decoration:none;}
+.topbar a:hover{color:var(--text);}
+.container{max-width:520px;margin:0 auto;padding:10px 20px 60px;}
+h1{font-family:'Bricolage Grotesque',sans-serif;font-size:1.5rem;font-weight:800;margin-bottom:4px;}
+.subtitle{color:var(--muted);font-size:.88rem;margin-bottom:24px;}
+
+/* WhatsApp bubble */
+.wa-wrap{background:#0b141a;border-radius:18px;overflow:hidden;box-shadow:0 8px 32px rgba(0,0,0,.4);}
+.wa-top{background:#1f2c33;padding:12px 16px;display:flex;align-items:center;gap:10px;}
+.wa-avatar{width:34px;height:34px;border-radius:50%;background:var(--green);display:flex;align-items:center;justify-content:center;font-size:16px;flex:0 0 auto;}
+.wa-name{font-size:.88rem;font-weight:600;color:#e9edef;}
+.wa-status{font-size:.72rem;color:#8696a0;}
+.wa-body{padding:16px 14px 20px;min-height:120px;}
+.bubble{background:#1f2c33;border-radius:0 12px 12px 12px;padding:10px 14px;display:inline-block;max-width:100%;font-size:.9rem;line-height:1.6;color:#e9edef;white-space:pre-wrap;word-break:break-word;}
+.bubble strong{color:#fff;}
+.wa-time{text-align:right;font-size:.7rem;color:#8696a0;margin-top:6px;}
+.empty-state{text-align:center;padding:40px 0;color:var(--muted);}
+.empty-state .ei{font-size:2.5rem;margin-bottom:12px;}
+.empty-state p{font-size:.9rem;}
+.fecha-badge{display:inline-block;background:rgba(93,180,201,.15);border:1px solid rgba(93,180,201,.3);color:var(--cyan);font-size:.75rem;font-weight:600;padding:4px 12px;border-radius:99px;margin-bottom:16px;}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <span style="font-size:1rem;font-weight:600;">📋 Mensaje del día</span>
+  <a href="javascript:history.back()">← Volver</a>
+</div>
+<div class="container">
+  <div id="content">
+    <div class="empty-state"><div class="ei">⏳</div><p>Cargando…</p></div>
+  </div>
+</div>
+<script>
+const supa = supabase.createClient('https://mzousqdahqterfawhwsz.supabase.co','eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im16b3VzcWRhaHF0ZXJmYXdod3N6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA1MTc4MzUsImV4cCI6MjA5NjA5MzgzNX0.EdSlcRdLD75OdYlwtZGLVgL_PGpJysWb_MKvuwGgj5Y');
+const DIAS = {'2026-08-15':'Sábado 15 de agosto','2026-08-16':'Domingo 16','2026-08-17':'Lunes 17','2026-08-18':'Martes 18','2026-08-19':'Miércoles 19','2026-08-20':'Jueves 20','2026-08-21':'Viernes 21','2026-08-22':'Sábado 22 de agosto'};
+
+async function load(){
+  const {data} = await supa.from('mensaje_dia').select('*').order('updated_at',{ascending:false}).limit(1);
+  const el = document.getElementById('content');
+  if(!data||!data.length){
+    el.innerHTML=`<div class="empty-state"><div class="ei">📭</div><p>Todavía no hay mensaje publicado.<br>Volvé más tarde.</p></div>`;
+    return;
+  }
+  const m = data[0];
+  const fechaLabel = m.fecha ? DIAS[m.fecha]||m.fecha : '';
+  const hora = new Date(m.updated_at).toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'});
+  const textoHTML = m.texto
+    .replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]))
+    .replace(/\*(.+?)\*/g,'<strong>$1</strong>');
+
+  el.innerHTML = `
+    ${fechaLabel ? `<div class="fecha-badge">📅 ${fechaLabel}</div>` : ''}
+    <div class="wa-wrap">
+      <div class="wa-top">
+        <div class="wa-avatar">🏔️</div>
+        <div>
+          <div class="wa-name">Wake Up Viajes</div>
+          <div class="wa-status">Bariloche 2026</div>
+        </div>
+      </div>
+      <div class="wa-body">
+        <div class="bubble">${textoHTML}</div>
+        <div class="wa-time">${hora} ✓✓</div>
+      </div>
+    </div>`;
+}
+load();
+</script>
+</body>
+</html>
