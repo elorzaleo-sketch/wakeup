@@ -348,7 +348,11 @@ document.getElementById('btnPublicar').addEventListener('click',async()=>{
     document.getElementById('videoThumbs').innerHTML='';
     btn.disabled=false; btn.textContent='Publicar resumen 🚀';
     setTimeout(()=>{prog.style.display='none';fill.style.width='0%';},1000);
-    /* ── MODERACIÓN DE COMENTARIOS ── */
+    loadResumenesPublicados();
+  }
+}
+
+/* ── MODERACIÓN DE COMENTARIOS ── */
 let currentResumenId = null;
 
 window.openComents = async function(resumenId, fecha) {
@@ -448,11 +452,7 @@ async function deleteResumen(id,fecha){
   if(!confirm(`¿Eliminar el resumen del ${fecha}?`)) return;
   await supa.from('resumenes_dia').delete().eq('id',id);
   showToast('Resumen eliminado');
-  loadResumenesPublicados();
-}
 
-loadResumenesPublicados();
-
-loadResumenesPublicados();</script>
+</script>
 </body>
 </html>
