@@ -813,7 +813,7 @@ function toggleResumen(btn, bodyId){
 async function loadComments(resumenId){
   const el = document.getElementById(`coments-${resumenId}`);
   if(!el) return;
-  const { data } = await supa.from('comentarios_resumen').select('*').eq('resumen_id', resumenId).order('created_at');
+  const { data } = await supa.from('comentarios_resumen').select('*').eq('resumen_id', resumenId).eq('oculto', false).order('created_at');
   if(!data||!data.length){ el.innerHTML='<div style="color:var(--muted);font-size:.82rem;">Sé el primero en comentar 👇</div>'; return; }
   el.innerHTML = data.map(c=>`
     <div class="comentario-item">
