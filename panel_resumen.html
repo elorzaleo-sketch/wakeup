@@ -260,7 +260,8 @@ document.getElementById('emojiDetails').addEventListener('toggle', e=>{
 });
 
 document.getElementById('emojiDetails').addEventListener('toggle', e=>{
-  document.getElementById('emojiChev').style.transform = e.target.open ? 'rotate(0deg)' : 'rotate(-90deg)';
+  const chev = document.getElementById('emojiChev');
+  if(chev) chev.style.transform = e.target.open ? 'rotate(0deg)' : 'rotate(-90deg)';
 });
 
 document.getElementById('emojiDetails').addEventListener('click',e=>{
@@ -347,9 +348,7 @@ document.getElementById('btnPublicar').addEventListener('click',async()=>{
     document.getElementById('videoThumbs').innerHTML='';
     btn.disabled=false; btn.textContent='Publicar resumen 🚀';
     setTimeout(()=>{prog.style.display='none';fill.style.width='0%';},1000);
-    loadResumenesPublicados();
-
-/* ── MODERACIÓN DE COMENTARIOS ── */
+    /* ── MODERACIÓN DE COMENTARIOS ── */
 let currentResumenId = null;
 
 async function openComents(resumenId, fecha) {
@@ -453,6 +452,7 @@ async function deleteResumen(id,fecha){
 }
 
 loadResumenesPublicados();
-</script>
+
+loadResumenesPublicados();</script>
 </body>
 </html>
