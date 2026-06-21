@@ -4,7 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Resumen del día · Coordis</title>
-
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -21,19 +20,16 @@ body{font-family:'Outfit',sans-serif;color:var(--text);background:var(--ink);min
 .container{max-width:700px;margin:0 auto;padding:20px 20px 80px;}
 .field{margin-bottom:14px;}
 label{display:block;font-size:.8rem;font-weight:600;margin:0 0 5px;color:var(--muted);}
-input[type=text],input[type=date],textarea,select{width:100%;font-family:'Outfit',sans-serif;font-size:.95rem;padding:12px 14px;border:1.5px solid var(--line);border-radius:11px;background:rgba(255,255,255,.04);color:var(--text);transition:border-color .15s;}
+input[type=text],textarea,select{width:100%;font-family:'Outfit',sans-serif;font-size:.95rem;padding:12px 14px;border:1.5px solid var(--line);border-radius:11px;background:rgba(255,255,255,.04);color:var(--text);transition:border-color .15s;}
 input::placeholder,textarea::placeholder{color:#5e6b6f;}
 input:focus,textarea:focus,select:focus{outline:none;border-color:var(--cyan);box-shadow:0 0 0 3px rgba(93,180,201,.15);}
 textarea{resize:vertical;}
 select option{background:#1a2224;}
 .section-title{font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.14em;color:var(--muted);margin:20px 0 10px;}
-.btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;cursor:pointer;font-family:'Outfit',sans-serif;font-weight:600;font-size:.97rem;padding:14px 20px;border-radius:12px;border:none;color:#fff;transition:transform .15s,box-shadow .2s;margin-top:6px;}
+.btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;cursor:pointer;font-family:'Outfit',sans-serif;font-weight:600;font-size:.97rem;padding:14px 20px;border-radius:12px;border:none;color:#fff;transition:transform .15s;margin-top:6px;}
 .btn-cyan{background:var(--cyan);box-shadow:0 10px 24px -8px rgba(93,180,201,.5);}
 .btn-cyan:hover{transform:translateY(-1px);}
-.btn-outline{background:transparent;border:1.5px solid var(--line);color:var(--muted);box-shadow:none;}
-.btn-outline:hover{border-color:var(--cyan);color:var(--text);transform:none;}
 .btn:disabled{opacity:.5;cursor:not-allowed;transform:none!important;}
-.emoji-bar{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0;}
 .emoji-btn{padding:4px 7px;border-radius:8px;border:1px solid var(--line);background:var(--card);cursor:pointer;font-size:1rem;transition:background .15s;flex-shrink:0;}
 .emoji-btn:hover{background:var(--card2);}
 .upload-zone{border:2px dashed var(--line);border-radius:12px;padding:22px;text-align:center;cursor:pointer;position:relative;transition:border-color .2s,background .2s;}
@@ -54,28 +50,17 @@ select option{background:#1a2224;}
 .ri-btn{padding:5px 12px;border-radius:8px;border:1.5px solid var(--line);background:transparent;color:var(--muted);font-family:'Outfit',sans-serif;font-size:.78rem;font-weight:600;cursor:pointer;}
 .ri-btn:hover{border-color:var(--cyan);color:var(--text);}
 .resumen-item .ri-preview{font-size:.84rem;color:var(--muted);line-height:1.5;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;}
-.search-bar{position:relative;margin-bottom:12px;}
-.search-bar input{padding-left:36px;}
-.search-bar .si{position:absolute;left:11px;top:50%;transform:translateY(-50%);color:var(--muted);}
-.ficha-row{display:flex;align-items:center;gap:12px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-bottom:8px;}
-.ficha-row .fr-ico{font-size:1.2rem;flex:0 0 auto;}
-.ficha-row .fr-txt{flex:1;min-width:0;}
-.ficha-row .fr-nombre{font-weight:600;font-size:.92rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-.ficha-row .fr-fecha{font-size:.74rem;color:var(--muted);margin-top:2px;}
-.ficha-row a{color:var(--cyan);font-size:.8rem;font-weight:600;text-decoration:none;white-space:nowrap;}
-.ficha-row a:hover{text-decoration:underline;}
-.ef-card{background:var(--card);border:1px solid var(--line);border-radius:13px;padding:16px;margin-bottom:10px;}
-.ef-nombre{font-weight:700;font-size:.95rem;margin-bottom:10px;}
-.ef-field{margin-bottom:8px;}
-.ef-label{font-size:.7rem;font-weight:600;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:2px;}
-.ef-val{font-size:.88rem;}
 .toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(80px);background:#1e2e31;border:1px solid rgba(93,180,201,.3);border-radius:12px;padding:10px 18px;font-size:.86rem;color:var(--text);transition:transform .3s cubic-bezier(.34,1.56,.64,1),opacity .3s;opacity:0;z-index:99;pointer-events:none;}
 .toast.show{transform:translateX(-50%) translateY(0);opacity:1;}
 .error{color:#ff5fae;font-size:.82rem;margin:8px 0;}
-@media(max-width:400px){.thumb-grid{grid-template-columns:repeat(3,1fr);}}
-
+/* Modal moderación */
+#modalComents{display:none;position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:200;overflow-y:auto;padding:20px;}
+.modal-inner{max-width:580px;margin:0 auto;background:#141e20;border:1px solid rgba(255,255,255,.12);border-radius:18px;padding:20px;}
+.modal-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;}
+.modal-head h2{font-family:'Bricolage Grotesque',sans-serif;font-size:1.05rem;font-weight:700;}
+.modal-close{background:rgba(255,255,255,.1);border:none;color:#fff;width:32px;height:32px;border-radius:50%;cursor:pointer;font-size:1rem;}
 .coment-card{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:12px 14px;margin-bottom:8px;display:flex;align-items:flex-start;gap:10px;}
-.coment-card.oculto{opacity:.4;}
+.coment-card.oculto{opacity:.35;border-style:dashed;}
 .coment-body{flex:1;min-width:0;}
 .coment-nombre{font-weight:600;font-size:.88rem;color:var(--cyan);margin-bottom:3px;}
 .coment-txt{font-size:.87rem;line-height:1.5;}
@@ -85,6 +70,7 @@ select option{background:#1a2224;}
 .coment-btn:hover{border-color:var(--cyan);color:var(--text);}
 .coment-btn.danger{color:#ff5fae;border-color:rgba(255,95,174,.3);}
 .coment-btn.danger:hover{border-color:#ff5fae;}
+@media(max-width:400px){.thumb-grid{grid-template-columns:repeat(3,1fr);}}
 </style>
 </head>
 <body>
@@ -118,88 +104,13 @@ select option{background:#1a2224;}
 
   <div class="field">
     <label>Texto del resumen</label>
-    
-    </div>
     <textarea id="rdTexto" rows="6" placeholder="Contá qué pasó hoy en el viaje…" spellcheck="true" lang="es" autocorrect="on" autocapitalize="sentences"></textarea>
-    <details id="emojiDetails" open style="margin:8px 0;max-width:100%;overflow:hidden;">
-      <summary style="cursor:pointer;font-size:.8rem;font-weight:600;color:var(--muted);list-style:none;display:flex;align-items:center;gap:6px;padding:4px 0;user-select:none;">
-        <span id="emojiChevron" style="transition:transform .2s;display:inline-block;">▼</span>
-        Emojis
+    <details id="emojiDetails" open style="margin-top:8px;max-width:100%;overflow:hidden;">
+      <summary style="font-size:.78rem;font-weight:600;color:var(--muted);cursor:pointer;list-style:none;display:flex;align-items:center;gap:6px;padding:4px 0;user-select:none;">
+        <span id="emojiChev" style="transition:transform .2s;display:inline-block;">▼</span> Emojis
       </summary>
-      <div style="display:flex;flex-wrap:wrap;gap:5px;margin-top:8px;" id="emojiBar">
-        <button class="emoji-btn" type="button" data-e="❄️">❄️</button>
-        <button class="emoji-btn" type="button" data-e="🏔️">🏔️</button>
-        <button class="emoji-btn" type="button" data-e="⛷️">⛷️</button>
-        <button class="emoji-btn" type="button" data-e="🎿">🎿</button>
-        <button class="emoji-btn" type="button" data-e="🌨️">🌨️</button>
-        <button class="emoji-btn" type="button" data-e="🗻">🗻</button>
-        <button class="emoji-btn" type="button" data-e="🌲">🌲</button>
-        <button class="emoji-btn" type="button" data-e="🏕️">🏕️</button>
-        <button class="emoji-btn" type="button" data-e="🌊">🌊</button>
-        <button class="emoji-btn" type="button" data-e="🛷">🛷</button>
-        <button class="emoji-btn" type="button" data-e="🧊">🧊</button>
-        <button class="emoji-btn" type="button" data-e="🌬️">🌬️</button>
-        <button class="emoji-btn" type="button" data-e="☀️">☀️</button>
-        <button class="emoji-btn" type="button" data-e="⛅">⛅</button>
-        <button class="emoji-btn" type="button" data-e="☁️">☁️</button>
-        <button class="emoji-btn" type="button" data-e="🌧️">🌧️</button>
-        <button class="emoji-btn" type="button" data-e="⛄">⛄</button>
-        <button class="emoji-btn" type="button" data-e="🌤️">🌤️</button>
-        <button class="emoji-btn" type="button" data-e="🌙">🌙</button>
-        <button class="emoji-btn" type="button" data-e="⭐">⭐</button>
-        <button class="emoji-btn" type="button" data-e="🌟">🌟</button>
-        <button class="emoji-btn" type="button" data-e="🌈">🌈</button>
-        <button class="emoji-btn" type="button" data-e="😄">😄</button>
-        <button class="emoji-btn" type="button" data-e="😊">😊</button>
-        <button class="emoji-btn" type="button" data-e="🤩">🤩</button>
-        <button class="emoji-btn" type="button" data-e="😍">😍</button>
-        <button class="emoji-btn" type="button" data-e="🥳">🥳</button>
-        <button class="emoji-btn" type="button" data-e="😎">😎</button>
-        <button class="emoji-btn" type="button" data-e="🤗">🤗</button>
-        <button class="emoji-btn" type="button" data-e="😂">😂</button>
-        <button class="emoji-btn" type="button" data-e="🥺">🥺</button>
-        <button class="emoji-btn" type="button" data-e="😴">😴</button>
-        <button class="emoji-btn" type="button" data-e="🥶">🥶</button>
-        <button class="emoji-btn" type="button" data-e="🤯">🤯</button>
-        <button class="emoji-btn" type="button" data-e="❤️">❤️</button>
-        <button class="emoji-btn" type="button" data-e="🧡">🧡</button>
-        <button class="emoji-btn" type="button" data-e="💛">💛</button>
-        <button class="emoji-btn" type="button" data-e="💚">💚</button>
-        <button class="emoji-btn" type="button" data-e="💙">💙</button>
-        <button class="emoji-btn" type="button" data-e="💜">💜</button>
-        <button class="emoji-btn" type="button" data-e="🩷">🩷</button>
-        <button class="emoji-btn" type="button" data-e="🤍">🤍</button>
-        <button class="emoji-btn" type="button" data-e="👏">👏</button>
-        <button class="emoji-btn" type="button" data-e="🙌">🙌</button>
-        <button class="emoji-btn" type="button" data-e="👍">👍</button>
-        <button class="emoji-btn" type="button" data-e="🤝">🤝</button>
-        <button class="emoji-btn" type="button" data-e="✌️">✌️</button>
-        <button class="emoji-btn" type="button" data-e="🤙">🤙</button>
-        <button class="emoji-btn" type="button" data-e="💪">💪</button>
-        <button class="emoji-btn" type="button" data-e="🫶">🫶</button>
-        <button class="emoji-btn" type="button" data-e="🎉">🎉</button>
-        <button class="emoji-btn" type="button" data-e="🥂">🥂</button>
-        <button class="emoji-btn" type="button" data-e="🎊">🎊</button>
-        <button class="emoji-btn" type="button" data-e="🔥">🔥</button>
-        <button class="emoji-btn" type="button" data-e="✨">✨</button>
-        <button class="emoji-btn" type="button" data-e="💫">💫</button>
-        <button class="emoji-btn" type="button" data-e="🎭">🎭</button>
-        <button class="emoji-btn" type="button" data-e="🎶">🎶</button>
-        <button class="emoji-btn" type="button" data-e="🕺">🕺</button>
-        <button class="emoji-btn" type="button" data-e="💃">💃</button>
-        <button class="emoji-btn" type="button" data-e="🎤">🎤</button>
-        <button class="emoji-btn" type="button" data-e="🍕">🍕</button>
-        <button class="emoji-btn" type="button" data-e="🍝">🍝</button>
-        <button class="emoji-btn" type="button" data-e="🥩">🥩</button>
-        <button class="emoji-btn" type="button" data-e="🍗">🍗</button>
-        <button class="emoji-btn" type="button" data-e="🥗">🥗</button>
-        <button class="emoji-btn" type="button" data-e="🍰">🍰</button>
-        <button class="emoji-btn" type="button" data-e="🧇">🧇</button>
-        <button class="emoji-btn" type="button" data-e="☕">☕</button>
-        <button class="emoji-btn" type="button" data-e="🧉">🧉</button>
-        <button class="emoji-btn" type="button" data-e="🍫">🍫</button>
-        <button class="emoji-btn" type="button" data-e="🍵">🍵</button>
-        <button class="emoji-btn" type="button" data-e="🫗">🫗</button>
+      <div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:8px;max-width:100%;">
+        <button class="emoji-btn" type="button" data-e="❄️">❄️</button><button class="emoji-btn" type="button" data-e="🏔️">🏔️</button><button class="emoji-btn" type="button" data-e="⛷️">⛷️</button><button class="emoji-btn" type="button" data-e="🎿">🎿</button><button class="emoji-btn" type="button" data-e="🌨️">🌨️</button><button class="emoji-btn" type="button" data-e="🗻">🗻</button><button class="emoji-btn" type="button" data-e="🌲">🌲</button><button class="emoji-btn" type="button" data-e="🏕️">🏕️</button><button class="emoji-btn" type="button" data-e="🌊">🌊</button><button class="emoji-btn" type="button" data-e="🛷">🛷</button><button class="emoji-btn" type="button" data-e="🧊">🧊</button><button class="emoji-btn" type="button" data-e="🌬️">🌬️</button><button class="emoji-btn" type="button" data-e="☀️">☀️</button><button class="emoji-btn" type="button" data-e="⛅">⛅</button><button class="emoji-btn" type="button" data-e="☁️">☁️</button><button class="emoji-btn" type="button" data-e="🌧️">🌧️</button><button class="emoji-btn" type="button" data-e="⛄">⛄</button><button class="emoji-btn" type="button" data-e="🌤️">🌤️</button><button class="emoji-btn" type="button" data-e="🌙">🌙</button><button class="emoji-btn" type="button" data-e="🌟">🌟</button><button class="emoji-btn" type="button" data-e="🌈">🌈</button><button class="emoji-btn" type="button" data-e="😄">😄</button><button class="emoji-btn" type="button" data-e="😊">😊</button><button class="emoji-btn" type="button" data-e="🤩">🤩</button><button class="emoji-btn" type="button" data-e="😍">😍</button><button class="emoji-btn" type="button" data-e="🥳">🥳</button><button class="emoji-btn" type="button" data-e="😎">😎</button><button class="emoji-btn" type="button" data-e="🤗">🤗</button><button class="emoji-btn" type="button" data-e="😂">😂</button><button class="emoji-btn" type="button" data-e="🥺">🥺</button><button class="emoji-btn" type="button" data-e="😴">😴</button><button class="emoji-btn" type="button" data-e="🥶">🥶</button><button class="emoji-btn" type="button" data-e="🤯">🤯</button><button class="emoji-btn" type="button" data-e="❤️">❤️</button><button class="emoji-btn" type="button" data-e="🧡">🧡</button><button class="emoji-btn" type="button" data-e="💛">💛</button><button class="emoji-btn" type="button" data-e="💚">💚</button><button class="emoji-btn" type="button" data-e="💙">💙</button><button class="emoji-btn" type="button" data-e="💜">💜</button><button class="emoji-btn" type="button" data-e="🩷">🩷</button><button class="emoji-btn" type="button" data-e="🤍">🤍</button><button class="emoji-btn" type="button" data-e="👏">👏</button><button class="emoji-btn" type="button" data-e="🙌">🙌</button><button class="emoji-btn" type="button" data-e="👍">👍</button><button class="emoji-btn" type="button" data-e="🤝">🤝</button><button class="emoji-btn" type="button" data-e="✌️">✌️</button><button class="emoji-btn" type="button" data-e="🤙">🤙</button><button class="emoji-btn" type="button" data-e="💪">💪</button><button class="emoji-btn" type="button" data-e="🫶">🫶</button><button class="emoji-btn" type="button" data-e="🎉">🎉</button><button class="emoji-btn" type="button" data-e="🥂">🥂</button><button class="emoji-btn" type="button" data-e="🎊">🎊</button><button class="emoji-btn" type="button" data-e="🔥">🔥</button><button class="emoji-btn" type="button" data-e="✨">✨</button><button class="emoji-btn" type="button" data-e="💫">💫</button><button class="emoji-btn" type="button" data-e="🎭">🎭</button><button class="emoji-btn" type="button" data-e="🎶">🎶</button><button class="emoji-btn" type="button" data-e="🕺">🕺</button><button class="emoji-btn" type="button" data-e="💃">💃</button><button class="emoji-btn" type="button" data-e="🎤">🎤</button><button class="emoji-btn" type="button" data-e="🍕">🍕</button><button class="emoji-btn" type="button" data-e="🍝">🍝</button><button class="emoji-btn" type="button" data-e="🥩">🥩</button><button class="emoji-btn" type="button" data-e="🍗">🍗</button><button class="emoji-btn" type="button" data-e="🥗">🥗</button><button class="emoji-btn" type="button" data-e="🍰">🍰</button><button class="emoji-btn" type="button" data-e="🧇">🧇</button><button class="emoji-btn" type="button" data-e="☕">☕</button><button class="emoji-btn" type="button" data-e="🧉">🧉</button><button class="emoji-btn" type="button" data-e="🍫">🍫</button><button class="emoji-btn" type="button" data-e="🍵">🍵</button><button class="emoji-btn" type="button" data-e="🫗">🫗</button>
       </div>
     </details>
   </div>
@@ -233,18 +144,19 @@ select option{background:#1a2224;}
   <p class="section-title" style="margin-top:28px;">Resúmenes publicados</p>
   <div id="resumenesPublicados"><div style="color:var(--muted);font-size:.88rem;text-align:center;padding:16px;">Cargando…</div></div>
 </div>
-<div class="toast" id="toast"></div>
 
 <!-- Modal moderación comentarios -->
-<div id="modalComents" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:99;overflow-y:auto;padding:20px;">
-  <div style="max-width:600px;margin:0 auto;background:#111;border:1px solid rgba(255,255,255,.12);border-radius:18px;padding:20px;">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
-      <h2 style="font-family:'Bricolage Grotesque',sans-serif;font-size:1.1rem;font-weight:700;" id="modalTitle">Comentarios</h2>
-      <button type="button" onclick="closeModal()" style="background:rgba(255,255,255,.1);border:none;color:#fff;width:32px;height:32px;border-radius:50%;cursor:pointer;font-size:1rem;">✕</button>
+<div id="modalComents">
+  <div class="modal-inner">
+    <div class="modal-head">
+      <h2 id="modalTitle">Comentarios</h2>
+      <button type="button" class="modal-close" onclick="closeModal()">✕</button>
     </div>
     <div id="modalComentsList"></div>
   </div>
 </div>
+
+<div class="toast" id="toast"></div>
 
 <script>
 const SUPA_URL="https://mzousqdahqterfawhwsz.supabase.co", SUPA_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im16b3VzcWRhaHF0ZXJmYXdod3N6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA1MTc4MzUsImV4cCI6MjA5NjA5MzgzNX0.EdSlcRdLD75OdYlwtZGLVgL_PGpJysWb_MKvuwGgj5Y";
@@ -252,20 +164,18 @@ const supa=supabase.createClient(SUPA_URL,SUPA_KEY);
 let toastT;
 function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove('show'),2800);}
 </script>
+
 <script>
 let rdFotos=[],rdVideos=[];
 
+/* ── EMOJI ── */
 document.getElementById('emojiDetails').addEventListener('toggle', e=>{
-  document.getElementById('emojiChevron').style.transform = e.target.open ? 'rotate(0deg)' : 'rotate(-90deg)';
+  const chev=document.getElementById('emojiChev');
+  if(chev) chev.style.transform=e.target.open?'rotate(0deg)':'rotate(-90deg)';
 });
-
-document.getElementById('emojiDetails').addEventListener('toggle', e=>{
-  const chev = document.getElementById('emojiChev');
-  if(chev) chev.style.transform = e.target.open ? 'rotate(0deg)' : 'rotate(-90deg)';
-});
-
 document.getElementById('emojiDetails').addEventListener('click',e=>{
-  const btn=e.target.closest('.emoji-btn'); if(!btn||e.target.closest('summary')) return;
+  const btn=e.target.closest('.emoji-btn');
+  if(!btn||e.target.closest('summary')) return;
   const ta=document.getElementById('rdTexto');
   const pos=ta.selectionStart, v=ta.value;
   ta.value=v.slice(0,pos)+btn.dataset.e+v.slice(pos);
@@ -273,7 +183,12 @@ document.getElementById('emojiDetails').addEventListener('click',e=>{
   ta.focus();
 });
 
+/* ── UPLOAD FOTOS ── */
 document.getElementById('fotoFiles').addEventListener('change',e=>addFotos(e.target.files));
+document.getElementById('fotoZone').addEventListener('dragover',e=>{e.preventDefault();e.currentTarget.classList.add('over');});
+document.getElementById('fotoZone').addEventListener('dragleave',e=>e.currentTarget.classList.remove('over'));
+document.getElementById('fotoZone').addEventListener('drop',e=>{e.preventDefault();e.currentTarget.classList.remove('over');addFotos(e.dataTransfer.files);});
+
 document.getElementById('videoFiles').addEventListener('change',e=>addVideos(e.target.files));
 
 function addFotos(files){
@@ -285,13 +200,13 @@ function addVideos(files){
   renderThumbs('videoThumbs',rdVideos,'video');
 }
 function renderThumbs(gridId,files,type){
-  const grid=document.getElementById(gridId); grid.innerHTML='';
+  const grid=document.getElementById(gridId);grid.innerHTML='';
   files.forEach((f,i)=>{
     const url=URL.createObjectURL(f);
-    const div=document.createElement('div'); div.className='thumb';
+    const div=document.createElement('div');div.className='thumb';
     div.innerHTML=type==='foto'
-      ?`<img src="${url}" alt=""><button class="rm" onclick="removeFile('${type}',${i})">✕</button>`
-      :`<video src="${url}" muted playsinline></video><button class="rm" onclick="removeFile('${type}',${i})">✕</button>`;
+      ?`<img src="${url}" alt=""><button class="rm" onclick="removeFile('foto',${i})">✕</button>`
+      :`<video src="${url}" muted playsinline></video><button class="rm" onclick="removeFile('video',${i})">✕</button>`;
     grid.appendChild(div);
   });
 }
@@ -300,6 +215,7 @@ function removeFile(type,i){
   else{rdVideos.splice(i,1);renderThumbs('videoThumbs',rdVideos,'video');}
 }
 
+/* ── PUBLICAR ── */
 document.getElementById('btnPublicar').addEventListener('click',async()=>{
   const fecha=document.getElementById('rdFecha').value;
   const texto=document.getElementById('rdTexto').value.trim();
@@ -308,12 +224,10 @@ document.getElementById('btnPublicar').addEventListener('click',async()=>{
   errEl.textContent='';
   if(!fecha){errEl.textContent='Seleccioná el día.';return;}
   if(!texto&&!rdFotos.length){errEl.textContent='Escribí algo o subí al menos una foto.';return;}
-
   const btn=document.getElementById('btnPublicar');
-  btn.disabled=true; btn.textContent='Publicando…';
-  const prog=document.getElementById('rdProgress'); prog.style.display='block';
-  const fill=document.getElementById('rdFill'); fill.style.width='10%';
-
+  btn.disabled=true;btn.textContent='Publicando…';
+  const prog=document.getElementById('rdProgress');prog.style.display='block';
+  const fill=document.getElementById('rdFill');fill.style.width='10%';
   try{
     const fotoUrls=[],videoUrls=[];
     const total=rdFotos.length+rdVideos.length;
@@ -324,7 +238,7 @@ document.getElementById('btnPublicar').addEventListener('click',async()=>{
       if(error) throw error;
       const {data}=supa.storage.from('resumenes').getPublicUrl(name);
       fotoUrls.push(data.publicUrl);
-      done++; fill.style.width=`${10+Math.round(done/total*70)}%`;
+      done++;fill.style.width=`${10+Math.round(done/total*70)}%`;
     }
     for(const v of rdVideos){
       const name=`${fecha}/vid_${Date.now()}_${v.name.replace(/\s/g,'_')}`;
@@ -332,91 +246,32 @@ document.getElementById('btnPublicar').addEventListener('click',async()=>{
       if(error) throw error;
       const {data}=supa.storage.from('resumenes').getPublicUrl(name);
       videoUrls.push(data.publicUrl);
-      done++; fill.style.width=`${10+Math.round(done/total*70)}%`;
+      done++;fill.style.width=`${10+Math.round(done/total*70)}%`;
     }
     fill.style.width='85%';
     const payload={fecha,titulo:titulo||null,texto:texto||null,fotos:fotoUrls,videos:videoUrls,updated_at:new Date().toISOString()};
     const {error:dbErr}=await supa.from('resumenes_dia').upsert(payload,{onConflict:'fecha'});
     if(dbErr) throw dbErr;
     fill.style.width='100%';
-    showToast('¡Resumen publicado! Las familias ya pueden verlo ✓');
+    showToast('¡Resumen publicado! ✓');
     document.getElementById('rdFecha').value='';
     document.getElementById('rdTitulo').value='';
     document.getElementById('rdTexto').value='';
-    rdFotos=[]; rdVideos=[];
+    rdFotos=[];rdVideos=[];
     document.getElementById('fotoThumbs').innerHTML='';
     document.getElementById('videoThumbs').innerHTML='';
-    btn.disabled=false; btn.textContent='Publicar resumen 🚀';
+    btn.disabled=false;btn.textContent='Publicar resumen 🚀';
     setTimeout(()=>{prog.style.display='none';fill.style.width='0%';},1000);
     loadResumenesPublicados();
-  }
-}
-
-/* ── MODERACIÓN DE COMENTARIOS ── */
-let currentResumenId = null;
-
-window.openComents = async function(resumenId, fecha) {
-  currentResumenId = resumenId;
-  document.getElementById('modalTitle').textContent = `Comentarios · ${fecha}`;
-  document.getElementById('modalComents').style.display = 'block';
-  document.body.style.overflow = 'hidden';
-  await loadModalComents(resumenId);
-}
-
-window.closeModal = function() {
-  document.getElementById('modalComents').style.display = 'none';
-  document.body.style.overflow = '';
-}
-
-async function loadModalComents(resumenId) {
-  const el = document.getElementById('modalComentsList');
-  el.innerHTML = '<div style="color:var(--muted);text-align:center;padding:16px;">Cargando…</div>';
-  const { data, error } = await supa.from('comentarios_resumen').select('*').eq('resumen_id', resumenId).order('created_at');
-  if (!data || !data.length) {
-    el.innerHTML = '<div style="color:var(--muted);text-align:center;padding:16px;">No hay comentarios aún.</div>';
-    return;
-  }
-  el.innerHTML = data.map(c => `
-    <div class="coment-card ${c.oculto ? 'oculto' : ''}" id="cc-${c.id}">
-      <div class="coment-body">
-        <div class="coment-nombre">${c.nombre}</div>
-        <div class="coment-txt">${c.comentario}</div>
-        <div class="coment-fecha">${new Date(c.created_at).toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})}</div>
-      </div>
-      <div class="coment-actions">
-        <button class="coment-btn" type="button" onclick="toggleOculto('${c.id}', ${c.oculto})">${c.oculto ? '👁️ Mostrar' : '🚫 Ocultar'}</button>
-        <button class="coment-btn danger" type="button" onclick="deleteComent('${c.id}')">🗑️ Eliminar</button>
-      </div>
-    </div>`).join('');
-}
-
-window.toggleOculto = async function(id, estaOculto) {
-  const nuevoEstado = !estaOculto;
-  const { error } = await supa.from('comentarios_resumen').update({ oculto: nuevoEstado }).eq('id', id);
-  if (error) { showToast('Error al actualizar.'); return; }
-  showToast(nuevoEstado ? 'Comentario ocultado' : 'Comentario visible');
-  await loadModalComents(currentResumenId);
-}
-
-window.deleteComent = async function(id) {
-  if (!confirm('¿Eliminar este comentario? No se puede deshacer.')) return;
-  const { error } = await supa.from('comentarios_resumen').delete().eq('id', id);
-  if (error) { showToast('Error al eliminar.'); return; }
-  showToast('Comentario eliminado ✓');
-  await loadModalComents(currentResumenId);
-}
-
-// Cerrar modal tocando el fondo
-document.getElementById('modalComents').addEventListener('click', e => {
-  if (e.target === e.currentTarget) closeModal();
-});
   }catch(e){
-    errEl.textContent='Error al publicar: '+e.message;
-    btn.disabled=false; btn.textContent='Publicar resumen 🚀';
+    errEl.textContent='Error: '+e.message;
+    btn.disabled=false;btn.textContent='Publicar resumen 🚀';
     prog.style.display='none';
+    console.error(e);
   }
 });
 
+/* ── RESÚMENES PUBLICADOS ── */
 async function loadResumenesPublicados(){
   const el=document.getElementById('resumenesPublicados');
   const {data}=await supa.from('resumenes_dia').select('*').order('fecha',{ascending:false});
@@ -425,7 +280,7 @@ async function loadResumenesPublicados(){
     <div class="resumen-item">
       <div class="ri-head">
         <span class="ri-fecha">${r.fecha}</span>
-        <div style="display:flex;gap:6px;">
+        <div style="display:flex;gap:6px;flex-wrap:wrap;">
           <button class="ri-btn" type="button" onclick="editResumen('${r.fecha}')">✏️ Editar</button>
           <button class="ri-btn" type="button" onclick="openComents('${r.id}','${r.fecha}')">💬 Comentarios</button>
           <button class="ri-btn" type="button" onclick="deleteResumen('${r.id}','${r.fecha}')" style="color:#ff5fae;">🗑️</button>
@@ -442,7 +297,7 @@ function editResumen(fecha){
     if(r.data){
       document.getElementById('rdTitulo').value=r.data.titulo||'';
       document.getElementById('rdTexto').value=r.data.texto||'';
-      showToast('Editando el resumen del '+fecha+'. Publicá para guardar.');
+      showToast('Editando resumen del '+fecha+'. Publicá para guardar.');
       window.scrollTo(0,0);
     }
   });
@@ -452,7 +307,64 @@ async function deleteResumen(id,fecha){
   if(!confirm(`¿Eliminar el resumen del ${fecha}?`)) return;
   await supa.from('resumenes_dia').delete().eq('id',id);
   showToast('Resumen eliminado');
+  loadResumenesPublicados();
+}
 
+/* ── MODERACIÓN COMENTARIOS ── */
+let currentResumenId=null;
+
+function openComents(resumenId,fecha){
+  currentResumenId=resumenId;
+  document.getElementById('modalTitle').textContent=`Comentarios · ${fecha}`;
+  document.getElementById('modalComents').style.display='block';
+  document.body.style.overflow='hidden';
+  loadModalComents(resumenId);
+}
+
+function closeModal(){
+  document.getElementById('modalComents').style.display='none';
+  document.body.style.overflow='';
+}
+
+async function loadModalComents(resumenId){
+  const el=document.getElementById('modalComentsList');
+  el.innerHTML='<div style="color:var(--muted);text-align:center;padding:16px;">Cargando…</div>';
+  const {data}=await supa.from('comentarios_resumen').select('*').eq('resumen_id',resumenId).order('created_at');
+  if(!data||!data.length){el.innerHTML='<div style="color:var(--muted);text-align:center;padding:16px;">No hay comentarios aún.</div>';return;}
+  el.innerHTML=data.map(c=>`
+    <div class="coment-card ${c.oculto?'oculto':''}">
+      <div class="coment-body">
+        <div class="coment-nombre">${c.nombre}</div>
+        <div class="coment-txt">${c.comentario}</div>
+        <div class="coment-fecha">${new Date(c.created_at).toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})}</div>
+      </div>
+      <div class="coment-actions">
+        <button class="coment-btn" type="button" onclick="toggleOculto('${c.id}',${!!c.oculto})">${c.oculto?'👁️ Mostrar':'🚫 Ocultar'}</button>
+        <button class="coment-btn danger" type="button" onclick="deleteComent('${c.id}')">🗑️ Eliminar</button>
+      </div>
+    </div>`).join('');
+}
+
+async function toggleOculto(id,estaOculto){
+  const {error}=await supa.from('comentarios_resumen').update({oculto:!estaOculto}).eq('id',id);
+  if(error){showToast('Error al actualizar.');return;}
+  showToast(!estaOculto?'Comentario ocultado':'Comentario visible');
+  loadModalComents(currentResumenId);
+}
+
+async function deleteComent(id){
+  if(!confirm('¿Eliminar este comentario?')) return;
+  const {error}=await supa.from('comentarios_resumen').delete().eq('id',id);
+  if(error){showToast('Error al eliminar.');return;}
+  showToast('Comentario eliminado ✓');
+  loadModalComents(currentResumenId);
+}
+
+document.getElementById('modalComents').addEventListener('click',e=>{
+  if(e.target===e.currentTarget) closeModal();
+});
+
+loadResumenesPublicados();
 </script>
 </body>
 </html>
