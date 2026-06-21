@@ -96,7 +96,7 @@ select option{background:#1a2224;}
 <body>
 <div class="topbar">
   <h1>💬 Encuestas familias</h1>
-  <a href="/#accesos">← Volver</a>
+  <a href="/#accesos" style="font-size:.83rem;font-weight:600;color:var(--muted);text-decoration:none;padding:6px 14px;border:1.5px solid var(--line);border-radius:99px;transition:.15s;">Panel →</a>
 </div>
 <div class="container">
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px;">
@@ -138,7 +138,10 @@ function renderEfCards(){
   el.innerHTML=data.map(r=>`<div class="ef-card">
       <div class="card-head">
         <span class="card-nombre">${r.nombre||'Anónimo'}</span>
-        <span class="card-fecha">${new Date(r.created_at).toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric'})}</span>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span class="card-fecha">${new Date(r.created_at).toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric'})}</span>
+          <button type="button" onclick="deleteEf('${r.id}')" style="padding:3px 9px;border-radius:7px;border:1.5px solid rgba(255,95,174,.3);background:transparent;color:#ff5fae;font-family:Outfit,sans-serif;font-size:.73rem;font-weight:600;cursor:pointer;">🗑️</button>
+        </div>
       </div>
       ${r.estrellas_organizacion?`<div class="ef-field"><div class="ef-label">Organización</div><div class="ef-val" style="color:#f5c842;letter-spacing:2px;">${stars(r.estrellas_organizacion)}</div></div>`:''}
       ${r.estrellas_experiencia?`<div class="ef-field"><div class="ef-label">Experiencia general</div><div class="ef-val" style="color:#f5c842;letter-spacing:2px;">${stars(r.estrellas_experiencia)}</div></div>`:''}
@@ -161,6 +164,13 @@ async function loadEncuestasFam(){
   document.getElementById('statRec').textContent=data.length?Math.round(rec/data.length*100)+'%':'—';
   renderEfCards();
 }
+async function deleteEf(id) {
+  if(!confirm('¿Eliminar esta respuesta?')) return;
+  const { error } = await supa.from('encuestas_familias').delete().eq('id', id);
+  if(error) { alert('Error: ' + error.message); return; }
+  loadEncuestasFam();
+}
+
 loadEncuestasFam();
 </script>
 </body>

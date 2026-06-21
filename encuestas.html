@@ -52,7 +52,7 @@
 
 <div class="topbar">
   <h1>✨ Encuestas del viaje</h1>
-  <a href="/#accesos">← Volver</a>
+  <a href="/#accesos" style="font-size:.83rem;font-weight:600;color:var(--muted);text-decoration:none;padding:6px 14px;border:1.5px solid var(--line);border-radius:99px;transition:.15s;">Panel →</a>
 </div>
 
 <div class="container">
@@ -109,6 +109,7 @@ function renderCards(data) {
         <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
           <span class="stars-disp">${starsHtml(r.estrellas)}</span>
           <span class="card-fecha">${formatFecha(r.created_at)}</span>
+          <button type="button" onclick="deleteEncuesta('${r.id}')" style="padding:3px 9px;border-radius:7px;border:1.5px solid rgba(255,95,174,.3);background:transparent;color:#ff5fae;font-family:Outfit,sans-serif;font-size:.73rem;font-weight:600;cursor:pointer;">🗑️</button>
         </div>
       </div>
       ${r.recomendaria ? `<div class="field-row"><div class="flabel">¿Lo recomendaría?</div><div class="fval"><span class="badge">${r.recomendaria}</span></div></div>` : ''}
@@ -155,6 +156,13 @@ async function load() {
   document.getElementById('statRec').textContent = pct;
 
   applyFilter();
+}
+
+async function deleteEncuesta(id) {
+  if(!confirm('¿Eliminar esta respuesta?')) return;
+  const { error } = await supa.from('experiencias').delete().eq('id', id);
+  if(error) { alert('Error al eliminar: ' + error.message); return; }
+  load();
 }
 
 load();

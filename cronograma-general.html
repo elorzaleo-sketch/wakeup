@@ -153,7 +153,6 @@
 <div class="wrap">
   <header>
     <div class="brand">
-      <a href="/#accesos" class="btn" style="text-decoration:none">← Panel</a>
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 410.48 408.65" aria-label="Wake Up">
         <path fill="#000" fill-rule="evenodd" d="M137.78,95.24c14.69,1.8,31.05,2.96,39.75,2.53,2.14-.11,23.13-2.02,19.1-8.01-5.94-8.84-16.92-10.94-26.79-9.56-10.54,1.47-21.84,7.16-32.07,15.04M89.67,134.4c5.18-15.23,13.58-27.33,24.6-37.83-2.98-.96-5.58-1.94-7.68-2.91-7.54-3.48-11.06-5.65-15.79-12.35,8.7,4.76,12.64,7.1,22.51,9.75,1.6.43,3.5.86,5.62,1.28,2.42-2.08,4.95-4.1,7.57-6.08,20.98-15.77,56.49-30.7,77.16-5.81,12.91,15.54-2.67,24.68-18.49,26.44-11.56,1.28-35-1.66-54.23-5.92-12.06,10.98-21.78,24.67-25.61,37.13-1.02,4.33-5.36,7.01-9.69,5.98-4.33-1.02-7.01-5.36-5.98-9.69Z"/>
         <path fill="#199432" fill-rule="evenodd" d="M195.85,93.37c-9.74,5.64-30.27,5.65-58.08,1.87,19.72-13.77,37.87-19.01,53.57-10.89,5.65,4.49,6.91,7.4,4.51,9.01"/>
@@ -175,7 +174,9 @@
         <div class="sub">Wake Up Viajes <span id="modetag" class="modetag view">Solo lectura</span> <span class="status" id="status"></span></div>
       </div>
     </div>
-    <div class="tools" id="tools"></div>
+    <div class="tools" id="tools" style="display:flex;align-items:center;gap:10px;">
+      <a href="/#accesos" style="text-decoration:none;font-size:.83rem;font-weight:600;color:var(--muted,#666);padding:6px 14px;border:1.5px solid rgba(0,0,0,.12);border-radius:99px;transition:.15s;" onmouseover="this.style.color='#333'" onmouseout="this.style.color=''">Panel →</a>
+    </div>
   </header>
 
   <div class="rangebar" id="rangebar"></div>
