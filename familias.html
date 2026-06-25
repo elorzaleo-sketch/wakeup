@@ -290,7 +290,7 @@ textarea{resize:vertical;min-height:80px;}
   <div style="margin-top:16px;">
     <div class="progress-bar" id="fichaProgress" style="display:none;"><div class="progress-fill" id="fichaFill"></div></div>
     <button class="btn btn-cyan" id="btnSubirFicha" type="button" style="margin-top:8px;">
-      Generar PDF y enviar
+      Enviar
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13"/><path d="M22 2 15 22 11 13 2 9l20-7z"/></svg>
     </button>
   </div>
@@ -515,23 +515,21 @@ document.getElementById('logoutBtn').addEventListener('click', ()=>{
 /* ── MENÚ ── */
 async function loadFamiliaConfig(){
   try {
-    const { data, error } = await supa.from('config_app').select('clave,valor').like('key', 'landing_%');
+    const { data, error } = await supa.from('config_app').select('clave,valor');
     if(error) throw error;
-    if(data && data.length > 0){
-      // Hay config guardada: aplicar cada botón
-      MENU_BTNS.forEach(b => b.visible = false); // empezar en false
-      data.forEach(row=>{
+    const landingData = data ? data.filter(r => r.clave && r.clave.startsWith('landing_fbtn')) : [];
+    if(landingData.length > 0){
+      MENU_BTNS.forEach(b => b.visible = false);
+      landingData.forEach(row=>{
         const k = row.clave.replace('landing_','');
         const btn = MENU_BTNS.find(b=>b.id===k);
         if(btn) btn.visible = (row.valor == 1);
       });
     } else {
-      // Sin config guardada aún: mostrar todo
       MENU_BTNS.forEach(b => b.visible = true);
     }
   } catch(e) {
     console.error('loadFamiliaConfig error:', e);
-    // Si falla Supabase, mostrar todo
     MENU_BTNS.forEach(b => b.visible = true);
   }
   renderMenu();
@@ -605,7 +603,7 @@ document.getElementById('btnSubirFicha').addEventListener('click', async ()=>{
   if(!fichaImgFrente){ errEl.textContent='Subí al menos la foto del frente de la ficha.'; return; }
 
   const btn = document.getElementById('btnSubirFicha');
-  btn.disabled=true; btn.textContent='Procesando…';
+  btn.disabled=true; btn.textContent='Enviando…';
   const prog = document.getElementById('fichaProgress');
   const fill = document.getElementById('fichaFill');
   prog.style.display='block'; fill.style.width='20%';
@@ -725,14 +723,14 @@ document.getElementById('btnSubirFicha').addEventListener('click', async ()=>{
       document.getElementById('fichaDorso').value='';
       document.getElementById('prevFrente').style.display='none';
       document.getElementById('prevDorso').style.display='none';
-      btn.disabled=false; btn.innerHTML='Generar PDF y enviar <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="width:17px;height:17px"><path d="M22 2L11 13"/><path d="M22 2 15 22 11 13 2 9l20-7z"/></svg>';
+      btn.disabled=false; btn.innerHTML='Enviar <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="width:17px;height:17px"><path d="M22 2L11 13"/><path d="M22 2 15 22 11 13 2 9l20-7z"/></svg>';
       prog.style.display='none'; fill.style.width='0%';
     }, 3000);
 
   } catch(e){
     console.error(e);
     errEl.textContent='Hubo un error al enviar la ficha. Intentá de nuevo.';
-    btn.disabled=false; btn.textContent='Generar PDF y enviar';
+    btn.disabled=false; btn.textContent='Enviar';
     prog.style.display='none';
   }
 });
