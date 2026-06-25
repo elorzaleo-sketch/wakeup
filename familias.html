@@ -481,7 +481,11 @@ function show(id){
   window.scrollTo(0,0);
 }
 
-function goMenu(){ show('viewMenu'); }
+function goMenu(){
+  // Limpiar el ?panel= de la URL para que al volver no redirija de nuevo
+  history.replaceState(null, '', location.pathname);
+  show('viewMenu');
+}
 
 // Init
 if(lsGet(SESS_KEY)==='1'){
