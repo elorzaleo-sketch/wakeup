@@ -1020,11 +1020,11 @@ document.querySelectorAll('.tip-toggle').forEach(btn => {
    FAMILIA MENU CONFIG (para el index)
    ============================================================ */
 const FAMILIA_MENU_ITEMS = [
-  { id:"fbtn_descargar_ficha", label:"Descargar ficha de salud", icon:"⬇️", sub:"Descargá el formulario para completar", color:"card-cyan",    type:"link", href:"/familias.html#descargar" },
-  { id:"fbtn_cargar_ficha",    label:"Cargar ficha de salud",    icon:"📤", sub:"Subí la ficha completada y firmada",  color:"card-magenta", type:"link", href:"/familias.html#cargar" },
-  { id:"fbtn_doc_salida",      label:"Documentación para la salida", icon:"📋", sub:"Todo lo que necesitás tener listo", color:"card-green",   type:"link", href:"/familias.html#docsalida" },
-  { id:"fbtn_resumen",         label:"Resumen del día",          icon:"📸", sub:"Fotos, videos y novedades del viaje", color:"card-cyan",    type:"link", href:"/familias.html#resumen" },
-  { id:"fbtn_encuesta_fam",    label:"Tu opinión",               icon:"💬", sub:"Contanos cómo viviste el viaje",      color:"card-magenta", type:"link", href:"/familias.html#encuesta" },
+  { id:"fbtn_descargar_ficha", label:"Descargar ficha de salud", icon:"⬇️", sub:"Descargá el formulario para completar", color:"card-cyan",    type:"link", href:"/familias.html?panel=descargar" },
+  { id:"fbtn_cargar_ficha",    label:"Cargar ficha de salud",    icon:"📤", sub:"Subí la ficha completada y firmada",  color:"card-magenta", type:"link", href:"/familias.html?panel=cargar" },
+  { id:"fbtn_doc_salida",      label:"Documentación para la salida", icon:"📋", sub:"Todo lo que necesitás tener listo", color:"card-green",   type:"link", href:"/familias.html?panel=docsalida" },
+  { id:"fbtn_resumen",         label:"Resumen del día",          icon:"📸", sub:"Fotos, videos y novedades del viaje", color:"card-cyan",    type:"link", href:"/familias.html?panel=resumen" },
+  { id:"fbtn_encuesta_fam",    label:"Tu opinión",               icon:"💬", sub:"Contanos cómo viviste el viaje",      color:"card-magenta", type:"link", href:"/familias.html?panel=encuesta" },
 ];
 
 async function loadFamiliaMenuConfig() {
