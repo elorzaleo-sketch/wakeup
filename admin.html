@@ -2,6 +2,19 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
+
+<!-- 1. Manifest (hace la app instalable) -->
+<link rel="manifest" href="/manifest.json">
+ 
+<!-- 2. Theme color (color de la barra del browser en Android) -->
+<meta name="theme-color" content="#5DB4C9">
+ 
+<!-- 3. Para iOS (Safari no lee el manifest para algunos de estos) -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Wake Up">
+<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+ 
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -131,6 +144,16 @@
   @media(max-width:700px){.main{padding:16px;}.topbar{padding:10px 16px;}.sort-btn{display:none;}}
 </style>
 </head>
+
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/sw.js')
+        .catch(err => console.error('SW error:', err));
+    });
+  }
+  
+</script>
 <body>
 
 <!-- LOGIN -->
