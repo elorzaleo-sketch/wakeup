@@ -484,7 +484,32 @@ function show(id){
 function goMenu(){ show('viewMenu'); }
 
 // Init
-if(lsGet(SESS_KEY)==='1'){ loadFamiliaConfig(); show('viewMenu'); }
+if(lsGet(SESS_KEY)==='1'){
+  loadFamiliaConfig().then(()=>{
+    // Si viene con ?panel=xxx, ir directo a ese panel
+    const panelParam = new URLSearchParams(location.search).get('panel');
+    const PANEL_MAP = {
+      'descargar': null,        // es descarga directa, mostrar menú
+      'cargar':    'viewCargarFicha',
+      'docsalida': 'viewDocSalida',
+      'resumen':   'viewResumen',
+      'encuesta':  'viewEncuestaFamilias',
+    };
+    if(panelParam && PANEL_MAP[panelParam]){
+      if(panelParam === 'resumen') loadResumenes();
+      show(PANEL_MAP[panelParam]);
+    } else if(panelParam === 'descargar'){
+      // Descarga directa del PDF
+      const a = document.createElement('a');
+      a.href = '/FICHA_MEDICA_2026.pdf';
+      a.download = 'Ficha_de_Salud.pdf';
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
+      show('viewMenu');
+    } else {
+      show('viewMenu');
+    }
+  });
+}
 
 /* ── LOGIN ── */
 function attemptLogin(){
@@ -492,8 +517,12 @@ function attemptLogin(){
   if(p === PASS){
     lsSet(SESS_KEY,'1');
     document.getElementById('loginError').textContent='';
-    loadFamiliaConfig();
-    show('viewMenu');
+    const _panelParam = new URLSearchParams(location.search).get('panel');
+    const _PMAP = {'cargar':'viewCargarFicha','docsalida':'viewDocSalida','resumen':'viewResumen','encuesta':'viewEncuestaFamilias'};
+    loadFamiliaConfig().then(()=>{
+      if(_panelParam && _PMAP[_panelParam]){ if(_panelParam==='resumen') loadResumenes(); show(_PMAP[_panelParam]); }
+      else show('viewMenu');
+    });
   } else {
     document.getElementById('loginError').textContent='Clave incorrecta.';
   }
