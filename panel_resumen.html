@@ -173,6 +173,8 @@ select option{background:#1a2224;}
 <script>
 const SUPA_URL="https://mzousqdahqterfawhwsz.supabase.co", SUPA_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im16b3VzcWRhaHF0ZXJmYXdod3N6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA1MTc4MzUsImV4cCI6MjA5NjA5MzgzNX0.EdSlcRdLD75OdYlwtZGLVgL_PGpJysWb_MKvuwGgj5Y";
 const supa=supabase.createClient(SUPA_URL,SUPA_KEY);
+const R2_WORKER="https://wakeup-upload-worker.elorzaleo.workers.dev";
+const R2_TOKEN="wakeup-r2-secret-2026";
 let toastT;
 function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove('show'),2800);}
 </script>
@@ -240,8 +242,7 @@ document.getElementById('btnPublicar').addEventListener('click',async()=>{
   btn.disabled=true;btn.textContent='Publicando…';
   const prog=document.getElementById('rdProgress');prog.style.display='block';
   const fill=document.getElementById('rdFill');fill.style.width='10%';
-  const R2_WORKER='https://wakeup-upload-worker.elorzaleo.workers.dev';
-  const R2_TOKEN='wakeup-r2-secret-2026';
+
   async function subirArchivoR2(file,folder){
     const safeName=file.name.normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s/g,'_');
     const fileName=`${Date.now()}_${safeName}`;
@@ -352,9 +353,6 @@ async function deleteResumen(id,fecha){
         body:JSON.stringify({key})
       });
     }
-
-    // Borrar comentarios asociados primero (foreign key constraint)
-    await supa.from('comentarios_resumen').delete().eq('resumen_id',id);
 
     // Borrar el registro de la base de datos
     const {error}=await supa.from('resumenes_dia').delete().eq('id',id);
