@@ -911,7 +911,8 @@ async function loadResumenes(){
     const _fotos = r.fotos || [];
     window['_lb_'+r.id] = _fotos;
     const fotosHTML = _fotos.length ? `<div class="foto-grid">${_fotos.map(url=>`<img src="${url}" alt="foto" onclick="openLightbox('${url}',window['_lb_'+'${r.id}'])" loading="lazy">`).join('')}</div>` : '';
-    const videosHTML = r.videos?.length ? r.videos.map(url=>`<div class="video-wrap"><video controls playsinline preload="metadata" src="${url}"></video></div>`).join('') : '';
+    const streamUrl = url => url.includes('r2.dev') ? `https://wakeup-upload-worker.elorzaleo.workers.dev/stream/${encodeURIComponent(url.replace(/^https:\/\/pub-[^.]+\.r2\.dev\//, ''))}` : url;
+    const videosHTML = r.videos?.length ? r.videos.map(url=>`<div class="video-wrap"><video controls playsinline preload="metadata" src="${streamUrl(url)}"></video></div>`).join('') : '';
 
     el.innerHTML=`
       <button class="resumen-toggle" aria-expanded="${i===0}" type="button" onclick="toggleResumen(this,'${bodyId}')">
