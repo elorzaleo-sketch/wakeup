@@ -684,9 +684,12 @@ function renderMenu(){
   grid.innerHTML = '';
   MENU_BTNS.filter(b=>b.visible!==false).forEach(b=>{
     if(b.type==='link'){
-      const a=document.createElement('a');
-      a.href=b.href; a.target='_blank'; a.rel='noopener noreferrer';
-      btn.addEventListener('click',()=>a.click());
+      const btn=document.createElement('button');
+      btn.type='button';
+      btn.className=`action-card ${b.color}`;
+      btn.innerHTML=cardHTML(b);
+      btn.addEventListener('click',()=>window.open(b.href,'_blank','noopener,noreferrer'));
+      grid.appendChild(btn);
     } else if(b.type==='download'){
       const a = document.createElement('a');
       a.className=`action-card ${b.color}`;
