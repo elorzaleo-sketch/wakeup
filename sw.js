@@ -51,7 +51,9 @@ self.addEventListener('fetch', event => {
   if (
     url.hostname.includes('supabase.co') ||
     url.hostname.includes('googleapis.com') ||
-    url.hostname.includes('cdnjs.cloudflare.com')
+    url.hostname.includes('cdnjs.cloudflare.com') ||
+    url.hostname.includes('workers.dev') ||
+    request.method === 'POST'
   ) {
     event.respondWith(fetch(request));
     return;
