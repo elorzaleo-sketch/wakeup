@@ -347,12 +347,19 @@ async function deleteResumen(id,fecha){
     const archivosR2=todosArchivos.filter(url=>url.includes('r2.dev'));
     for(const url of archivosR2){
       const key=url.replace(/^https:\/\/pub-[^.]+\.r2\.dev\//,'');
-      await fetch(R2_WORKER+'/delete',{
-        method:'POST',
-        headers:{'X-Auth-Token':R2_TOKEN,'Content-Type':'application/json'},
-        body:JSON.stringify({key})
-      });
+      try{
+        await fetch(R2_WORKER+'/delete',{
+          method:'POST',
+          headers:{'X-Auth-Token':R2_TOKEN,'Content-Type':'application/json'},
+          body:JSON.stringify({key})
+        });
+      }catch(r2Err){
+        console.warn('No se pudo borrar archivo de R2:',r2Err);
+      }
     }
+
+    // Borrar comentarios asociados (foreign key constraint)
+    await supa.from('comentarios_resumen').delete().eq('resumen_id',id);
 
     // Borrar el registro de la base de datos
     const {error}=await supa.from('resumenes_dia').delete().eq('id',id);
