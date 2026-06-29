@@ -568,6 +568,7 @@ const MENU_BTNS = [
   { id:"fbtn_doc_salida",      label:"Datos del viaje, doc. y tips", icon:"📋", sub:"Info importante antes de partir",          type:"panel", panel:"viewDocSalida",  color:"card-green" },
   { id:"fbtn_resumen",         label:"Resumen del día",          icon:"📸", sub:"Fotos, videos y novedades del viaje",             type:"panel", panel:"viewResumen",    color:"card-cyan" },
   { id:"fbtn_encuesta_fam",    label:"Tu opinión",               icon:"💬", sub:"Contanos cómo viviste el viaje",                  type:"panel", panel:"viewEncuestaFamilias", color:"card-magenta" },
+  { id:"fbtn_instagram",        label:"Seguinos en Instagram",    icon:"📸", sub:"@okwakeup · fotos y novedades de Wake Up",           type:"link",  href:"https://www.instagram.com/okwakeup/", color:"card-cyan" },
 ];
 
 /* ============================================================
@@ -682,7 +683,11 @@ function renderMenu(){
   const grid = document.getElementById('menuGrid');
   grid.innerHTML = '';
   MENU_BTNS.filter(b=>b.visible!==false).forEach(b=>{
-    if(b.type==='download'){
+    if(b.type==='link'){
+      const a=document.createElement('a');
+      a.href=b.href; a.target='_blank'; a.rel='noopener noreferrer';
+      btn.addEventListener('click',()=>a.click());
+    } else if(b.type==='download'){
       const a = document.createElement('a');
       a.className=`action-card ${b.color}`;
       a.href=b.href; a.download='';
