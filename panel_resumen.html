@@ -240,24 +240,32 @@ document.getElementById('btnPublicar').addEventListener('click',async()=>{
   btn.disabled=true;btn.textContent='Publicando…';
   const prog=document.getElementById('rdProgress');prog.style.display='block';
   const fill=document.getElementById('rdFill');fill.style.width='10%';
+  const R2_WORKER='https://wakeup-upload-worker.elorzaleo.workers.dev';
+  const R2_TOKEN='wakeup-r2-secret-2026';
+  async function subirArchivoR2(file,folder){
+    const safeName=file.name.normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s/g,'_');
+    const fileName=`${Date.now()}_${safeName}`;
+    const fd=new FormData();
+    fd.append('file',file);
+    fd.append('fileName',fileName);
+    fd.append('folder',folder);
+    const res=await fetch(R2_WORKER,{method:'POST',headers:{'X-Auth-Token':R2_TOKEN},body:fd});
+    const json=await res.json();
+    if(!res.ok) throw new Error(json.error||'Error subiendo archivo');
+    return json.url;
+  }
   try{
     const fotoUrls=[],videoUrls=[];
     const total=rdFotos.length+rdVideos.length;
     let done=0;
     for(const f of rdFotos){
-      const name=`${fecha}/${Date.now()}_${f.name.replace(/\s/g,'_')}`;
-      const {error}=await supa.storage.from('resumenes').upload(name,f,{contentType:f.type});
-      if(error) throw error;
-      const {data}=supa.storage.from('resumenes').getPublicUrl(name);
-      fotoUrls.push(data.publicUrl);
+      const url=await subirArchivoR2(f,fecha);
+      fotoUrls.push(url);
       done++;fill.style.width=`${10+Math.round(done/total*70)}%`;
     }
     for(const v of rdVideos){
-      const name=`${fecha}/vid_${Date.now()}_${v.name.replace(/\s/g,'_')}`;
-      const {error}=await supa.storage.from('resumenes').upload(name,v,{contentType:v.type});
-      if(error) throw error;
-      const {data}=supa.storage.from('resumenes').getPublicUrl(name);
-      videoUrls.push(data.publicUrl);
+      const url=await subirArchivoR2(v,`${fecha}/videos`);
+      videoUrls.push(url);
       done++;fill.style.width=`${10+Math.round(done/total*70)}%`;
     }
     fill.style.width='85%';
@@ -317,9 +325,43 @@ function editResumen(fecha){
 
 async function deleteResumen(id,fecha){
   if(!confirm(`¿Eliminar el resumen del ${fecha}?`)) return;
-  await supa.from('resumenes_dia').delete().eq('id',id);
-  showToast('Resumen eliminado');
-  loadResumenesPublicados();
+  try{
+    // Buscar el registro para obtener las URLs de archivos
+    const {data:r}=await supa.from('resumenes_dia').select('fotos,videos').eq('id',id).single();
+    const todosArchivos=[...(r?.fotos||[]),...(r?.videos||[])];
+
+    // Borrar archivos de Supabase Storage (URLs que contengan supabase.co)
+    const archivosSupabase=todosArchivos
+      .filter(url=>url.includes('supabase.co'))
+      .map(url=>{
+        // Extraer el path después de /resumenes/
+        const match=url.match(/\/resumenes\/(.+)$/);
+        return match?match[1]:null;
+      }).filter(Boolean);
+    if(archivosSupabase.length){
+      await supa.storage.from('resumenes').remove(archivosSupabase);
+    }
+
+    // Borrar archivos de R2 (URLs que contengan r2.dev) vía Worker
+    const archivosR2=todosArchivos.filter(url=>url.includes('r2.dev'));
+    for(const url of archivosR2){
+      const key=url.replace(/^https:\/\/pub-[^.]+\.r2\.dev\//,'');
+      await fetch(R2_WORKER+'/delete',{
+        method:'POST',
+        headers:{'X-Auth-Token':R2_TOKEN,'Content-Type':'application/json'},
+        body:JSON.stringify({key})
+      });
+    }
+
+    // Borrar el registro de la base de datos
+    const {error}=await supa.from('resumenes_dia').delete().eq('id',id);
+    if(error) throw error;
+    showToast('Resumen eliminado ✓');
+    loadResumenesPublicados();
+  }catch(e){
+    showToast('Error al eliminar: '+e.message);
+    console.error(e);
+  }
 }
 
 /* ── MODERACIÓN COMENTARIOS ── */
