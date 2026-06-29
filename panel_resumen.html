@@ -353,6 +353,9 @@ async function deleteResumen(id,fecha){
       });
     }
 
+    // Borrar comentarios asociados primero (foreign key constraint)
+    await supa.from('comentarios_resumen').delete().eq('resumen_id',id);
+
     // Borrar el registro de la base de datos
     const {error}=await supa.from('resumenes_dia').delete().eq('id',id);
     if(error) throw error;
