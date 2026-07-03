@@ -758,6 +758,16 @@ const PASAJERO_BTNS = [
     type: "action",
     action: "experiencia",
     color: "card-magenta"
+  },
+  {
+    id: "btn_instagram",
+    label: "Seguinos en Instagram",
+    icon: "📸",
+    sub: "@okwakeup · fotos y novedades de Wake Up",
+    type: "link",
+    href: "https://www.instagram.com/okwakeup/",
+    color: "card-cyan",
+    external: true
   }
 ];
 
@@ -830,6 +840,15 @@ async function loadBtnConfig() {
         if (k in btnConfig) btnConfig[k] = row.valor == 1;
         if (k in fbtnConfig) fbtnConfig[k] = row.valor == 1;
       });
+      // Botones nuevos que todavía no tienen fila guardada: visibles por defecto
+      const knownKeys = new Set(landingData.map(r => r.clave.replace('landing_', '')));
+      for (const b of [...PASAJERO_BTNS, ...FAMILIA_BTNS]) {
+        if (!knownKeys.has(b.id)) {
+          if (b.id in btnConfig) btnConfig[b.id] = true;
+          if (b.id in fbtnConfig) fbtnConfig[b.id] = true;
+          await saveConfig('landing_' + b.id, 1);
+        }
+      }
     } else {
       // Primera vez: no hay filas landing_ → insertar todos como true
       // Primera vez: guardar todos como visibles
