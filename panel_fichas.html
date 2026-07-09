@@ -90,6 +90,31 @@ select option{background:#1a2224;}
 .frow-btn.cyan:hover{border-color:var(--cyan);}
 .frow-btn.danger{color:#ff5fae;border-color:rgba(255,95,174,.3);}
 .frow-btn.danger:hover{border-color:#ff5fae;}
+
+/* Modales (Faltantes / Gestionar listado) */
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:200;align-items:center;justify-content:center;padding:20px;}
+.overlay.open{display:flex;}
+.modal-box{background:#141a1c;border:1px solid var(--line);border-radius:20px;width:100%;max-width:520px;max-height:80vh;display:flex;flex-direction:column;}
+.modal-header{padding:18px 22px 14px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;}
+.modal-header h2{font-family:'Bricolage Grotesque',sans-serif;font-size:1.05rem;font-weight:700;}
+.modal-close{background:none;border:none;color:var(--muted);font-size:22px;cursor:pointer;line-height:1;}
+.modal-close:hover{color:var(--text);}
+.modal-body{padding:18px 22px;overflow-y:auto;flex:1;}
+.faltantes-count{font-size:.82rem;color:var(--muted);margin-bottom:12px;}
+.faltantes-count span{color:var(--magenta);font-weight:700;}
+.faltante-item{display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--card);border:1px solid var(--line);border-radius:10px;margin-bottom:8px;font-size:.88rem;}
+.faltante-item .dot{width:8px;height:8px;border-radius:50%;background:var(--magenta);flex-shrink:0;}
+
+/* Listado de pasajeros editable */
+.pasajero-input{flex:1;min-width:0;background:transparent;border:1px solid var(--line);border-radius:8px;padding:6px 8px;font-size:.85rem;color:var(--text);font-family:'Outfit',sans-serif;transition:border-color .15s;}
+.pasajero-input:focus{outline:none;border-color:var(--cyan);}
+.del-pasajero-btn{background:none;border:none;color:var(--muted);font-size:16px;cursor:pointer;padding:2px 6px;border-radius:6px;transition:color .15s;flex-shrink:0;}
+.del-pasajero-btn:hover{color:var(--magenta);}
+
+/* Nombre editable dentro de cada ficha */
+.fr-nombre-input{font-weight:600;font-size:.92rem;background:transparent;border:1px solid transparent;border-radius:6px;padding:2px 4px;margin:-2px -4px;color:var(--text);font-family:'Outfit',sans-serif;width:100%;transition:border-color .15s,background .15s;}
+.fr-nombre-input:hover{border-color:var(--line);}
+.fr-nombre-input:focus{outline:none;border-color:var(--cyan);background:rgba(93,180,201,.08);}
 </style>
 </head>
 <body>
@@ -100,7 +125,11 @@ select option{background:#1a2224;}
 <div class="container">
   <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
     <p class="section-title" style="margin:0;">Fichas recibidas</p>
-    <button class="btn btn-outline" id="btnDescTodo" type="button" style="width:auto;padding:8px 16px;font-size:.82rem;">⬇️ Descargar todo</button>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+      <button class="btn btn-outline" id="btnFaltantes" type="button" style="width:auto;padding:8px 16px;font-size:.82rem;">👥 Ver faltantes</button>
+      <button class="btn btn-outline" id="btnPasajeros" type="button" style="width:auto;padding:8px 16px;font-size:.82rem;">📋 Gestionar listado</button>
+      <button class="btn btn-outline" id="btnDescTodo" type="button" style="width:auto;padding:8px 16px;font-size:.82rem;">⬇️ Descargar todo</button>
+    </div>
   </div>
   <div class="search-bar">
     <span class="si">🔍</span>
@@ -108,6 +137,38 @@ select option{background:#1a2224;}
   </div>
   <div id="fichasList"><div style="color:var(--muted);font-size:.88rem;text-align:center;padding:16px;">Cargando…</div></div>
 </div>
+
+<!-- Faltantes modal -->
+<div class="overlay" id="faltantesOverlay" onclick="closeFaltantes(event)">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h2>👥 Faltantes</h2>
+      <button class="modal-close" onclick="closeFaltantes()">✕</button>
+    </div>
+    <div class="modal-body" id="faltantesBody">
+      <div style="text-align:center;color:var(--muted);padding:20px;font-size:.85rem;">Cargando…</div>
+    </div>
+  </div>
+</div>
+
+<!-- Gestionar pasajeros modal -->
+<div class="overlay" id="pasajerosOverlay" onclick="closePasajeros(event)">
+  <div class="modal-box" style="max-width:600px;">
+    <div class="modal-header">
+      <h2>📋 Listado de pasajeros</h2>
+      <button class="modal-close" onclick="closePasajeros()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="upload-zone" id="uploadZonePasajeros">
+        <input type="file" id="excelInput" accept=".xlsx,.xls,.csv" onchange="procesarExcel(this)">
+        <div class="uz-ico">📂</div>
+        <p>Subí el Excel para cargar o reemplazar el listado<br><small>Columna A: Apellido · Columna B: Nombre · Con encabezado</small></p>
+      </div>
+      <div id="pasajerosList" style="margin-top:16px;"></div>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -125,9 +186,11 @@ async function loadFichas(){
   filterFichas();
 }
 
+function escAttr(s){return (s||'').toString().replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
 function filterFichas(){
   const q=document.getElementById('fichaSearch').value.toLowerCase();
-  const filtered=allFichas.filter(f=>f.nombre_pasajero.toLowerCase().includes(q));
+  const filtered=allFichas.filter(f=>(f.nombre_pasajero||'').toLowerCase().includes(q));
   const el=document.getElementById('fichasList');
   if(!filtered.length){el.innerHTML='<div style="color:var(--muted);font-size:.88rem;text-align:center;padding:20px;">No se encontraron fichas.</div>';return;}
   el.innerHTML=filtered.map(f=>{
@@ -135,16 +198,42 @@ function filterFichas(){
     return `<div class="ficha-row">
       <span class="fr-ico">📋</span>
       <span class="fr-txt">
-        <span class="fr-nombre">${f.nombre_pasajero}</span>
+        <input class="fr-nombre-input" value="${escAttr(f.nombre_pasajero)}" data-id="${f.id}"
+          onblur="saveFichaNombre('${f.id}', this.value, this)">
         <span class="fr-fecha">${fecha}</span>
       </span>
       <div style="display:flex;gap:6px;flex:0 0 auto;align-items:center;">
         <a href="${f.url_pdf}" target="_blank" rel="noopener" class="frow-btn">👁️ Ver</a>
-        <button type="button" class="frow-btn cyan dl-btn" data-url="${f.url_pdf}" data-nombre="${f.nombre_pasajero}">⬇️ Bajar</button>
-        <button type="button" class="frow-btn danger del-btn" data-id="${f.id}" data-nombre="${f.nombre_pasajero}">🗑️</button>
+        <button type="button" class="frow-btn cyan dl-btn" data-url="${f.url_pdf}" data-nombre="${escAttr(f.nombre_pasajero)}">⬇️ Bajar</button>
+        <button type="button" class="frow-btn danger del-btn" data-id="${f.id}" data-nombre="${escAttr(f.nombre_pasajero)}">🗑️</button>
       </div>
     </div>`;
   }).join('');
+}
+
+// Autoguardado del nombre mostrado en la ficha (solo el texto, no toca el PDF subido).
+async function saveFichaNombre(id, value, el){
+  const nombre=value.trim();
+  const original=allFichas.find(x=>x.id===id);
+  if(!nombre){
+    showToast('El nombre no puede quedar vacío.');
+    if(el&&original) el.value=original.nombre_pasajero;
+    return;
+  }
+  if(el) el.style.borderColor='var(--cyan)';
+  const {error}=await supa.from('fichas_salud').update({nombre_pasajero:nombre}).eq('id',id);
+  if(error){
+    if(el) el.style.borderColor='#ff5fae';
+    showToast('Error al guardar: '+error.message);
+  } else {
+    if(original) original.nombre_pasajero=nombre;
+    if(el){
+      el.value=nombre;
+      el.style.borderColor='var(--cyan)';
+      setTimeout(()=>{el.style.borderColor='transparent';},1200);
+    }
+    showToast('Nombre actualizado ✓');
+  }
 }
 
 document.getElementById('btnDescTodo').addEventListener('click', async ()=>{
@@ -209,6 +298,155 @@ document.getElementById('fichasList').addEventListener('click', async e=>{
   showToast('Ficha eliminada ✓');
   loadFichas();
 });
+
+// ── Normaliza texto: saca tildes/diéresis, pasa a minúsculas y normaliza espacios ──
+function normalizar(t){
+  return (t||'')
+    .normalize('NFD').replace(/[̀-ͯ]/g,'')
+    .toLowerCase().trim().replace(/\s+/g,' ');
+}
+
+function loadScript(src){
+  return new Promise((res,rej)=>{
+    if(document.querySelector(`script[src="${src}"]`))return res();
+    const s=document.createElement('script');s.src=src;s.onload=res;s.onerror=rej;document.head.appendChild(s);
+  });
+}
+
+const toTC = s => (s||'').toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
+
+// ── FALTANTES: pasajeros del listado que todavía no subieron su ficha de salud ──
+async function openFaltantes(){
+  document.getElementById('faltantesOverlay').classList.add('open');
+  const body=document.getElementById('faltantesBody');
+  body.innerHTML='<div style="text-align:center;color:var(--muted);padding:20px;font-size:.85rem;">Cargando…</div>';
+
+  const {data:pasajeros,error}=await supa.from('pasajeros').select('*').order('apellido');
+  if(error||!pasajeros||pasajeros.length===0){
+    body.innerHTML='<div style="text-align:center;color:var(--muted);padding:20px;font-size:.85rem;">No hay listado de pasajeros cargado aún.<br>Usá <strong>Gestionar listado</strong> para subir el Excel.</div>';
+    return;
+  }
+
+  // Cada ficha guarda el nombre completo en un solo campo (nombre_pasajero);
+  // lo partimos en palabras normalizadas (sin tildes ni mayúsculas) para poder cruzarlo.
+  const registrados=allFichas.map(f=>normalizar(f.nombre_pasajero).split(' ').filter(Boolean));
+
+  // Falta = ninguna ficha tiene el apellido Y al menos un nombre de pila en común.
+  const faltantes=pasajeros.filter(p=>{
+    const apellido=normalizar(p.apellido);
+    const nombres=normalizar(p.nombre).split(' ').filter(Boolean);
+    return !registrados.some(palabras=>
+      palabras.includes(apellido) && nombres.some(n=>palabras.includes(n))
+    );
+  });
+
+  if(faltantes.length===0){
+    body.innerHTML=`<div style="text-align:center;padding:20px;color:var(--green);font-size:.9rem;">✓ ¡Todos los ${pasajeros.length} pasajeros subieron su ficha!</div>`;
+    return;
+  }
+
+  body.innerHTML=`
+    <div class="faltantes-count">Faltan subir la ficha: <span>${faltantes.length} de ${pasajeros.length}</span> pasajeros</div>
+    ${faltantes.map(f=>`
+      <div class="faltante-item">
+        <div class="dot"></div>
+        <span><strong>${escAttr(f.apellido)}</strong>, ${escAttr(f.nombre)}</span>
+      </div>`).join('')}`;
+}
+
+function closeFaltantes(e){
+  if(!e||e.target===document.getElementById('faltantesOverlay'))
+    document.getElementById('faltantesOverlay').classList.remove('open');
+}
+
+// ── GESTIONAR LISTADO DE PASAJEROS ──
+async function openPasajeros(){
+  document.getElementById('pasajerosOverlay').classList.add('open');
+  await renderPasajerosList();
+}
+
+function closePasajeros(e){
+  if(!e||e.target===document.getElementById('pasajerosOverlay'))
+    document.getElementById('pasajerosOverlay').classList.remove('open');
+}
+
+async function renderPasajerosList(){
+  const {data,error}=await supa.from('pasajeros').select('*').order('apellido');
+  const el=document.getElementById('pasajerosList');
+  if(error||!data||data.length===0){
+    el.innerHTML='<p style="font-size:.82rem;color:var(--muted);text-align:center;margin-top:8px;">No hay pasajeros cargados aún.</p>';
+    return;
+  }
+  el.innerHTML=`
+    <div style="font-size:.7rem;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;margin-bottom:10px;">${data.length} pasajeros en el listado</div>
+    ${data.map(p=>`
+      <div class="faltante-item" style="justify-content:space-between;gap:8px;">
+        <input class="pasajero-input" style="font-weight:600;" value="${escAttr(toTC(p.apellido))}"
+          onblur="savePasajeroCampo('${p.id}','apellido',this.value,this)">
+        <input class="pasajero-input" value="${escAttr(toTC(p.nombre))}"
+          onblur="savePasajeroCampo('${p.id}','nombre',this.value,this)">
+        <button type="button" class="del-pasajero-btn del-pasajero" data-id="${p.id}" data-nombre="${escAttr(toTC(p.apellido)+' '+toTC(p.nombre))}">✕</button>
+      </div>`).join('')}`;
+}
+
+// Autoguardado de apellido/nombre del pasajero (normaliza a Title Case, igual que en el panel admin).
+async function savePasajeroCampo(id,field,value,el){
+  const normalizado=toTC(value.trim());
+  if(el){el.value=normalizado;el.style.borderColor='var(--cyan)';}
+  const update={};update[field]=normalizado||null;
+  const {error}=await supa.from('pasajeros').update(update).eq('id',id);
+  if(error){
+    if(el)el.style.borderColor='#ff5fae';
+    showToast('Error al guardar: '+error.message);
+  } else {
+    if(el){el.style.borderColor='var(--cyan)';setTimeout(()=>{el.style.borderColor='var(--line)';},1200);}
+    showToast('Guardado ✓');
+  }
+}
+
+document.getElementById('pasajerosList').addEventListener('click', async e=>{
+  const btn=e.target.closest('.del-pasajero');
+  if(!btn) return;
+  const nombre=btn.dataset.nombre;
+  if(!confirm(`¿Querés eliminar a ${nombre} del listado?`)) return;
+  btn.disabled=true;
+  const {error}=await supa.from('pasajeros').delete().eq('id',btn.dataset.id);
+  if(error){showToast('Error al eliminar: '+error.message);btn.disabled=false;return;}
+  showToast('Pasajero eliminado ✓');
+  await renderPasajerosList();
+});
+
+async function procesarExcel(input){
+  if(!input.files||!input.files[0])return;
+  await loadScript('https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js');
+  const file=input.files[0];
+  const reader=new FileReader();
+  reader.onload=async function(e){
+    const data=new Uint8Array(e.target.result);
+    const wb=XLSX.read(data,{type:'array'});
+    const ws=wb.Sheets[wb.SheetNames[0]];
+    const objRows=XLSX.utils.sheet_to_json(ws,{defval:''});
+    const nuevos=objRows.map(r=>{
+      const apellido=(r['Apellido']||r['apellido']||r['APELLIDO']||Object.values(r)[0]||'').toString().trim();
+      const nombre=(r['Nombre']||r['nombre']||r['NOMBRE']||Object.values(r)[1]||'').toString().trim();
+      return {apellido,nombre};
+    }).filter(r=>r.apellido.length>0);
+
+    if(nuevos.length===0){showToast('No se encontraron datos en el archivo.');return;}
+    if(!confirm(`¿Reemplazar el listado actual con ${nuevos.length} pasajeros del Excel?`))return;
+
+    await supa.from('pasajeros').delete().neq('id','00000000-0000-0000-0000-000000000000');
+    const {error}=await supa.from('pasajeros').insert(nuevos);
+    if(error){showToast('Error al guardar: '+error.message);return;}
+    input.value='';
+    await renderPasajerosList();
+    showToast('Listado actualizado ✓');
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+document.getElementById('btnFaltantes').addEventListener('click', openFaltantes);
+document.getElementById('btnPasajeros').addEventListener('click', openPasajeros);
 
 loadFichas();
 </script>
