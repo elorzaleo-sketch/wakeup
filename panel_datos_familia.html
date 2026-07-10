@@ -75,12 +75,31 @@ body{font-family:'Outfit',sans-serif;color:var(--text);background:var(--ink);min
 .pw-cancel:hover{color:var(--text);}
 .pw-confirm{background:var(--cyan);border:1.5px solid var(--cyan);color:var(--ink);}
 .pw-confirm:hover{opacity:.88;}
+.update-photos-btn{font-family:'Outfit',sans-serif;font-size:.83rem;font-weight:600;padding:6px 14px;border-radius:99px;border:1.5px solid var(--cyan);background:transparent;color:var(--cyan);cursor:pointer;transition:.15s;}
+.update-photos-btn:hover{background:var(--cyan);color:var(--ink);}
+.update-photos-btn:disabled{opacity:.5;cursor:default;}
+.card-photo-row{display:flex;align-items:center;gap:10px;margin-bottom:12px;}
+.card-photo{width:52px;height:52px;border-radius:50%;object-fit:cover;border:2px solid var(--line);flex-shrink:0;cursor:zoom-in;}
+.card-photo-empty{width:52px;height:52px;border-radius:50%;background:rgba(255,255,255,.05);border:2px solid var(--line);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;color:var(--muted);}
+.link-status{font-size:.72rem;color:var(--muted);}
+.link-status.linked{color:var(--green);}
+.link-status.warn{color:#ffb020;}
+.id-mini{font-family:monospace;background:rgba(255,255,255,.06);padding:1px 5px;border-radius:5px;font-size:.66rem;}
+.link-picker{position:relative;margin-top:5px;}
+.link-input{width:100%;font-family:'Outfit',sans-serif;font-size:.85rem;padding:8px 10px;border:1.5px solid var(--line);border-radius:9px;background:rgba(255,255,255,.05);color:var(--text);box-sizing:border-box;}
+.link-input:focus{outline:none;border-color:var(--cyan);}
+.link-results{position:absolute;left:0;right:0;top:calc(100% + 4px);background:#12181a;border:1px solid var(--line);border-radius:10px;max-height:220px;overflow-y:auto;z-index:20;box-shadow:0 8px 24px rgba(0,0,0,.4);}
+.link-result{display:flex;align-items:center;gap:8px;padding:8px 10px;cursor:pointer;font-size:.85rem;}
+.link-result:hover{background:rgba(255,255,255,.06);}
+.link-result img,.link-result .ph{width:26px;height:26px;border-radius:50%;object-fit:cover;flex-shrink:0;}
+.link-clear{font-size:.75rem;color:var(--muted);background:none;border:none;cursor:pointer;text-decoration:underline;margin-top:4px;padding:0;}
 </style>
 </head>
 <body>
 <div class="topbar">
   <h1>🩺 Datos de familias</h1>
   <div class="topbar-actions">
+    <button class="update-photos-btn" id="updatePhotosBtn" type="button" onclick="actualizarFotos()">🔄 Actualizar fotos</button>
     <button class="edit-toggle" id="editToggle" type="button">✏️ Editar</button>
     <a href="/#accesos">Panel →</a>
   </div>
@@ -134,6 +153,162 @@ function escHTML(s){
 }
 
 let registros = [];
+let alumnos = [];
+let alumnoColumnWarned = false;
+
+// Saca tildes/diéresis, pasa a minúsculas y normaliza espacios (misma lógica que admin.html).
+function normalizar(t){
+  return (t||'').toString()
+    .normalize('NFD')
+    .split('').filter(function(ch){ var c = ch.codePointAt(0); return c < 768 || c > 879; }).join('')
+    .toLowerCase().trim().replace(/\s+/g,' ');
+}
+function tokens(t){ return normalizar(t).split(' ').filter(Boolean); }
+
+// Coincidencia = el apellido del alumno aparece completo entre las palabras del nombre del pasajero
+// Y comparten al menos un nombre de pila.
+function buscarCoincidencias(nombrePasajero){
+  const pTokens = tokens(nombrePasajero);
+  if(!pTokens.length || !alumnos.length) return [];
+  return alumnos.filter(a=>{
+    const apTokens = tokens(a.apellido);
+    const noTokens = tokens(a.nombre);
+    if(!apTokens.length) return false;
+    const apellidoOk = apTokens.every(t=>pTokens.includes(t));
+    const nombreOk = noTokens.some(t=>pTokens.includes(t));
+    return apellidoOk && nombreOk;
+  });
+}
+
+async function cargarAlumnos(){
+  const { data, error } = await supa.from('alumnos').select('id,apellido,nombre,foto_url');
+  if(error){ console.error(error); return; }
+  alumnos = data || [];
+}
+
+async function vincularAlumno(id, alumnoId, notify){
+  const { error } = await supa.from('datos_familia').update({ alumno_id: alumnoId }).eq('id', id);
+  if(error){
+    console.error(error);
+    if(notify){
+      showToast('No se pudo guardar el vínculo. ¿Falta la columna alumno_id en la base?');
+    } else if(!alumnoColumnWarned){
+      alumnoColumnWarned = true;
+      showToast('No se pudo guardar el vínculo automático (revisá la columna alumno_id).');
+    }
+    return false;
+  }
+  const reg = registros.find(r=>r.id===id);
+  if(reg){ reg.alumno_id = alumnoId; reg._alumno = alumnos.find(a=>a.id===alumnoId) || null; }
+  return true;
+}
+
+async function desvincularAlumno(id){
+  const { error } = await supa.from('datos_familia').update({ alumno_id: null }).eq('id', id);
+  if(error){ console.error(error); showToast('No se pudo quitar el vínculo.'); return; }
+  const reg = registros.find(r=>r.id===id);
+  if(reg){
+    reg.alumno_id = null;
+    reg._alumno = null;
+    reg._sugerencias = buscarCoincidencias(reg.nombre_pasajero);
+  }
+  showToast('Vínculo eliminado.');
+  filtrar();
+}
+
+async function seleccionarAlumno(idRegistro, idAlumno){
+  const ok = await vincularAlumno(idRegistro, idAlumno, true);
+  if(ok) showToast('Foto vinculada.');
+  filtrar();
+}
+
+// Intenta vincular automáticamente los registros que todavía no tienen alumno_id.
+async function autoVincular(){
+  const pendientes = [];
+  registros.forEach(r=>{
+    if(r.alumno_id){
+      r._alumno = alumnos.find(a=>a.id===r.alumno_id) || null;
+      return;
+    }
+    const matches = buscarCoincidencias(r.nombre_pasajero);
+    r._sugerencias = matches;
+    if(matches.length===1){
+      r.alumno_id = matches[0].id;
+      r._alumno = matches[0];
+      pendientes.push(vincularAlumno(r.id, matches[0].id, false));
+    } else {
+      r._alumno = null;
+    }
+  });
+  if(pendientes.length) await Promise.allSettled(pendientes);
+}
+
+async function actualizarFotos(){
+  const btn = document.getElementById('updatePhotosBtn');
+  const original = btn.textContent;
+  btn.disabled = true; btn.textContent = 'Actualizando…';
+  await cargarAlumnos();
+  await autoVincular();
+  filtrar();
+  btn.disabled = false; btn.textContent = original;
+  showToast('Fotos actualizadas.');
+}
+
+function fotoAlumnoHTML(a){
+  if(a && a.foto_url) return `<img class="card-photo" src="${a.foto_url}" alt="${escHTML(a.nombre||'')}" onclick="window.open('${a.foto_url}','_blank')">`;
+  return `<div class="card-photo-empty">👤</div>`;
+}
+
+function bloqueVinculo(r){
+  const a = r._alumno;
+  const fotoHtml = fotoAlumnoHTML(a);
+  let estado;
+  if(a){
+    estado = `<div class="link-status linked">✓ Vinculado con ${escHTML(a.apellido)}, ${escHTML(a.nombre)} <span class="id-mini" title="${a.id}">${(a.id||'').slice(0,8)}</span></div>`;
+  } else if(r._sugerencias && r._sugerencias.length>1){
+    estado = `<div class="link-status warn">⚠ Varias coincidencias posibles, elegí manualmente</div>`;
+  } else {
+    estado = `<div class="link-status">Sin foto vinculada</div>`;
+  }
+
+  if(!editMode){
+    return `<div class="card-photo-row">${fotoHtml}<div>${estado}</div></div>`;
+  }
+
+  return `<div class="card-photo-row">
+      ${fotoHtml}
+      <div style="flex:1;min-width:0">
+        ${estado}
+        <div class="link-picker">
+          <input type="text" class="link-input" placeholder="Buscar alumno por apellido o nombre…" autocomplete="off"
+            data-id="${r.id}" oninput="onLinkSearch(this)" onfocus="onLinkSearch(this)" onblur="onLinkBlur(this)">
+          <div class="link-results" style="display:none"></div>
+        </div>
+        ${a?`<button type="button" class="link-clear" onclick="desvincularAlumno('${r.id}')">Quitar vínculo</button>`:''}
+      </div>
+    </div>`;
+}
+
+function onLinkSearch(el){
+  const q = normalizar(el.value);
+  const box = el.nextElementSibling;
+  const results = !q ? alumnos.slice(0,8) : alumnos.filter(a=>
+    normalizar(a.apellido).includes(q) || normalizar(a.nombre).includes(q) || normalizar(`${a.apellido} ${a.nombre}`).includes(q)
+  ).slice(0,8);
+  if(!results.length){
+    box.innerHTML = `<div class="link-result" style="color:var(--muted);cursor:default">Sin resultados</div>`;
+  } else {
+    box.innerHTML = results.map(a=>`
+      <div class="link-result" onmousedown="seleccionarAlumno('${el.dataset.id}','${a.id}')">
+        ${a.foto_url?`<img src="${a.foto_url}" alt="">`:`<span class="ph">👤</span>`}
+        <span>${escHTML(a.apellido)}, ${escHTML(a.nombre)}</span>
+      </div>`).join('');
+  }
+  box.style.display = 'block';
+}
+function onLinkBlur(el){
+  setTimeout(()=>{ const box = el.nextElementSibling; if(box) box.style.display = 'none'; }, 150);
+}
 
 const EDIT_PASSWORD = 'Wakeupadmin26!';
 let editMode = false;
@@ -204,6 +379,8 @@ async function cargar(){
   const { data, error } = await supa.from('datos_familia').select('*').order('created_at', { ascending:false });
   if(error){ console.error(error); document.getElementById('lista').innerHTML = '<div class="empty-state">Hubo un error al cargar los datos.</div>'; return; }
   registros = data || [];
+  await cargarAlumnos();
+  await autoVincular();
   actualizarStats();
   filtrar();
 }
@@ -244,6 +421,7 @@ function filtrar(){
         <span class="card-nombre">${escHTML(r.nombre_pasajero)}</span>
         <span class="card-fecha">${fecha}</span>
       </div>
+      ${bloqueVinculo(r)}
       ${campoColegio(r.colegio, r.id)}
       ${campo('Observaciones médicas', r.observaciones_medicas, 'observaciones_medicas', r.id)}
       ${campo('Dietas alimenticias', r.dieta_alimenticia, 'dieta_alimenticia', r.id)}
