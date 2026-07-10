@@ -334,6 +334,41 @@ textarea{resize:vertical;min-height:80px;}
   <button class="back" id="backFromFicha" type="button">← Volver</button>
 </section>
 
+<!-- ══════════ DATOS DEL PASAJERO ══════════ -->
+<section class="panel" id="viewDatosPasajero">
+  <div class="logo sm"><img src="data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiPz48c3ZnIGlkPSJMYXllcl8xIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZlcnNpb249IjEuMSIgdmlld0JveD0iMCAwIDQxMC40OCA0MDguNjUiPjwhLS0gR2VuZXJhdG9yOiBBZG9iZSBJbGx1c3RyYXRvciAzMC4xLjAsIFNWRyBFeHBvcnQgUGx1Zy1JbiAuIFNWRyBWZXJzaW9uOiAyLjEuMSBCdWlsZCAxMzYpIC0tPjxkZWZzPjxzdHlsZT4gLnN0MCB7IGZpbGw6ICNmMTFkOGM7IH0gLnN0MCwgLnN0MSwgLnN0MiwgLnN0MyB7IGZpbGwtcnVsZTogZXZlbm9kZDsgfSAuc3QxIHsgZmlsbDogIzE5OTQzMjsgfSAuc3QzIHsgZmlsbDogIzVkYjRjOTsgfSAgLnN0MiB7IGZpbGw6ICNmZmZmZmY7IH0gPC9zdHlsZT48L2RlZnM+PHBhdGggY2xhc3M9InN0MiIgZD0iTTEzNy43OCw5NS4yNGMxNC42OSwxLjgsMzEuMDUsMi45NiwzOS43NSwyLjUzLDIuMTQtLjExLDIzLjEzLTIuMDIsMTkuMS04LjAxLTUuOTQtOC44NC0xNi45Mi0xMC45NC0yNi43OS05LjU2LTEwLjU0LDEuNDctMjEuODQsNy4xNi0zMi4wNywxNS4wNE04OS42NywxMzQuNGM1LjE4LTE1LjIzLDEzLjU4LTI3LjMzLDI0LjYtMzcuODMtMi45OC0uOTYtNS41OC0xLjk0LTcuNjgtMi45MS03LjU0LTMuNDgtMTEuMDYtNS42NS0xNS43OS0xMi4zNSw4LjcsNC43NiwxMi42NCw3LjEsMjIuNTEsOS43NSwxLjYuNDMsMy41Ljg2LDUuNjIsMS4yOCwyLjQyLTIuMDgsNC45NS00LjEsNy41Ny02LjA4LDIwLjk4LTE1Ljc3LDU2LjQ5LTMwLjcsNzcuMTYtNS44MSwxMi45MSwxNS41NC0yLjY3LDI0LjY4LTE4LjQ5LDI2LjQ0LTExLjU2LDEuMjgtMzUtMS42Ni01NC4yMy01LjkyLTEyLjA2LDEwLjk4LTIxLjc4LDI0LjY3LTI1LjYxLDM3LjEzLTEuMDIsNC4zMy01LjM2LDcuMDEtOS42OSw1Ljk4LTQuMzMtMS4wMi03LjAxLTUuMzYtNS45OC05LjY5WiIvPjxwYXRoIGNsYXNzPSJzdDEiIGQ9Ik0xOTUuODUsOTMuMzdjLTkuNzQsNS42NC0zMC4yNyw1LjY1LTU4LjA4LDEuODcsMTkuNzItMTMuNzcsMzcuODctMTkuMDEsNTMuNTctMTAuODksNS42NSw0LjQ5LDYuOTEsNy40LDQuNTEsOS4wMSIvPjxwYXRoIGNsYXNzPSJzdDIiIGQ9Ik0yNTYuMzgsMTMzLjUyYy0xNy44NCwzNC4wNi0yMS4yNCw2NS40OS0zMy45OCw5OS44Mi0uODYsMi4zMi43OS42OC0xLjc1LDQuMDMtMS43My01LjMyLTEuMjktNC41NS0uNTYtMTEuNTcsMy4zNi0zMi4xNiw5Ljg1LTY5LjQ4LDIyLjg3LTk5LjA5LDEuODgtMy43MSw2LjQxLTUuMTksMTAuMTItMy4zLDMuNzEsMS44OCw1LjE5LDYuNDEsMy4zLDEwLjEyIi8+PHBhdGggY2xhc3M9InN0MiIgZD0iTTI3MS41MywyMjcuNTZsLjY2LDIuNDNjLTE3LTEwLjE0LTM0LjMtMjAuNDMtNTEuNTUtMzAuMTFsLTcuNjQtNC4yMmMtMy43Mi0yLjY3LTUuODUtMS40OC02LjU1LTUuNjctMS4wNy02LjQ0LDEwLjE3LTguMywxNS4yNi0xMC4xNSwxMy41LTQuODksNTEuNjQtMTkuNzMsNjMuNTktMjEuMzlsNS41NS0uMTNjLTcuMTUsNC4xNi0zLjM0LDIuMTItMTIuOTYsNi42OC0xNi44MSw3Ljk4LTM0Ljc2LDE2LjYzLTUyLjI0LDI0LjIsMTMuOTgsNi40LDMwLjUyLDE1LjQ5LDQxLjQ2LDIxLjIzLDEyLjA5LDYuMzUsOS4xMywzLjIxLDE4LjkyLDEzLjIuODQsNC4wNy0xLjc3LDguMDUtNS44NSw4LjktMy43OC43OC03LjQ3LTEuNDEtOC42Ny00Ljk4Ii8+PHBhdGggY2xhc3M9InN0MiIgZD0iTTE0NC43NywyMjEuMTFjMTMuMjUtNy4zNiwzOC45OC02Ni42MSw0Ny4zNi02OS44NSw4LjY4LTMuMzUsOC4wNiwxMy41Miw4LjQyLDE4LjA2LDEuMTEsMTMuOTIsMS42MywyNS4xNCw1LjUsMzguODMsMS42OSw1Ljk5LDMuMDMsOS4yNSwyLjg4LDE1LjQyLTQuMTQtNS43Mi04LjgxLTE2LjA4LTExLjA0LTIyLjk2LTMuNC0xMC40OS00LjQ1LTIxLjIyLTYuMTgtMzEuNDUtNy4wOCwxMi44MS0xMy42OSwyOC4zNi0yMC4zNyw0MC40My01Ljg2LDEwLjU5LTEwLjM2LDE5LTIwLjgsMjUuNDItMy44NCwxLjYtOC4yNS0uMjItOS44NC00LjA2LTEuNi0zLjg0LjIyLTguMjUsNC4wNi05Ljg0Ii8+PHBhdGggY2xhc3M9InN0MiIgZD0iTTE2OS4yLDI2NS4zMmMtOS40LDYuMTQtMTYuMjgsNjEuMjktNC4zNCw1Ni4zLDIxLjk0LTkuMTYsMzUuNzktNjMuMzcsNDMuMDQtODQuMzMsMS4zMi0zLjgsMS4yNS00Ljg3LDMuNzMtNy4yN3YxLjc5Yy0xLjQ4LDIyLjAyLTEyLjkyLDY2LjE4LTI1LjM0LDg0LjI0LTEzLjMsMTkuMzUtMzQuMjQsMjcuODMtMzkuNzEtMS4wOS0zLjMxLTE3LjQ5LS40My01MC42OCwxNC44NS02Mi41NSwzLjU2LTIuMTQsOC4xOS0uOTksMTAuMzMsMi41NywyLjE0LDMuNTYuOTksOC4xOS0yLjU3LDEwLjMzIi8+PHBhdGggY2xhc3M9InN0MiIgZD0iTTI5OS44LDE2Ni42YzkuMDItMTAuNDksMTguNDEtMjIuNjIsMjIuNTktMjkuNjEsMS4wMy0xLjcyLDEwLjQzLTE5LjA0LDMuNjgtMTkuMDItOS45Ni4wMy0xNy4yOCw3LjQ4LTIxLjMzLDE1Ljg3LTQuMzMsOC45Ny01Ljc3LDIwLjctNC45NCwzMi43NU0zMDUuMjksMjI0LjMzYy05LjE2LTExLjkzLTE0LjIxLTI0Ljc0LTE2LjY1LTM4Ljc2LTIuMjksMS44Mi00LjQsMy4zNC02LjI1LDQuNDctNi42Miw0LjA2LTEwLjEzLDUuNjctMTcuOCw1Ljg3LDguMjEtNC4yOSwxMi4wOC02LjE0LDE5LjI3LTEyLjQ1LDEuMTYtMS4wMiwyLjQ4LTIuMjgsMy45MS0zLjcxLS4zNi0yLjk2LS42My01Ljk4LS44LTkuMDUtMS4zOC0yNC41LDUuNDMtNTkuODcsMzUuNTEtNjMuMDMsMTguNzgtMS45NywxNy44MiwxNC44OCwxMC45NywyOC4xLTUsOS42NS0xOS40NSwyNi4zNi0zMi43NCwzOS4xMSwyLjI4LDE1LjA3LDcuODgsMjkuNzQsMTUuNTksMzkuMTgsMi44MywzLjA0LDIuNjcsNy44MS0uMzgsMTAuNjQtMy4wNCwyLjgzLTcuODEsMi42Ny0xMC42NC0uMzhaIi8+PHBhdGggY2xhc3M9InN0MCIgZD0iTTMyOC40OCwxMjAuNDZjLS42NywxMC41LTExLjMxLDI2LjQ4LTI4LjY4LDQ2LjE0LS40OC0yMi40OCw0Ljg3LTM5LjMyLDE5LjMzLTQ3LjMyLDYuNDItMi4wNyw5LjM0LTEuNTMsOS4zNSwxLjE3Ii8+PHBhdGggY2xhc3M9InN0MCIgZD0iTTI3MC41LDI5NS44NGM3LjI1LTYuNjUsOC4zNC0yMi44Miw5LjgxLTMyLjA0Ljc3LTQuODYsMi4xNS0yMC44MSw1LjAzLTI0LjQ0LDguMDQsMi44Niw5LjUyLDMxLjM3LDkuNzQsMzguODcuMzksMTMuNDQtLjUzLDIxLjY5LTguMTUsMzIuNzctNC4xOSw0LjU0LTExLjI2LDQuODItMTUuNzkuNjMtNC41NC00LjE5LTQuODItMTEuMjYtLjYzLTE1Ljc5Ii8+PHBhdGggY2xhc3M9InN0MCIgZD0iTTI2OC40NiwzMjAuN2M1Ljc3LjgsOS42Myw3LjM5LDguNjIsMTQuNzMtMS4wMSw3LjM0LTYuNTIsMTIuNjQtMTIuMjksMTEuODQtNS43Ny0uOC05LjYzLTcuMzktOC42Mi0xNC43MywxLjAxLTcuMzQsNi41Mi0xMi42NCwxMi4yOS0xMS44NCIvPjxwYXRoIGNsYXNzPSJzdDIiIGQ9Ik05OS44NCwxNjIuNDJjLTMuNDIsOS40Ni03LjI0LDMxLjQ4LTkuNDksNTAuOTMsNi4wNS0xMC4wMSwxMi4xNy0xOS44OCwxNC44LTI0LjE5LDQuNjItNy41OCwyNi40Mi00Ni40NSwzNS43NC00Ni42MSw3Ljg0LS4xMyw4LjUxLDcuNCw1LjQ1LDEzLjc1LTguMjMsMTcuMS02LjAzLDkuNTctMTEuODIsMjguNjEtMS42OSw1LjU1LTQuNzQsMTUuMzYtNy41NywyNS4yOCwxLjg5LTMuMTUsMy44NS02LjMzLDUuOTQtOS41OCw3LTEwLjg3LDQ4LjA0LTczLjg2LDU4LjE2LTcwLjAyLTE3LjksMTYuMS00Ni4zNyw2Ny4wOC01OC44OSw4OS43NC0yLjY0LDQuNzktNy4zNSwxNC45Ny05Ljc5LDE4Ljk4LTMuMDMsNC45Ny04LjUzLDguMTctMTEuOTIsMi4yNi0yLjE5LTMuODEsMS41Mi0yMS44Niw1Ljc4LTM5LjA1LTEyLjQzLDIyLjA3LTI3LjIsNDguMzMtMjkuNDksNTAuNy0zLjM0LDMuNDYtOS42MSwyLjc5LTEyLjkyLS43Ny05LjI3LTkuOTgsMy4wOC04My43Myw3Ljg0LTk3LjcyLDIuMTItNS4wMiw3LjkyLTcuMzcsMTIuOTMtNS4yNCw1LjAyLDIuMTIsNy4zNyw3LjkxLDUuMjQsMTIuOTMiLz48cGF0aCBjbGFzcz0ic3QyIiBkPSJNMjI2LjQ4LDI5OS44OWM0LjY1LDQuODgsMTEuMzgsMy45NiwxOC44LTMuNzQsMTUuMi0xNS43OCw5LjMtMzMuNzMtMy4wMi00Ny42LTQuMjksMTAuOTctOS4wMSwyOS4wMi0xMS42OCwzNy43NC0xLjI1LDQuMDgtMi41OSw4LjcxLTQuMSwxMy42TTE4Ny44NywzMzEuOTNjMTMuMzEtNC4xMiwzNC45Ni04OC4zMiw0NS4zNC05OS4xNywxMC4zOC0xMC44NiwyMS40NSw2LjI3LDI2LjIxLDE0LjMzLDEzLjY5LDIzLjE5LDYuMyw1NS44OC0yMC4wMiw2My4yNy02LjM2LDEuNzgtMTEuNTYuNDItMTUuMzgtMi43OS01LjkyLDE3LjY4LTE0LjM1LDM2LjU5LTI4LjQ4LDQ0LjA5LTUuNDUsMi4xMi0xMS41OC0uNTgtMTMuNy02LjAzLTIuMTItNS40NS41OC0xMS41OCw2LjAzLTEzLjdaIi8+PHBhdGggY2xhc3M9InN0MyIgZD0iTTMxMC4xMywzNjUuMDRjLTc2Ljc5LDYzLjgzLTE5MC45OSw1Ny4xMi0yNTkuNjgtMTYuOTktNjguNjktNzQuMTEtNjYuNzMtMTg4LjQ5LDIuNzQtMjYwLjIyQy0xLjQxLDE2MC42OCwyLjA5LDI2NC4zNCw2Ni4xNywzMzMuNDhjNjQuMDksNjkuMTQsMTY3LjE5LDgwLjQ4LDI0My45NiwzMS41NiIvPjxwYXRoIGNsYXNzPSJzdDMiIGQ9Ik0zNTcuMjgsMzIwLjgyYzY5LjQ3LTcxLjczLDcxLjQzLTE4Ni4xMSwyLjc0LTI2MC4yMkMyOTEuMzMtMTMuNTEsMTc3LjEzLTIwLjIyLDEwMC4zNSw0My42MSwxNzcuMTItNS4zMSwyODAuMjIsNi4wMywzNDQuMzEsNzUuMTdjNjQuMDgsNjkuMTQsNjcuNTgsMTcyLjgxLDEyLjk4LDI0NS42NSIvPjwvc3ZnPg==" alt="Wake Up Viajes"></div>
+  <h2 class="panel-head">🩺 Datos del pasajero</h2>
+  <p class="panel-sub">Contanos sobre tratamientos, dietas o cualquier detalle que debamos tener en cuenta.</p>
+
+  <div class="field">
+    <label for="datosNombre">Nombre y apellido del pasajero</label>
+    <input type="text" id="datosNombre" placeholder="Ej: Valentina García" autocomplete="off">
+  </div>
+
+  <div class="field">
+    <label for="datosMedicas">Observaciones médicas</label>
+    <textarea id="datosMedicas" rows="4" placeholder="Tratamientos médicos actuales o relevantes, limitaciones físicas o medicamentos que esté tomando..."></textarea>
+  </div>
+
+  <div class="field">
+    <label for="datosDieta">Dietas alimenticias</label>
+    <textarea id="datosDieta" rows="3" placeholder="Restricciones o consideraciones alimentarias, si las hay..."></textarea>
+  </div>
+
+  <div class="field" style="margin-bottom:6px;">
+    <label for="datosObs">Observaciones</label>
+    <textarea id="datosObs" rows="3" placeholder="Cualquier otro comentario que quieras hacernos saber..."></textarea>
+  </div>
+
+  <button class="btn btn-cyan" id="btnEnviarDatos" type="button" style="margin-top:8px;">
+    Enviar datos
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13"/><path d="M22 2 15 22 11 13 2 9l20-7z"/></svg>
+  </button>
+  <p class="error" id="datosError"></p>
+  <p class="success" id="datosSuccess" style="display:none;">✓ Datos enviados correctamente. ¡Gracias!</p>
+  <button class="back" id="backFromDatosPasajero" type="button">← Volver</button>
+</section>
+
 <!-- ══════════ DATOS DEL VIAJE ══════════ -->
 <section class="panel" id="viewDocSalida">
   <div class="logo sm"><img src="data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiPz48c3ZnIGlkPSJMYXllcl8xIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZlcnNpb249IjEuMSIgdmlld0JveD0iMCAwIDQxMC40OCA0MDguNjUiPjwhLS0gR2VuZXJhdG9yOiBBZG9iZSBJbGx1c3RyYXRvciAzMC4xLjAsIFNWRyBFeHBvcnQgUGx1Zy1JbiAuIFNWRyBWZXJzaW9uOiAyLjEuMSBCdWlsZCAxMzYpIC0tPjxkZWZzPjxzdHlsZT4gLnN0MCB7IGZpbGw6ICNmMTFkOGM7IH0gLnN0MCwgLnN0MSwgLnN0MiwgLnN0MyB7IGZpbGwtcnVsZTogZXZlbm9kZDsgfSAuc3QxIHsgZmlsbDogIzE5OTQzMjsgfSAuc3QzIHsgZmlsbDogIzVkYjRjOTsgfSAgLnN0MiB7IGZpbGw6ICNmZmZmZmY7IH0gPC9zdHlsZT48L2RlZnM+PHBhdGggY2xhc3M9InN0MiIgZD0iTTEzNy43OCw5NS4yNGMxNC42OSwxLjgsMzEuMDUsMi45NiwzOS43NSwyLjUzLDIuMTQtLjExLDIzLjEzLTIuMDIsMTkuMS04LjAxLTUuOTQtOC44NC0xNi45Mi0xMC45NC0yNi43OS05LjU2LTEwLjU0LDEuNDctMjEuODQsNy4xNi0zMi4wNywxNS4wNE04OS42NywxMzQuNGM1LjE4LTE1LjIzLDEzLjU4LTI3LjMzLDI0LjYtMzcuODMtMi45OC0uOTYtNS41OC0xLjk0LTcuNjgtMi45MS03LjU0LTMuNDgtMTEuMDYtNS42NS0xNS43OS0xMi4zNSw4LjcsNC43NiwxMi42NCw3LjEsMjIuNTEsOS43NSwxLjYuNDMsMy41Ljg2LDUuNjIsMS4yOCwyLjQyLTIuMDgsNC45NS00LjEsNy41Ny02LjA4LDIwLjk4LTE1Ljc3LDU2LjQ5LTMwLjcsNzcuMTYtNS44MSwxMi45MSwxNS41NC0yLjY3LDI0LjY4LTE4LjQ5LDI2LjQ0LTExLjU2LDEuMjgtMzUtMS42Ni01NC4yMy01LjkyLTEyLjA2LDEwLjk4LTIxLjc4LDI0LjY3LTI1LjYxLDM3LjEzLTEuMDIsNC4zMy01LjM2LDcuMDEtOS42OSw1Ljk4LTQuMzMtMS4wMi03LjAxLTUuMzYtNS45OC05LjY5WiIvPjxwYXRoIGNsYXNzPSJzdDEiIGQ9Ik0xOTUuODUsOTMuMzdjLTkuNzQsNS42NC0zMC4yNyw1LjY1LTU4LjA4LDEuODcsMTkuNzItMTMuNzcsMzcuODctMTkuMDEsNTMuNTctMTAuODksNS42NSw0LjQ5LDYuOTEsNy40LDQuNTEsOS4wMSIvPjxwYXRoIGNsYXNzPSJzdDIiIGQ9Ik0yNTYuMzgsMTMzLjUyYy0xNy44NCwzNC4wNi0yMS4yNCw2NS40OS0zMy45OCw5OS44Mi0uODYsMi4zMi43OS42OC0xLjc1LDQuMDMtMS43My01LjMyLTEuMjktNC41NS0uNTYtMTEuNTcsMy4zNi0zMi4xNiw5Ljg1LTY5LjQ4LDIyLjg3LTk5LjA5LDEuODgtMy43MSw2LjQxLTUuMTksMTAuMTItMy4zLDMuNzEsMS44OCw1LjE5LDYuNDEsMy4zLDEwLjEyIi8+PHBhdGggY2xhc3M9InN0MiIgZD0iTTI3MS41MywyMjcuNTZsLjY2LDIuNDNjLTE3LTEwLjE0LTM0LjMtMjAuNDMtNTEuNTUtMzAuMTFsLTcuNjQtNC4yMmMtMy43Mi0yLjY3LTUuODUtMS40OC02LjU1LTUuNjctMS4wNy02LjQ0LDEwLjE3LTguMywxNS4yNi0xMC4xNSwxMy41LTQuODksNTEuNjQtMTkuNzMsNjMuNTktMjEuMzlsNS41NS0uMTNjLTcuMTUsNC4xNi0zLjM0LDIuMTItMTIuOTYsNi42OC0xNi44MSw3Ljk4LTM0Ljc2LDE2LjYzLTUyLjI0LDI0LjIsMTMuOTgsNi40LDMwLjUyLDE1LjQ5LDQxLjQ2LDIxLjIzLDEyLjA5LDYuMzUsOS4xMywzLjIxLDE4LjkyLDEzLjIuODQsNC4wNy0xLjc3LDguMDUtNS44NSw4LjktMy43OC43OC03LjQ3LTEuNDEtOC42Ny00Ljk4Ii8+PHBhdGggY2xhc3M9InN0MiIgZD0iTTE0NC43NywyMjEuMTFjMTMuMjUtNy4zNiwzOC45OC02Ni42MSw0Ny4zNi02OS44NSw4LjY4LTMuMzUsOC4wNiwxMy41Miw4LjQyLDE4LjA2LDEuMTEsMTMuOTIsMS42MywyNS4xNCw1LjUsMzguODMsMS42OSw1Ljk5LDMuMDMsOS4yNSwyLjg4LDE1LjQyLTQuMTQtNS43Mi04LjgxLTE2LjA4LTExLjA0LTIyLjk2LTMuNC0xMC40OS00LjQ1LTIxLjIyLTYuMTgtMzEuNDUtNy4wOCwxMi44MS0xMy42OSwyOC4zNi0yMC4zNyw0MC40My01Ljg2LDEwLjU5LTEwLjM2LDE5LTIwLjgsMjUuNDItMy44NCwxLjYtOC4yNS0uMjItOS44NC00LjA2LTEuNi0zLjg0LjIyLTguMjUsNC4wNi05Ljg0Ii8+PHBhdGggY2xhc3M9InN0MiIgZD0iTTE2OS4yLDI2NS4zMmMtOS40LDYuMTQtMTYuMjgsNjEuMjktNC4zNCw1Ni4zLDIxLjk0LTkuMTYsMzUuNzktNjMuMzcsNDMuMDQtODQuMzMsMS4zMi0zLjgsMS4yNS00Ljg3LDMuNzMtNy4yN3YxLjc5Yy0xLjQ4LDIyLjAyLTEyLjkyLDY2LjE4LTI1LjM0LDg0LjI0LTEzLjMsMTkuMzUtMzQuMjQsMjcuODMtMzkuNzEtMS4wOS0zLjMxLTE3LjQ5LS40My01MC42OCwxNC44NS02Mi41NSwzLjU2LTIuMTQsOC4xOS0uOTksMTAuMzMsMi41NywyLjE0LDMuNTYuOTksOC4xOS0yLjU3LDEwLjMzIi8+PHBhdGggY2xhc3M9InN0MiIgZD0iTTI5OS44LDE2Ni42YzkuMDItMTAuNDksMTguNDEtMjIuNjIsMjIuNTktMjkuNjEsMS4wMy0xLjcyLDEwLjQzLTE5LjA0LDMuNjgtMTkuMDItOS45Ni4wMy0xNy4yOCw3LjQ4LTIxLjMzLDE1Ljg3LTQuMzMsOC45Ny01Ljc3LDIwLjctNC45NCwzMi43NU0zMDUuMjksMjI0LjMzYy05LjE2LTExLjkzLTE0LjIxLTI0Ljc0LTE2LjY1LTM4Ljc2LTIuMjksMS44Mi00LjQsMy4zNC02LjI1LDQuNDctNi42Miw0LjA2LTEwLjEzLDUuNjctMTcuOCw1Ljg3LDguMjEtNC4yOSwxMi4wOC02LjE0LDE5LjI3LTEyLjQ1LDEuMTYtMS4wMiwyLjQ4LTIuMjgsMy45MS0zLjcxLS4zNi0yLjk2LS42My01Ljk4LS44LTkuMDUtMS4zOC0yNC41LDUuNDMtNTkuODcsMzUuNTEtNjMuMDMsMTguNzgtMS45NywxNy44MiwxNC44OCwxMC45NywyOC4xLTUsOS42NS0xOS40NSwyNi4zNi0zMi43NCwzOS4xMSwyLjI4LDE1LjA3LDcuODgsMjkuNzQsMTUuNTksMzkuMTgsMi44MywzLjA0LDIuNjcsNy44MS0uMzgsMTAuNjQtMy4wNCwyLjgzLTcuODEsMi42Ny0xMC42NC0uMzhaIi8+PHBhdGggY2xhc3M9InN0MCIgZD0iTTMyOC40OCwxMjAuNDZjLS42NywxMC41LTExLjMxLDI2LjQ4LTI4LjY4LDQ2LjE0LS40OC0yMi40OCw0Ljg3LTM5LjMyLDE5LjMzLTQ3LjMyLDYuNDItMi4wNyw5LjM0LTEuNTMsOS4zNSwxLjE3Ii8+PHBhdGggY2xhc3M9InN0MCIgZD0iTTI3MC41LDI5NS44NGM3LjI1LTYuNjUsOC4zNC0yMi44Miw5LjgxLTMyLjA0Ljc3LTQuODYsMi4xNS0yMC44MSw1LjAzLTI0LjQ0LDguMDQsMi44Niw5LjUyLDMxLjM3LDkuNzQsMzguODcuMzksMTMuNDQtLjUzLDIxLjY5LTguMTUsMzIuNzctNC4xOSw0LjU0LTExLjI2LDQuODItMTUuNzkuNjMtNC41NC00LjE5LTQuODItMTEuMjYtLjYzLTE1Ljc5Ii8+PHBhdGggY2xhc3M9InN0MCIgZD0iTTI2OC40NiwzMjAuN2M1Ljc3LjgsOS42Myw3LjM5LDguNjIsMTQuNzMtMS4wMSw3LjM0LTYuNTIsMTIuNjQtMTIuMjksMTEuODQtNS43Ny0uOC05LjYzLTcuMzktOC42Mi0xNC43MywxLjAxLTcuMzQsNi41Mi0xMi42NCwxMi4yOS0xMS44NCIvPjxwYXRoIGNsYXNzPSJzdDIiIGQ9Ik05OS44NCwxNjIuNDJjLTMuNDIsOS40Ni03LjI0LDMxLjQ4LTkuNDksNTAuOTMsNi4wNS0xMC4wMSwxMi4xNy0xOS44OCwxNC44LTI0LjE5LDQuNjItNy41OCwyNi40Mi00Ni40NSwzNS43NC00Ni42MSw3Ljg0LS4xMyw4LjUxLDcuNCw1LjQ1LDEzLjc1LTguMjMsMTcuMS02LjAzLDkuNTctMTEuODIsMjguNjEtMS42OSw1LjU1LTQuNzQsMTUuMzYtNy41NywyNS4yOCwxLjg5LTMuMTUsMy44NS02LjMzLDUuOTQtOS41OCw3LTEwLjg3LDQ4LjA0LTczLjg2LDU4LjE2LTcwLjAyLTE3LjksMTYuMS00Ni4zNyw2Ny4wOC01OC44OSw4OS43NC0yLjY0LDQuNzktNy4zNSwxNC45Ny05Ljc5LDE4Ljk4LTMuMDMsNC45Ny04LjUzLDguMTctMTEuOTIsMi4yNi0yLjE5LTMuODEsMS41Mi0yMS44Niw1Ljc4LTM5LjA1LTEyLjQzLDIyLjA3LTI3LjIsNDguMzMtMjkuNDksNTAuNy0zLjM0LDMuNDYtOS42MSwyLjc5LTEyLjkyLS43Ny05LjI3LTkuOTgsMy4wOC04My43Myw3Ljg0LTk3LjcyLDIuMTItNS4wMiw3LjkyLTcuMzcsMTIuOTMtNS4yNCw1LjAyLDIuMTIsNy4zNyw3LjkxLDUuMjQsMTIuOTMiLz48cGF0aCBjbGFzcz0ic3QyIiBkPSJNMjI2LjQ4LDI5OS44OWM0LjY1LDQuODgsMTEuMzgsMy45NiwxOC44LTMuNzQsMTUuMi0xNS43OCw5LjMtMzMuNzMtMy4wMi00Ny42LTQuMjksMTAuOTctOS4wMSwyOS4wMi0xMS42OCwzNy43NC0xLjI1LDQuMDgtMi41OSw4LjcxLTQuMSwxMy42TTE4Ny44NywzMzEuOTNjMTMuMzEtNC4xMiwzNC45Ni04OC4zMiw0NS4zNC05OS4xNywxMC4zOC0xMC44NiwyMS40NSw2LjI3LDI2LjIxLDE0LjMzLDEzLjY5LDIzLjE5LDYuMyw1NS44OC0yMC4wMiw2My4yNy02LjM2LDEuNzgtMTEuNTYuNDItMTUuMzgtMi43OS01LjkyLDE3LjY4LTE0LjM1LDM2LjU5LTI4LjQ4LDQ0LjA5LTUuNDUsMi4xMi0xMS41OC0uNTgtMTMuNy02LjAzLTIuMTItNS40NS41OC0xMS41OCw2LjAzLTEzLjdaIi8+PHBhdGggY2xhc3M9InN0MyIgZD0iTTMxMC4xMywzNjUuMDRjLTc2Ljc5LDYzLjgzLTE5MC45OSw1Ny4xMi0yNTkuNjgtMTYuOTktNjguNjktNzQuMTEtNjYuNzMtMTg4LjQ5LDIuNzQtMjYwLjIyQy0xLjQxLDE2MC42OCwyLjA5LDI2NC4zNCw2Ni4xNywzMzMuNDhjNjQuMDksNjkuMTQsMTY3LjE5LDgwLjQ4LDI0My45NiwzMS41NiIvPjxwYXRoIGNsYXNzPSJzdDMiIGQ9Ik0zNTcuMjgsMzIwLjgyYzY5LjQ3LTcxLjczLDcxLjQzLTE4Ni4xMSwyLjc0LTI2MC4yMkMyOTEuMzMtMTMuNTEsMTc3LjEzLTIwLjIyLDEwMC4zNSw0My42MSwxNzcuMTItNS4zMSwyODAuMjIsNi4wMywzNDQuMzEsNzUuMTdjNjQuMDgsNjkuMTQsNjcuNTgsMTcyLjgxLDEyLjk4LDI0NS42NSIvPjwvc3ZnPg==" alt="Wake Up Viajes"></div>
@@ -564,6 +599,7 @@ const supa = supabase.createClient(SUPA_URL, SUPA_KEY);
 const MENU_BTNS = [
   { id:"fbtn_descargar_ficha", label:"Descargar ficha de salud", icon:"⬇️", sub:"Descargá el formulario para completar e imprimir", type:"download", href:"/FICHA_MEDICA_2026.pdf", color:"card-cyan" },
   { id:"fbtn_cargar_ficha",    label:"Cargar ficha de salud",    icon:"📤", sub:"Subí la ficha completada y firmada",              type:"panel", panel:"viewCargarFicha", color:"card-magenta" },
+  { id:"fbtn_datos_pasajero",  label:"Datos del pasajero",       icon:"🩺", sub:"Observaciones médicas, dieta y comentarios",     type:"panel", panel:"viewDatosPasajero", color:"card-cyan" },
   { id:"fbtn_doc_salida",      label:"Información del viaje y Documentación", icon:"📋", sub:"Info importante antes de partir",          type:"panel", panel:"viewDocSalida",  color:"card-green" },
   { id:"fbtn_resumen",         label:"Resumen del día",          icon:"📸", sub:"Se habilitará luego de comenzado el viaje",             type:"panel", panel:"viewResumen",    color:"card-cyan" },
   { id:"fbtn_encuesta_fam",    label:"Tu opinión",               icon:"💬", sub:"Contanos cómo viviste el viaje",                  type:"panel", panel:"viewEncuestaFamilias", color:"card-magenta" },
@@ -601,6 +637,7 @@ if(lsGet(SESS_KEY)==='1'){
     const PANEL_MAP = {
       'descargar': null,        // es descarga directa, mostrar menú
       'cargar':    'viewCargarFicha',
+      'datos':     'viewDatosPasajero',
       'docsalida': 'viewDocSalida',
       'resumen':   'viewResumen',
       'encuesta':  'viewEncuestaFamilias',
@@ -628,7 +665,7 @@ function attemptLogin(){
     lsSet(SESS_KEY,'1');
     document.getElementById('loginError').textContent='';
     const _panelParam = new URLSearchParams(location.search).get('panel');
-    const _PMAP = {'cargar':'viewCargarFicha','docsalida':'viewDocSalida','resumen':'viewResumen','encuesta':'viewEncuestaFamilias'};
+    const _PMAP = {'cargar':'viewCargarFicha','datos':'viewDatosPasajero','docsalida':'viewDocSalida','resumen':'viewResumen','encuesta':'viewEncuestaFamilias'};
     loadFamiliaConfig().then(()=>{
       if(_panelParam && _PMAP[_panelParam]){ if(_panelParam==='resumen') loadResumenes(); show(_PMAP[_panelParam]); }
       else show('viewMenu');
@@ -647,7 +684,7 @@ document.getElementById('logoutBtn').addEventListener('click', ()=>{
 });
 
 /* ── BACKS ── */
-['backFromFicha','backFromDocSalida','backFromResumen','backFromEncuestaFam'].forEach(id=>{
+['backFromFicha','backFromDatosPasajero','backFromDocSalida','backFromResumen','backFromEncuestaFam'].forEach(id=>{
   document.getElementById(id).addEventListener('click', goMenu);
 });
 
@@ -882,6 +919,48 @@ document.getElementById('btnSubirFicha').addEventListener('click', async ()=>{
     errEl.textContent='Hubo un error al enviar la ficha. Intentá de nuevo.';
     btn.disabled=false; btn.textContent='Enviar';
     prog.style.display='none';
+  }
+});
+
+/* ============================================================
+   DATOS DEL PASAJERO
+   ============================================================ */
+document.getElementById('btnEnviarDatos').addEventListener('click', async ()=>{
+  const nombre = document.getElementById('datosNombre').value.trim();
+  const medicas = document.getElementById('datosMedicas').value.trim();
+  const dieta = document.getElementById('datosDieta').value.trim();
+  const obs = document.getElementById('datosObs').value.trim();
+  const errEl = document.getElementById('datosError');
+  const succEl = document.getElementById('datosSuccess');
+  errEl.textContent=''; succEl.style.display='none';
+
+  if(!nombre){ errEl.textContent='Ingresá el nombre y apellido del pasajero.'; return; }
+
+  const btn = document.getElementById('btnEnviarDatos');
+  btn.disabled = true; btn.textContent = 'Enviando...';
+
+  try {
+    const { error:dbErr } = await supa.from('datos_familia').insert([{
+      nombre_pasajero: nombre,
+      observaciones_medicas: medicas,
+      dieta_alimenticia: dieta,
+      observaciones: obs
+    }]);
+    if(dbErr) throw dbErr;
+
+    succEl.style.display='block';
+    btn.textContent='✓ Enviado';
+    setTimeout(()=>{
+      document.getElementById('datosNombre').value='';
+      document.getElementById('datosMedicas').value='';
+      document.getElementById('datosDieta').value='';
+      document.getElementById('datosObs').value='';
+      btn.disabled=false; btn.innerHTML='Enviar datos <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="width:17px;height:17px"><path d="M22 2L11 13"/><path d="M22 2 15 22 11 13 2 9l20-7z"/></svg>';
+    }, 2500);
+  } catch(e){
+    console.error(e);
+    errEl.textContent='Hubo un error al enviar los datos. Intentá de nuevo.';
+    btn.disabled=false; btn.textContent='Enviar datos';
   }
 });
 
