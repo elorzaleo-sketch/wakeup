@@ -352,6 +352,20 @@ textarea{resize:vertical;min-height:80px;}
   </div>
 
   <div class="field">
+    <label for="datosColegio">Colegio</label>
+    <select id="datosColegio">
+      <option value="" selected disabled>Seleccioná el colegio</option>
+      <option value="Berazategui">Berazategui</option>
+      <option value="El Encuentro">El Encuentro</option>
+      <option value="Emanuel">Emanuel</option>
+      <option value="Hay Vida En Jesús">Hay Vida En Jesús</option>
+      <option value="M.T Alvear">M.T Alvear</option>
+      <option value="Menoyo">Menoyo</option>
+      <option value="Zion">Zion</option>
+    </select>
+  </div>
+
+  <div class="field">
     <label for="datosMedicas">Observaciones médicas</label>
     <textarea id="datosMedicas" rows="4" placeholder="Tratamientos médicos actuales o relevantes, limitaciones físicas o medicamentos que esté tomando..."></textarea>
   </div>
@@ -935,6 +949,7 @@ document.getElementById('btnEnviarDatos').addEventListener('click', async ()=>{
   const apellido = document.getElementById('datosApellido').value.trim();
   const nombreInput = document.getElementById('datosNombreInput').value.trim();
   const nombre = apellido && nombreInput ? apellido + ', ' + nombreInput : '';
+  const colegio = document.getElementById('datosColegio').value;
   const medicas = document.getElementById('datosMedicas').value.trim();
   const dieta = document.getElementById('datosDieta').value.trim();
   const obs = document.getElementById('datosObs').value.trim();
@@ -943,6 +958,7 @@ document.getElementById('btnEnviarDatos').addEventListener('click', async ()=>{
   errEl.textContent=''; succEl.style.display='none';
 
   if(!apellido || !nombreInput){ errEl.textContent='Ingresá el nombre y el apellido del pasajero.'; return; }
+  if(!colegio){ errEl.textContent='Seleccioná el colegio del pasajero.'; return; }
 
   const btn = document.getElementById('btnEnviarDatos');
   btn.disabled = true; btn.textContent = 'Enviando...';
@@ -950,6 +966,7 @@ document.getElementById('btnEnviarDatos').addEventListener('click', async ()=>{
   try {
     const { error:dbErr } = await supa.from('datos_familia').insert([{
       nombre_pasajero: nombre,
+      colegio: colegio,
       observaciones_medicas: medicas,
       dieta_alimenticia: dieta,
       observaciones: obs
@@ -961,6 +978,7 @@ document.getElementById('btnEnviarDatos').addEventListener('click', async ()=>{
     setTimeout(()=>{
       document.getElementById('datosApellido').value='';
       document.getElementById('datosNombreInput').value='';
+      document.getElementById('datosColegio').value='';
       document.getElementById('datosMedicas').value='';
       document.getElementById('datosDieta').value='';
       document.getElementById('datosObs').value='';
