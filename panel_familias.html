@@ -17,6 +17,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/exifr/dist/lite.umd.js"></script>
 <style>
 :root{
   --cyan:#5DB4C9; --magenta:#F11D8C; --green:#199432;
@@ -213,6 +214,34 @@ textarea{resize:vertical;min-height:80px;}
   *{animation:none!important;transition:none!important;}
   .action-card:hover,.btn:hover{transform:none;}
 }
+
+/* ── TIPS / ACORDEÓN ── */
+/* ── TIPS PAGE ── */
+  .tips-header{margin:0 0 18px;}
+  .tips-header h2{font-family:'Bricolage Grotesque',sans-serif;font-weight:800;font-size:1.6rem;margin:0 0 4px;}
+  .tips-header p{color:var(--muted);font-size:.88rem;}
+
+  .tip-section{margin-bottom:8px;border:1px solid var(--line);border-radius:14px;overflow:hidden;background:var(--card);}
+  .tip-toggle{
+    width:100%;display:flex;align-items:center;gap:12px;
+    background:none;border:none;cursor:pointer;padding:14px 16px;
+    font-family:'Outfit',sans-serif;font-size:.95rem;font-weight:600;color:var(--text);
+    text-align:left;transition:background .15s;
+  }
+  .tip-toggle:hover{background:var(--card-hover);}
+  .tip-toggle .tip-icon{font-size:1.2rem;flex:0 0 auto;}
+  .tip-toggle .tip-label{flex:1;}
+  .tip-toggle .tip-chevron{color:var(--muted);font-size:.9rem;transition:transform .25s;flex:0 0 auto;}
+  .tip-toggle[aria-expanded="true"] .tip-chevron{transform:rotate(180deg);}
+  .tip-body{
+    display:none;padding:0 16px 14px;color:var(--muted);font-size:.88rem;line-height:1.65;
+    border-top:1px solid var(--line);
+  }
+  .tip-body.open{display:block;}
+  .tip-body ul{padding-left:16px;margin:6px 0;}
+  .tip-body li{margin-bottom:4px;}
+  .tip-body strong{color:var(--text);font-weight:600;}
+  .tip-body p{margin:6px 0;}
 </style>
 </head>
 <body>
@@ -262,11 +291,11 @@ textarea{resize:vertical;min-height:80px;}
 
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
     <div class="field" style="margin-bottom:0;">
-      <label for="fichaApellido">Apellido</label>
+      <label for="fichaApellido">Apellido del pasajero</label>
       <input type="text" id="fichaApellido" placeholder="Ej: García" autocomplete="off">
     </div>
     <div class="field" style="margin-bottom:0;">
-      <label for="fichaNombreInput">Nombre</label>
+      <label for="fichaNombreInput">Nombre del pasajero</label>
       <input type="text" id="fichaNombreInput" placeholder="Ej: Valentina" autocomplete="off">
     </div>
   </div>
@@ -296,7 +325,7 @@ textarea{resize:vertical;min-height:80px;}
   <div style="margin-top:16px;">
     <div class="progress-bar" id="fichaProgress" style="display:none;"><div class="progress-fill" id="fichaFill"></div></div>
     <button class="btn btn-cyan" id="btnSubirFicha" type="button" style="margin-top:8px;">
-      Generar PDF y enviar
+      Enviar
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13"/><path d="M22 2 15 22 11 13 2 9l20-7z"/></svg>
     </button>
   </div>
@@ -311,9 +340,29 @@ textarea{resize:vertical;min-height:80px;}
   <h2 class="panel-head">🩺 Datos del pasajero</h2>
   <p class="panel-sub">Contanos sobre tratamientos, dietas o cualquier detalle que debamos tener en cuenta.</p>
 
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+    <div class="field">
+      <label for="datosApellido">Apellido del pasajero</label>
+      <input type="text" id="datosApellido" placeholder="Ej: García" autocomplete="off">
+    </div>
+    <div class="field">
+      <label for="datosNombreInput">Nombre del pasajero</label>
+      <input type="text" id="datosNombreInput" placeholder="Ej: Valentina" autocomplete="off">
+    </div>
+  </div>
+
   <div class="field">
-    <label for="datosNombre">Nombre y apellido del pasajero</label>
-    <input type="text" id="datosNombre" placeholder="Ej: Valentina García" autocomplete="off">
+    <label for="datosColegio">Colegio</label>
+    <select id="datosColegio">
+      <option value="" selected disabled>Seleccioná el colegio</option>
+      <option value="Berazategui">Berazategui</option>
+      <option value="El Encuentro">El Encuentro</option>
+      <option value="Emanuel">Emanuel</option>
+      <option value="Hay Vida En Jesús">Hay Vida En Jesús</option>
+      <option value="M.T Alvear">M.T Alvear</option>
+      <option value="Menoyo">Menoyo</option>
+      <option value="Zion">Zion</option>
+    </select>
   </div>
 
   <div class="field">
@@ -340,36 +389,105 @@ textarea{resize:vertical;min-height:80px;}
   <button class="back" id="backFromDatosPasajero" type="button">← Volver</button>
 </section>
 
-<!-- ══════════ DOCUMENTACIÓN SALIDA ══════════ -->
+<!-- ══════════ DATOS DEL VIAJE ══════════ -->
 <section class="panel" id="viewDocSalida">
   <div class="logo sm"><img src="data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiPz48c3ZnIGlkPSJMYXllcl8xIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZlcnNpb249IjEuMSIgdmlld0JveD0iMCAwIDQxMC40OCA0MDguNjUiPjwhLS0gR2VuZXJhdG9yOiBBZG9iZSBJbGx1c3RyYXRvciAzMC4xLjAsIFNWRyBFeHBvcnQgUGx1Zy1JbiAuIFNWRyBWZXJzaW9uOiAyLjEuMSBCdWlsZCAxMzYpIC0tPjxkZWZzPjxzdHlsZT4gLnN0MCB7IGZpbGw6ICNmMTFkOGM7IH0gLnN0MCwgLnN0MSwgLnN0MiwgLnN0MyB7IGZpbGwtcnVsZTogZXZlbm9kZDsgfSAuc3QxIHsgZmlsbDogIzE5OTQzMjsgfSAuc3QzIHsgZmlsbDogIzVkYjRjOTsgfSAgLnN0MiB7IGZpbGw6ICNmZmZmZmY7IH0gPC9zdHlsZT48L2RlZnM+PHBhdGggY2xhc3M9InN0MiIgZD0iTTEzNy43OCw5NS4yNGMxNC42OSwxLjgsMzEuMDUsMi45NiwzOS43NSwyLjUzLDIuMTQtLjExLDIzLjEzLTIuMDIsMTkuMS04LjAxLTUuOTQtOC44NC0xNi45Mi0xMC45NC0yNi43OS05LjU2LTEwLjU0LDEuNDctMjEuODQsNy4xNi0zMi4wNywxNS4wNE04OS42NywxMzQuNGM1LjE4LTE1LjIzLDEzLjU4LTI3LjMzLDI0LjYtMzcuODMtMi45OC0uOTYtNS41OC0xLjk0LTcuNjgtMi45MS03LjU0LTMuNDgtMTEuMDYtNS42NS0xNS43OS0xMi4zNSw4LjcsNC43NiwxMi42NCw3LjEsMjIuNTEsOS43NSwxLjYuNDMsMy41Ljg2LDUuNjIsMS4yOCwyLjQyLTIuMDgsNC45NS00LjEsNy41Ny02LjA4LDIwLjk4LTE1Ljc3LDU2LjQ5LTMwLjcsNzcuMTYtNS44MSwxMi45MSwxNS41NC0yLjY3LDI0LjY4LTE4LjQ5LDI2LjQ0LTExLjU2LDEuMjgtMzUtMS42Ni01NC4yMy01LjkyLTEyLjA2LDEwLjk4LTIxLjc4LDI0LjY3LTI1LjYxLDM3LjEzLTEuMDIsNC4zMy01LjM2LDcuMDEtOS42OSw1Ljk4LTQuMzMtMS4wMi03LjAxLTUuMzYtNS45OC05LjY5WiIvPjxwYXRoIGNsYXNzPSJzdDEiIGQ9Ik0xOTUuODUsOTMuMzdjLTkuNzQsNS42NC0zMC4yNyw1LjY1LTU4LjA4LDEuODcsMTkuNzItMTMuNzcsMzcuODctMTkuMDEsNTMuNTctMTAuODksNS42NSw0LjQ5LDYuOTEsNy40LDQuNTEsOS4wMSIvPjxwYXRoIGNsYXNzPSJzdDIiIGQ9Ik0yNTYuMzgsMTMzLjUyYy0xNy44NCwzNC4wNi0yMS4yNCw2NS40OS0zMy45OCw5OS44Mi0uODYsMi4zMi43OS42OC0xLjc1LDQuMDMtMS43My01LjMyLTEuMjktNC41NS0uNTYtMTEuNTcsMy4zNi0zMi4xNiw5Ljg1LTY5LjQ4LDIyLjg3LTk5LjA5LDEuODgtMy43MSw2LjQxLTUuMTksMTAuMTItMy4zLDMuNzEsMS44OCw1LjE5LDYuNDEsMy4zLDEwLjEyIi8+PHBhdGggY2xhc3M9InN0MiIgZD0iTTI3MS41MywyMjcuNTZsLjY2LDIuNDNjLTE3LTEwLjE0LTM0LjMtMjAuNDMtNTEuNTUtMzAuMTFsLTcuNjQtNC4yMmMtMy43Mi0yLjY3LTUuODUtMS40OC02LjU1LTUuNjctMS4wNy02LjQ0LDEwLjE3LTguMywxNS4yNi0xMC4xNSwxMy41LTQuODksNTEuNjQtMTkuNzMsNjMuNTktMjEuMzlsNS41NS0uMTNjLTcuMTUsNC4xNi0zLjM0LDIuMTItMTIuOTYsNi42OC0xNi44MSw3Ljk4LTM0Ljc2LDE2LjYzLTUyLjI0LDI0LjIsMTMuOTgsNi40LDMwLjUyLDE1LjQ5LDQxLjQ2LDIxLjIzLDEyLjA5LDYuMzUsOS4xMywzLjIxLDE4LjkyLDEzLjIuODQsNC4wNy0xLjc3LDguMDUtNS44NSw4LjktMy43OC43OC03LjQ3LTEuNDEtOC42Ny00Ljk4Ii8+PHBhdGggY2xhc3M9InN0MiIgZD0iTTE0NC43NywyMjEuMTFjMTMuMjUtNy4zNiwzOC45OC02Ni42MSw0Ny4zNi02OS44NSw4LjY4LTMuMzUsOC4wNiwxMy41Miw4LjQyLDE4LjA2LDEuMTEsMTMuOTIsMS42MywyNS4xNCw1LjUsMzguODMsMS42OSw1Ljk5LDMuMDMsOS4yNSwyLjg4LDE1LjQyLTQuMTQtNS43Mi04LjgxLTE2LjA4LTExLjA0LTIyLjk2LTMuNC0xMC40OS00LjQ1LTIxLjIyLTYuMTgtMzEuNDUtNy4wOCwxMi44MS0xMy42OSwyOC4zNi0yMC4zNyw0MC40My01Ljg2LDEwLjU5LTEwLjM2LDE5LTIwLjgsMjUuNDItMy44NCwxLjYtOC4yNS0uMjItOS44NC00LjA2LTEuNi0zLjg0LjIyLTguMjUsNC4wNi05Ljg0Ii8+PHBhdGggY2xhc3M9InN0MiIgZD0iTTE2OS4yLDI2NS4zMmMtOS40LDYuMTQtMTYuMjgsNjEuMjktNC4zNCw1Ni4zLDIxLjk0LTkuMTYsMzUuNzktNjMuMzcsNDMuMDQtODQuMzMsMS4zMi0zLjgsMS4yNS00Ljg3LDMuNzMtNy4yN3YxLjc5Yy0xLjQ4LDIyLjAyLTEyLjkyLDY2LjE4LTI1LjM0LDg0LjI0LTEzLjMsMTkuMzUtMzQuMjQsMjcuODMtMzkuNzEtMS4wOS0zLjMxLTE3LjQ5LS40My01MC42OCwxNC44NS02Mi41NSwzLjU2LTIuMTQsOC4xOS0uOTksMTAuMzMsMi41NywyLjE0LDMuNTYuOTksOC4xOS0yLjU3LDEwLjMzIi8+PHBhdGggY2xhc3M9InN0MiIgZD0iTTI5OS44LDE2Ni42YzkuMDItMTAuNDksMTguNDEtMjIuNjIsMjIuNTktMjkuNjEsMS4wMy0xLjcyLDEwLjQzLTE5LjA0LDMuNjgtMTkuMDItOS45Ni4wMy0xNy4yOCw3LjQ4LTIxLjMzLDE1Ljg3LTQuMzMsOC45Ny01Ljc3LDIwLjctNC45NCwzMi43NU0zMDUuMjksMjI0LjMzYy05LjE2LTExLjkzLTE0LjIxLTI0Ljc0LTE2LjY1LTM4Ljc2LTIuMjksMS44Mi00LjQsMy4zNC02LjI1LDQuNDctNi42Miw0LjA2LTEwLjEzLDUuNjctMTcuOCw1Ljg3LDguMjEtNC4yOSwxMi4wOC02LjE0LDE5LjI3LTEyLjQ1LDEuMTYtMS4wMiwyLjQ4LTIuMjgsMy45MS0zLjcxLS4zNi0yLjk2LS42My01Ljk4LS44LTkuMDUtMS4zOC0yNC41LDUuNDMtNTkuODcsMzUuNTEtNjMuMDMsMTguNzgtMS45NywxNy44MiwxNC44OCwxMC45NywyOC4xLTUsOS42NS0xOS40NSwyNi4zNi0zMi43NCwzOS4xMSwyLjI4LDE1LjA3LDcuODgsMjkuNzQsMTUuNTksMzkuMTgsMi44MywzLjA0LDIuNjcsNy44MS0uMzgsMTAuNjQtMy4wNCwyLjgzLTcuODEsMi42Ny0xMC42NC0uMzhaIi8+PHBhdGggY2xhc3M9InN0MCIgZD0iTTMyOC40OCwxMjAuNDZjLS42NywxMC41LTExLjMxLDI2LjQ4LTI4LjY4LDQ2LjE0LS40OC0yMi40OCw0Ljg3LTM5LjMyLDE5LjMzLTQ3LjMyLDYuNDItMi4wNyw5LjM0LTEuNTMsOS4zNSwxLjE3Ii8+PHBhdGggY2xhc3M9InN0MCIgZD0iTTI3MC41LDI5NS44NGM3LjI1LTYuNjUsOC4zNC0yMi44Miw5LjgxLTMyLjA0Ljc3LTQuODYsMi4xNS0yMC44MSw1LjAzLTI0LjQ0LDguMDQsMi44Niw5LjUyLDMxLjM3LDkuNzQsMzguODcuMzksMTMuNDQtLjUzLDIxLjY5LTguMTUsMzIuNzctNC4xOSw0LjU0LTExLjI2LDQuODItMTUuNzkuNjMtNC41NC00LjE5LTQuODItMTEuMjYtLjYzLTE1Ljc5Ii8+PHBhdGggY2xhc3M9InN0MCIgZD0iTTI2OC40NiwzMjAuN2M1Ljc3LjgsOS42Myw3LjM5LDguNjIsMTQuNzMtMS4wMSw3LjM0LTYuNTIsMTIuNjQtMTIuMjksMTEuODQtNS43Ny0uOC05LjYzLTcuMzktOC42Mi0xNC43MywxLjAxLTcuMzQsNi41Mi0xMi42NCwxMi4yOS0xMS44NCIvPjxwYXRoIGNsYXNzPSJzdDIiIGQ9Ik05OS44NCwxNjIuNDJjLTMuNDIsOS40Ni03LjI0LDMxLjQ4LTkuNDksNTAuOTMsNi4wNS0xMC4wMSwxMi4xNy0xOS44OCwxNC44LTI0LjE5LDQuNjItNy41OCwyNi40Mi00Ni40NSwzNS43NC00Ni42MSw3Ljg0LS4xMyw4LjUxLDcuNCw1LjQ1LDEzLjc1LTguMjMsMTcuMS02LjAzLDkuNTctMTEuODIsMjguNjEtMS42OSw1LjU1LTQuNzQsMTUuMzYtNy41NywyNS4yOCwxLjg5LTMuMTUsMy44NS02LjMzLDUuOTQtOS41OCw3LTEwLjg3LDQ4LjA0LTczLjg2LDU4LjE2LTcwLjAyLTE3LjksMTYuMS00Ni4zNyw2Ny4wOC01OC44OSw4OS43NC0yLjY0LDQuNzktNy4zNSwxNC45Ny05Ljc5LDE4Ljk4LTMuMDMsNC45Ny04LjUzLDguMTctMTEuOTIsMi4yNi0yLjE5LTMuODEsMS41Mi0yMS44Niw1Ljc4LTM5LjA1LTEyLjQzLDIyLjA3LTI3LjIsNDguMzMtMjkuNDksNTAuNy0zLjM0LDMuNDYtOS42MSwyLjc5LTEyLjkyLS43Ny05LjI3LTkuOTgsMy4wOC04My43Myw3Ljg0LTk3LjcyLDIuMTItNS4wMiw3LjkyLTcuMzcsMTIuOTMtNS4yNCw1LjAyLDIuMTIsNy4zNyw3LjkxLDUuMjQsMTIuOTMiLz48cGF0aCBjbGFzcz0ic3QyIiBkPSJNMjI2LjQ4LDI5OS44OWM0LjY1LDQuODgsMTEuMzgsMy45NiwxOC44LTMuNzQsMTUuMi0xNS43OCw5LjMtMzMuNzMtMy4wMi00Ny42LTQuMjksMTAuOTctOS4wMSwyOS4wMi0xMS42OCwzNy43NC0xLjI1LDQuMDgtMi41OSw4LjcxLTQuMSwxMy42TTE4Ny44NywzMzEuOTNjMTMuMzEtNC4xMiwzNC45Ni04OC4zMiw0NS4zNC05OS4xNywxMC4zOC0xMC44NiwyMS40NSw2LjI3LDI2LjIxLDE0LjMzLDEzLjY5LDIzLjE5LDYuMyw1NS44OC0yMC4wMiw2My4yNy02LjM2LDEuNzgtMTEuNTYuNDItMTUuMzgtMi43OS01LjkyLDE3LjY4LTE0LjM1LDM2LjU5LTI4LjQ4LDQ0LjA5LTUuNDUsMi4xMi0xMS41OC0uNTgtMTMuNy02LjAzLTIuMTItNS40NS41OC0xMS41OCw2LjAzLTEzLjdaIi8+PHBhdGggY2xhc3M9InN0MyIgZD0iTTMxMC4xMywzNjUuMDRjLTc2Ljc5LDYzLjgzLTE5MC45OSw1Ny4xMi0yNTkuNjgtMTYuOTktNjguNjktNzQuMTEtNjYuNzMtMTg4LjQ5LDIuNzQtMjYwLjIyQy0xLjQxLDE2MC42OCwyLjA5LDI2NC4zNCw2Ni4xNywzMzMuNDhjNjQuMDksNjkuMTQsMTY3LjE5LDgwLjQ4LDI0My45NiwzMS41NiIvPjxwYXRoIGNsYXNzPSJzdDMiIGQ9Ik0zNTcuMjgsMzIwLjgyYzY5LjQ3LTcxLjczLDcxLjQzLTE4Ni4xMSwyLjc0LTI2MC4yMkMyOTEuMzMtMTMuNTEsMTc3LjEzLTIwLjIyLDEwMC4zNSw0My42MSwxNzcuMTItNS4zMSwyODAuMjIsNi4wMywzNDQuMzEsNzUuMTdjNjQuMDgsNjkuMTQsNjcuNTgsMTcyLjgxLDEyLjk4LDI0NS42NSIvPjwvc3ZnPg==" alt="Wake Up Viajes"></div>
-  <h2 class="panel-head">📋 Documentación para la salida</h2>
-  <p class="panel-sub" style="margin-bottom:20px;">Todo lo que necesitás tener listo el día del viaje.</p>
+  <h2 class="panel-head">📋 Información del viaje y Documentación</h2>
+  <p class="panel-sub" style="margin-bottom:16px;">Todo lo que necesitás saber antes de que partan.</p>
 
-  <div class="doc-section">
-    <h3>📄 Documentos obligatorios</h3>
-    <ul>
-      <li>Cuota Cero (dentro de un folio).</li>
-      <li>Fotocopia del DNI del pasajero.</li>
-      <li>Fotocopia del carnet de obra social.</li>
-      <li>Ficha médica impresa y firmada (además de la versión digital ya enviada).</li>
-      <li>Certificado médico de dieta o restricción alimentaria, si corresponde.</li>
-      <li>Comprobante de pago del Seguro de Caución.</li>
-      <li>Sobre con depósito de hotel y de ropa (monto a confirmar).</li>
-    </ul>
+  <div id="docList">
+    <div class="tip-section">
+      <button class="tip-toggle" aria-expanded="true" type="button"><span class="tip-icon">📅</span><span class="tip-label">Fecha de salida y llegada</span><span class="tip-chevron">▼</span></button>
+      <div class="tip-body open">
+        <p><strong>🚌 Micro</strong></p><ul><li>Salida: <strong>14/8</strong> — (Horarios y paradas a confirmar)</li><li>Regreso: <strong>22/8</strong> — (Horario a confirmar / Llegada a destino 23/8)</li></ul>
+        <p style="margin-top:8px;"><strong>✈️ Avión</strong></p><ul><li>Salida: <strong>15/8 — vuelo AR 1674 9:55 hs desde Aeroparque</strong></li><li>Regreso: <strong>22/8 — vuelo AR 1679 19:40 hs llega a Aeroparque</strong></li></ul>
+      </div>
+    </div>
+    <div class="tip-section">
+      <button class="tip-toggle" aria-expanded="false" type="button"><span class="tip-icon">🚌</span><span class="tip-label">Parada de micros</span><span class="tip-chevron">▼</span></button>
+      <div class="tip-body">
+        <p>A confirmar.</p>
+      </div>
+    </div>
+    <div class="tip-section">
+      <button class="tip-toggle" aria-expanded="false" type="button"><span class="tip-icon">🏨</span><span class="tip-label">Hotel</span><span class="tip-chevron">▼</span></button>
+      <div class="tip-body"><p><strong>Hostería Quime Quipan INN</strong> — Av. de los Pioneros 820, Bariloche.</p></div>
+    </div>
+    <div class="tip-section">
+      <button class="tip-toggle" aria-expanded="false" type="button"><span class="tip-icon">💰</span><span class="tip-label">Depósitos</span><span class="tip-chevron">▼</span></button>
+      <div class="tip-body">
+        <ul>
+          <li>Depósito hotel: <strong>Reembolsable $220.000</strong> / <strong>Sin reembolso $70.000</strong></li>
+          <li>Seguro de ropa: <strong>Reembolsable $100.000</strong> / <strong>Sin reembolso $50.000</strong></li>
+        </ul>
+      </div>
+    </div>
+    <div class="tip-section">
+      <button class="tip-toggle" aria-expanded="false" type="button"><span class="tip-icon">🔒</span><span class="tip-label">Seguridad</span><span class="tip-chevron">▼</span></button>
+      <div class="tip-body">
+        <p><strong>⚠️ Nada de alcohol, drogas, objetos punzantes ni pirotecnia.</strong> Si se encuentra algo, no solo se aplica multa sino que el pasajero regresa.</p>
+        <p style="margin-top:6px;">🧴 Aerosoles y líquidos van <strong>únicamente en el equipaje de bodega.</strong></p>
+      </div>
+    </div>
+    <div class="tip-section">
+      <button class="tip-toggle" aria-expanded="false" type="button"><span class="tip-icon">🧳</span><span class="tip-label">Equipaje permitido</span><span class="tip-chevron">▼</span></button>
+                    <div class="tip-body">
+              <p><strong>🚌 Micro</strong></p>
+              <ul>
+                <li><strong>Una valija de hasta 15 kg</strong> (no valijas grandes).<br>
+                  <span style="font-size:.82rem;color:var(--muted);">📏 Medidas estándar: Altura 65–70 cm · Ancho 40–45 cm · Profundidad 25–30 cm</span></li>
+                <li><strong>Mochila de mano.</strong></li>
+              </ul>
+              <p style="margin-top:10px;"><strong>✈️ Avión</strong></p>
+              <ul>
+                <li><strong>Equipaje de mano (carry on): 8 kg.</strong></li>
+                <li><strong>Equipaje a bodega: 15 kg.</strong></li>
+                <li><strong>Mochila personal: 3 kg</strong> — debe caber debajo del asiento delantero al que uno ocupa.</li>
+              </ul>
+              <p style="margin-top:8px;background:rgba(241,29,140,.08);border-left:3px solid var(--magenta);padding:8px 10px;border-radius:0 8px 8px 0;font-size:.83rem;">⚠️ Medidas de equipaje: ver en la página de la aerolínea. Si el equipaje excede el peso permitido, el pasajero deberá abonar el excedente al despacharlo.</p>
+            </div>
+    <div class="tip-section">
+      <button class="tip-toggle" aria-expanded="false" type="button"><span class="tip-icon">📋</span><span class="tip-label">Documentación a llevar</span><span class="tip-chevron">▼</span></button>
+      <div class="tip-body">
+        <ul><li>Caución (en folio).</li><li>Fotocopia del DNI.</li><li>Fotocopia del carnet de obra social.</li><li>Ficha médica (validez 30 días).</li><li>Dieta alimentaria (si aplica).</li><li>Sobres con depósito y seguro.</li></ul>
+        <p style="margin-top:8px;background:rgba(93,180,201,.1);border-left:3px solid var(--cyan);padding:8px 10px;border-radius:0 8px 8px 0;font-size:.83rem;">📌 La ficha médica se carga en esta misma web, en "Cargar ficha de salud".</p>
+      </div>
+    </div>
+    <div class="tip-section">
+      <button class="tip-toggle" aria-expanded="false" type="button"><span class="tip-icon">🎉</span><span class="tip-label">Fiesta Wake Up</span><span class="tip-chevron">▼</span></button>
+      <div class="tip-body"><p>Los coordinadores darán las indicaciones a través del grupo de WhatsApp.</p></div>
+    </div>
+    <div class="tip-section">
+      <button class="tip-toggle" aria-expanded="false" type="button"><span class="tip-icon">🧥</span><span class="tip-label">Recomendación de ropa</span><span class="tip-chevron">▼</span></button>
+      <div class="tip-body">
+        <ul>
+          <li>Mudas de ropa térmica (calzas, camisetas, medias — varias).</li>
+          <li>Campera de abrigo para debajo de la campera de nieve. Técnica cebolla.</li>
+          <li>Ropa vieja para el día de barro.</li>
+          <li>Zapatillas cómodas / deportivas.</li>
+          <li>Buff térmico, gorro, guantes de nieve y de abrigo, anteojos de sol.</li>
+          <li>Varios pares de medias, incluyendo térmicas.</li>
+          <li>Crema de cacao, toalla de microfibra, bolsas para los pies, 2 bolsas de consorcio.</li>
+          <li>Etiquetas para identificar el equipaje.</li>
+        </ul>
+        <p style="margin-top:8px;background:rgba(93,180,201,.1);border-left:3px solid var(--cyan);padding:8px 10px;border-radius:0 8px 8px 0;font-size:.83rem;">💡 No llevar demasiada ropa: lo que llevan allá se seca rápido.</p>
+      </div>
+    </div>
+    <div class="tip-section">
+      <button class="tip-toggle" aria-expanded="false" type="button"><span class="tip-icon">💬</span><span class="tip-label">Grupo de WhatsApp para padres</span><span class="tip-chevron">▼</span></button>
+      <div class="tip-body"><p>El grupo se abre unos días antes del viaje. Es únicamente para información importante, no para comentarios generales.</p></div>
+    </div>
+    <div class="tip-section">
+      <button class="tip-toggle" aria-expanded="false" type="button"><span class="tip-icon">💊</span><span class="tip-label">Medicaciones especiales</span><span class="tip-chevron">▼</span></button>
+      <div class="tip-body"><p><strong>🏥 Toda medicación especial debe ser entregada a los coordinadores.</strong> Esto incluye medicaciones psiquiátricas o cualquier tratamiento en curso.</p></div>
+    </div>
+    <div class="tip-section">
+      <button class="tip-toggle" aria-expanded="false" type="button"><span class="tip-icon">🎒</span><span class="tip-label">Guardarropas en excursiones</span><span class="tip-chevron">▼</span></button>
+      <div class="tip-body"><p>En algunas excursiones hay que dejar las mochilas en un guardarropas. <strong>Llevar dinero extra</strong> para afrontar ese costo.</p></div>
+    </div>
   </div>
 
-  <div class="doc-section">
-    <h3>🕐 Punto y hora de encuentro</h3>
-    <p style="color:var(--text);font-size:.95rem;font-weight:600;">A confirmar próximamente.</p>
-  </div>
-
-  <div class="doc-section">
-    <h3>📞 Contacto de emergencia coordis</h3>
-    <p>A confirmar próximamente.</p>
-  </div>
-
-  <button class="back" id="backFromDocSalida" type="button">← Volver</button>
+  <button class="back" id="backFromDocSalida" type="button" style="margin-top:18px;">← Volver</button>
 </section>
 
 <!-- ══════════ RESUMEN DEL DÍA ══════════ -->
@@ -377,6 +495,7 @@ textarea{resize:vertical;min-height:80px;}
   <div class="logo sm"><img src="data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiPz48c3ZnIGlkPSJMYXllcl8xIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZlcnNpb249IjEuMSIgdmlld0JveD0iMCAwIDQxMC40OCA0MDguNjUiPjwhLS0gR2VuZXJhdG9yOiBBZG9iZSBJbGx1c3RyYXRvciAzMC4xLjAsIFNWRyBFeHBvcnQgUGx1Zy1JbiAuIFNWRyBWZXJzaW9uOiAyLjEuMSBCdWlsZCAxMzYpIC0tPjxkZWZzPjxzdHlsZT4gLnN0MCB7IGZpbGw6ICNmMTFkOGM7IH0gLnN0MCwgLnN0MSwgLnN0MiwgLnN0MyB7IGZpbGwtcnVsZTogZXZlbm9kZDsgfSAuc3QxIHsgZmlsbDogIzE5OTQzMjsgfSAuc3QzIHsgZmlsbDogIzVkYjRjOTsgfSAgLnN0MiB7IGZpbGw6ICNmZmZmZmY7IH0gPC9zdHlsZT48L2RlZnM+PHBhdGggY2xhc3M9InN0MiIgZD0iTTEzNy43OCw5NS4yNGMxNC42OSwxLjgsMzEuMDUsMi45NiwzOS43NSwyLjUzLDIuMTQtLjExLDIzLjEzLTIuMDIsMTkuMS04LjAxLTUuOTQtOC44NC0xNi45Mi0xMC45NC0yNi43OS05LjU2LTEwLjU0LDEuNDctMjEuODQsNy4xNi0zMi4wNywxNS4wNE04OS42NywxMzQuNGM1LjE4LTE1LjIzLDEzLjU4LTI3LjMzLDI0LjYtMzcuODMtMi45OC0uOTYtNS41OC0xLjk0LTcuNjgtMi45MS03LjU0LTMuNDgtMTEuMDYtNS42NS0xNS43OS0xMi4zNSw4LjcsNC43NiwxMi42NCw3LjEsMjIuNTEsOS43NSwxLjYuNDMsMy41Ljg2LDUuNjIsMS4yOCwyLjQyLTIuMDgsNC45NS00LjEsNy41Ny02LjA4LDIwLjk4LTE1Ljc3LDU2LjQ5LTMwLjcsNzcuMTYtNS44MSwxMi45MSwxNS41NC0yLjY3LDI0LjY4LTE4LjQ5LDI2LjQ0LTExLjU2LDEuMjgtMzUtMS42Ni01NC4yMy01LjkyLTEyLjA2LDEwLjk4LTIxLjc4LDI0LjY3LTI1LjYxLDM3LjEzLTEuMDIsNC4zMy01LjM2LDcuMDEtOS42OSw1Ljk4LTQuMzMtMS4wMi03LjAxLTUuMzYtNS45OC05LjY5WiIvPjxwYXRoIGNsYXNzPSJzdDEiIGQ9Ik0xOTUuODUsOTMuMzdjLTkuNzQsNS42NC0zMC4yNyw1LjY1LTU4LjA4LDEuODcsMTkuNzItMTMuNzcsMzcuODctMTkuMDEsNTMuNTctMTAuODksNS42NSw0LjQ5LDYuOTEsNy40LDQuNTEsOS4wMSIvPjxwYXRoIGNsYXNzPSJzdDIiIGQ9Ik0yNTYuMzgsMTMzLjUyYy0xNy44NCwzNC4wNi0yMS4yNCw2NS40OS0zMy45OCw5OS44Mi0uODYsMi4zMi43OS42OC0xLjc1LDQuMDMtMS43My01LjMyLTEuMjktNC41NS0uNTYtMTEuNTcsMy4zNi0zMi4xNiw5Ljg1LTY5LjQ4LDIyLjg3LTk5LjA5LDEuODgtMy43MSw2LjQxLTUuMTksMTAuMTItMy4zLDMuNzEsMS44OCw1LjE5LDYuNDEsMy4zLDEwLjEyIi8+PHBhdGggY2xhc3M9InN0MiIgZD0iTTI3MS41MywyMjcuNTZsLjY2LDIuNDNjLTE3LTEwLjE0LTM0LjMtMjAuNDMtNTEuNTUtMzAuMTFsLTcuNjQtNC4yMmMtMy43Mi0yLjY3LTUuODUtMS40OC02LjU1LTUuNjctMS4wNy02LjQ0LDEwLjE3LTguMywxNS4yNi0xMC4xNSwxMy41LTQuODksNTEuNjQtMTkuNzMsNjMuNTktMjEuMzlsNS41NS0uMTNjLTcuMTUsNC4xNi0zLjM0LDIuMTItMTIuOTYsNi42OC0xNi44MSw3Ljk4LTM0Ljc2LDE2LjYzLTUyLjI0LDI0LjIsMTMuOTgsNi40LDMwLjUyLDE1LjQ5LDQxLjQ2LDIxLjIzLDEyLjA5LDYuMzUsOS4xMywzLjIxLDE4LjkyLDEzLjIuODQsNC4wNy0xLjc3LDguMDUtNS44NSw4LjktMy43OC43OC03LjQ3LTEuNDEtOC42Ny00Ljk4Ii8+PHBhdGggY2xhc3M9InN0MiIgZD0iTTE0NC43NywyMjEuMTFjMTMuMjUtNy4zNiwzOC45OC02Ni42MSw0Ny4zNi02OS44NSw4LjY4LTMuMzUsOC4wNiwxMy41Miw4LjQyLDE4LjA2LDEuMTEsMTMuOTIsMS42MywyNS4xNCw1LjUsMzguODMsMS42OSw1Ljk5LDMuMDMsOS4yNSwyLjg4LDE1LjQyLTQuMTQtNS43Mi04LjgxLTE2LjA4LTExLjA0LTIyLjk2LTMuNC0xMC40OS00LjQ1LTIxLjIyLTYuMTgtMzEuNDUtNy4wOCwxMi44MS0xMy42OSwyOC4zNi0yMC4zNyw0MC40My01Ljg2LDEwLjU5LTEwLjM2LDE5LTIwLjgsMjUuNDItMy44NCwxLjYtOC4yNS0uMjItOS44NC00LjA2LTEuNi0zLjg0LjIyLTguMjUsNC4wNi05Ljg0Ii8+PHBhdGggY2xhc3M9InN0MiIgZD0iTTE2OS4yLDI2NS4zMmMtOS40LDYuMTQtMTYuMjgsNjEuMjktNC4zNCw1Ni4zLDIxLjk0LTkuMTYsMzUuNzktNjMuMzcsNDMuMDQtODQuMzMsMS4zMi0zLjgsMS4yNS00Ljg3LDMuNzMtNy4yN3YxLjc5Yy0xLjQ4LDIyLjAyLTEyLjkyLDY2LjE4LTI1LjM0LDg0LjI0LTEzLjMsMTkuMzUtMzQuMjQsMjcuODMtMzkuNzEtMS4wOS0zLjMxLTE3LjQ5LS40My01MC42OCwxNC44NS02Mi41NSwzLjU2LTIuMTQsOC4xOS0uOTksMTAuMzMsMi41NywyLjE0LDMuNTYuOTksOC4xOS0yLjU3LDEwLjMzIi8+PHBhdGggY2xhc3M9InN0MiIgZD0iTTI5OS44LDE2Ni42YzkuMDItMTAuNDksMTguNDEtMjIuNjIsMjIuNTktMjkuNjEsMS4wMy0xLjcyLDEwLjQzLTE5LjA0LDMuNjgtMTkuMDItOS45Ni4wMy0xNy4yOCw3LjQ4LTIxLjMzLDE1Ljg3LTQuMzMsOC45Ny01Ljc3LDIwLjctNC45NCwzMi43NU0zMDUuMjksMjI0LjMzYy05LjE2LTExLjkzLTE0LjIxLTI0Ljc0LTE2LjY1LTM4Ljc2LTIuMjksMS44Mi00LjQsMy4zNC02LjI1LDQuNDctNi42Miw0LjA2LTEwLjEzLDUuNjctMTcuOCw1Ljg3LDguMjEtNC4yOSwxMi4wOC02LjE0LDE5LjI3LTEyLjQ1LDEuMTYtMS4wMiwyLjQ4LTIuMjgsMy45MS0zLjcxLS4zNi0yLjk2LS42My01Ljk4LS44LTkuMDUtMS4zOC0yNC41LDUuNDMtNTkuODcsMzUuNTEtNjMuMDMsMTguNzgtMS45NywxNy44MiwxNC44OCwxMC45NywyOC4xLTUsOS42NS0xOS40NSwyNi4zNi0zMi43NCwzOS4xMSwyLjI4LDE1LjA3LDcuODgsMjkuNzQsMTUuNTksMzkuMTgsMi44MywzLjA0LDIuNjcsNy44MS0uMzgsMTAuNjQtMy4wNCwyLjgzLTcuODEsMi42Ny0xMC42NC0uMzhaIi8+PHBhdGggY2xhc3M9InN0MCIgZD0iTTMyOC40OCwxMjAuNDZjLS42NywxMC41LTExLjMxLDI2LjQ4LTI4LjY4LDQ2LjE0LS40OC0yMi40OCw0Ljg3LTM5LjMyLDE5LjMzLTQ3LjMyLDYuNDItMi4wNyw5LjM0LTEuNTMsOS4zNSwxLjE3Ii8+PHBhdGggY2xhc3M9InN0MCIgZD0iTTI3MC41LDI5NS44NGM3LjI1LTYuNjUsOC4zNC0yMi44Miw5LjgxLTMyLjA0Ljc3LTQuODYsMi4xNS0yMC44MSw1LjAzLTI0LjQ0LDguMDQsMi44Niw5LjUyLDMxLjM3LDkuNzQsMzguODcuMzksMTMuNDQtLjUzLDIxLjY5LTguMTUsMzIuNzctNC4xOSw0LjU0LTExLjI2LDQuODItMTUuNzkuNjMtNC41NC00LjE5LTQuODItMTEuMjYtLjYzLTE1Ljc5Ii8+PHBhdGggY2xhc3M9InN0MCIgZD0iTTI2OC40NiwzMjAuN2M1Ljc3LjgsOS42Myw3LjM5LDguNjIsMTQuNzMtMS4wMSw3LjM0LTYuNTIsMTIuNjQtMTIuMjksMTEuODQtNS43Ny0uOC05LjYzLTcuMzktOC42Mi0xNC43MywxLjAxLTcuMzQsNi41Mi0xMi42NCwxMi4yOS0xMS44NCIvPjxwYXRoIGNsYXNzPSJzdDIiIGQ9Ik05OS44NCwxNjIuNDJjLTMuNDIsOS40Ni03LjI0LDMxLjQ4LTkuNDksNTAuOTMsNi4wNS0xMC4wMSwxMi4xNy0xOS44OCwxNC44LTI0LjE5LDQuNjItNy41OCwyNi40Mi00Ni40NSwzNS43NC00Ni42MSw3Ljg0LS4xMyw4LjUxLDcuNCw1LjQ1LDEzLjc1LTguMjMsMTcuMS02LjAzLDkuNTctMTEuODIsMjguNjEtMS42OSw1LjU1LTQuNzQsMTUuMzYtNy41NywyNS4yOCwxLjg5LTMuMTUsMy44NS02LjMzLDUuOTQtOS41OCw3LTEwLjg3LDQ4LjA0LTczLjg2LDU4LjE2LTcwLjAyLTE3LjksMTYuMS00Ni4zNyw2Ny4wOC01OC44OSw4OS43NC0yLjY0LDQuNzktNy4zNSwxNC45Ny05Ljc5LDE4Ljk4LTMuMDMsNC45Ny04LjUzLDguMTctMTEuOTIsMi4yNi0yLjE5LTMuODEsMS41Mi0yMS44Niw1Ljc4LTM5LjA1LTEyLjQzLDIyLjA3LTI3LjIsNDguMzMtMjkuNDksNTAuNy0zLjM0LDMuNDYtOS42MSwyLjc5LTEyLjkyLS43Ny05LjI3LTkuOTgsMy4wOC04My43Myw3Ljg0LTk3LjcyLDIuMTItNS4wMiw3LjkyLTcuMzcsMTIuOTMtNS4yNCw1LjAyLDIuMTIsNy4zNyw3LjkxLDUuMjQsMTIuOTMiLz48cGF0aCBjbGFzcz0ic3QyIiBkPSJNMjI2LjQ4LDI5OS44OWM0LjY1LDQuODgsMTEuMzgsMy45NiwxOC44LTMuNzQsMTUuMi0xNS43OCw5LjMtMzMuNzMtMy4wMi00Ny42LTQuMjksMTAuOTctOS4wMSwyOS4wMi0xMS42OCwzNy43NC0xLjI1LDQuMDgtMi41OSw4LjcxLTQuMSwxMy42TTE4Ny44NywzMzEuOTNjMTMuMzEtNC4xMiwzNC45Ni04OC4zMiw0NS4zNC05OS4xNywxMC4zOC0xMC44NiwyMS40NSw2LjI3LDI2LjIxLDE0LjMzLDEzLjY5LDIzLjE5LDYuMyw1NS44OC0yMC4wMiw2My4yNy02LjM2LDEuNzgtMTEuNTYuNDItMTUuMzgtMi43OS01LjkyLDE3LjY4LTE0LjM1LDM2LjU5LTI4LjQ4LDQ0LjA5LTUuNDUsMi4xMi0xMS41OC0uNTgtMTMuNy02LjAzLTIuMTItNS40NS41OC0xMS41OCw2LjAzLTEzLjdaIi8+PHBhdGggY2xhc3M9InN0MyIgZD0iTTMxMC4xMywzNjUuMDRjLTc2Ljc5LDYzLjgzLTE5MC45OSw1Ny4xMi0yNTkuNjgtMTYuOTktNjguNjktNzQuMTEtNjYuNzMtMTg4LjQ5LDIuNzQtMjYwLjIyQy0xLjQxLDE2MC42OCwyLjA5LDI2NC4zNCw2Ni4xNywzMzMuNDhjNjQuMDksNjkuMTQsMTY3LjE5LDgwLjQ4LDI0My45NiwzMS41NiIvPjxwYXRoIGNsYXNzPSJzdDMiIGQ9Ik0zNTcuMjgsMzIwLjgyYzY5LjQ3LTcxLjczLDcxLjQzLTE4Ni4xMSwyLjc0LTI2MC4yMkMyOTEuMzMtMTMuNTEsMTc3LjEzLTIwLjIyLDEwMC4zNSw0My42MSwxNzcuMTItNS4zMSwyODAuMjIsNi4wMywzNDQuMzEsNzUuMTdjNjQuMDgsNjkuMTQsNjcuNTgsMTcyLjgxLDEyLjk4LDI0NS42NSIvPjwvc3ZnPg==" alt="Wake Up Viajes"></div>
   <h2 class="panel-head">📸 Resumen del día</h2>
   <p class="panel-sub">Fotos, videos y novedades de cada día del viaje.</p>
+  <p class="panel-sub" style="margin-top:-6px;">Esta sección se habilitará luego de comenzado el viaje</p>
   <div id="resumenList">
     <div style="text-align:center;padding:30px 0;color:var(--muted);font-size:.9rem;" id="resumenEmpty">
       <div style="font-size:2rem;margin-bottom:10px;">🏔️</div>
@@ -394,9 +513,33 @@ textarea{resize:vertical;min-height:80px;}
 
   <div class="survey-wrap" id="encuestaFamForm">
 
+    <p style="font-size:.85rem;color:var(--muted);line-height:1.6;text-align:center;padding:4px 8px 10px;border-bottom:1px solid var(--line);margin-bottom:4px;">💬 Mientras más respondas y nos cuentes, más nos ayuda para seguir creciendo.</p>
+
     <div class="survey-q">
       <span class="q-label">Nombre de tu hijo/a</span>
       <input type="text" id="efNombre" placeholder="Ej: Valentina García">
+    </div>
+
+    <div class="survey-q">
+      <span class="q-label">¿Cómo fue tu experiencia general con Wake Up?</span>
+      <div class="stars" id="starsExp" role="group">
+        <span class="star" data-v="1" role="button" tabindex="0">★</span>
+        <span class="star" data-v="2" role="button" tabindex="0">★</span>
+        <span class="star" data-v="3" role="button" tabindex="0">★</span>
+        <span class="star" data-v="4" role="button" tabindex="0">★</span>
+        <span class="star" data-v="5" role="button" tabindex="0">★</span>
+      </div>
+    </div>
+
+    <div class="survey-q">
+      <span class="q-label">¿Cómo calificarías la organización general del viaje?</span>
+      <div class="stars" id="starsOrg" role="group">
+        <span class="star" data-v="1" role="button" tabindex="0">★</span>
+        <span class="star" data-v="2" role="button" tabindex="0">★</span>
+        <span class="star" data-v="3" role="button" tabindex="0">★</span>
+        <span class="star" data-v="4" role="button" tabindex="0">★</span>
+        <span class="star" data-v="5" role="button" tabindex="0">★</span>
+      </div>
     </div>
 
     <div class="survey-q">
@@ -413,28 +556,6 @@ textarea{resize:vertical;min-height:80px;}
 
 
     <div class="survey-q">
-      <span class="q-label">¿Cómo calificarías la organización general del viaje?</span>
-      <div class="stars" id="starsOrg" role="group">
-        <span class="star" data-v="1" role="button" tabindex="0">★</span>
-        <span class="star" data-v="2" role="button" tabindex="0">★</span>
-        <span class="star" data-v="3" role="button" tabindex="0">★</span>
-        <span class="star" data-v="4" role="button" tabindex="0">★</span>
-        <span class="star" data-v="5" role="button" tabindex="0">★</span>
-      </div>
-    </div>
-
-    <div class="survey-q">
-      <span class="q-label">¿Cómo fue tu experiencia general con Wake Up?</span>
-      <div class="stars" id="starsExp" role="group">
-        <span class="star" data-v="1" role="button" tabindex="0">★</span>
-        <span class="star" data-v="2" role="button" tabindex="0">★</span>
-        <span class="star" data-v="3" role="button" tabindex="0">★</span>
-        <span class="star" data-v="4" role="button" tabindex="0">★</span>
-        <span class="star" data-v="5" role="button" tabindex="0">★</span>
-      </div>
-    </div>
-
-    <div class="survey-q">
       <span class="q-label">¿Recomendarías Wake Up a otras familias?</span>
       <div class="option-grid" id="optRecFam">
         <button class="opt-btn" type="button" data-v="sí, sin dudarlo">Sí, sin dudarlo 🙌</button>
@@ -445,7 +566,7 @@ textarea{resize:vertical;min-height:80px;}
     </div>
 
     <div class="survey-q">
-      <span class="q-label">Comentarios libres (opcional)</span>
+      <span class="q-label">Comentarios libres</span>
       <p style="font-size:.78rem;color:var(--muted);margin-bottom:7px;">Todo lo que quieras contarnos: qué estuvo bien, qué mejoraría, o cualquier cosa que sientas.</p>
       <textarea id="efComentario" placeholder="Escribí lo que quieras…" rows="4"></textarea>
     </div>
@@ -496,12 +617,13 @@ const supa = supabase.createClient(SUPA_URL, SUPA_KEY);
 
 /* ── Menú buttons config ── */
 const MENU_BTNS = [
-  { id:"btn_descargar_ficha", label:"Descargar ficha de salud", icon:"⬇️", sub:"Descargá el formulario para completar e imprimir", type:"download", href:"/FICHA_MEDICA_2026.pdf", color:"card-cyan" },
-  { id:"btn_cargar_ficha",    label:"Cargar ficha de salud",    icon:"📤", sub:"Subí la ficha completada y firmada",              type:"panel", panel:"viewCargarFicha", color:"card-magenta" },
-  { id:"btn_datos_pasajero",  label:"Datos del pasajero",       icon:"🩺", sub:"Observaciones médicas, dieta y comentarios",     type:"panel", panel:"viewDatosPasajero", color:"card-cyan" },
-  { id:"btn_doc_salida",      label:"Documentación para la salida", icon:"📋", sub:"Todo lo que necesitás tener listo",          type:"panel", panel:"viewDocSalida",  color:"card-green" },
-  { id:"btn_resumen",         label:"Resumen del día",          icon:"📸", sub:"Fotos, videos y novedades del viaje",             type:"panel", panel:"viewResumen",    color:"card-cyan" },
-  { id:"btn_encuesta_fam",    label:"Tu opinión",               icon:"💬", sub:"Contanos cómo viviste el viaje",                  type:"panel", panel:"viewEncuestaFamilias", color:"card-magenta" },
+  { id:"fbtn_descargar_ficha", label:"Descargar ficha de salud", icon:"⬇️", sub:"Descargá el formulario para completar e imprimir", type:"download", href:"/FICHA_MEDICA_2026.pdf", color:"card-cyan" },
+  { id:"fbtn_cargar_ficha",    label:"Cargar ficha de salud",    icon:"📤", sub:"Subí la ficha completada y firmada",              type:"panel", panel:"viewCargarFicha", color:"card-magenta" },
+  { id:"fbtn_datos_pasajero",  label:"Datos del pasajero",       icon:"🩺", sub:"Observaciones médicas, dieta y comentarios",     type:"panel", panel:"viewDatosPasajero", color:"card-cyan" },
+  { id:"fbtn_doc_salida",      label:"Información del viaje y Documentación", icon:"📋", sub:"Info importante antes de partir",          type:"panel", panel:"viewDocSalida",  color:"card-green" },
+  { id:"fbtn_resumen",         label:"Resumen del día",          icon:"📸", sub:"Se habilitará luego de comenzado el viaje",             type:"panel", panel:"viewResumen",    color:"card-cyan" },
+  { id:"fbtn_encuesta_fam",    label:"Tu opinión",               icon:"💬", sub:"Contanos cómo viviste el viaje",                  type:"panel", panel:"viewEncuestaFamilias", color:"card-magenta" },
+  { id:"fbtn_instagram",        label:"Seguinos en Instagram",    icon:"📸", sub:"@okwakeup · fotos y novedades de Wake Up",           type:"link",  href:"https://www.instagram.com/okwakeup/", color:"card-cyan" },
 ];
 
 /* ============================================================
@@ -521,10 +643,40 @@ function show(id){
   window.scrollTo(0,0);
 }
 
-function goMenu(){ show('viewMenu'); }
+function goMenu(){
+  // Limpiar el ?panel= de la URL para que al volver no redirija de nuevo
+  history.replaceState(null, '', location.pathname);
+  show('viewMenu');
+}
 
 // Init
-if(lsGet(SESS_KEY)==='1'){ loadFamiliaConfig(); show('viewMenu'); }
+if(lsGet(SESS_KEY)==='1'){
+  loadFamiliaConfig().then(()=>{
+    // Si viene con ?panel=xxx, ir directo a ese panel
+    const panelParam = new URLSearchParams(location.search).get('panel');
+    const PANEL_MAP = {
+      'descargar': null,        // es descarga directa, mostrar menú
+      'cargar':    'viewCargarFicha',
+      'datos':     'viewDatosPasajero',
+      'docsalida': 'viewDocSalida',
+      'resumen':   'viewResumen',
+      'encuesta':  'viewEncuestaFamilias',
+    };
+    if(panelParam && PANEL_MAP[panelParam]){
+      if(panelParam === 'resumen') loadResumenes();
+      show(PANEL_MAP[panelParam]);
+    } else if(panelParam === 'descargar'){
+      // Descarga directa del PDF
+      const a = document.createElement('a');
+      a.href = '/FICHA_MEDICA_2026.pdf';
+      a.download = 'Ficha_de_Salud.pdf';
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
+      show('viewMenu');
+    } else {
+      show('viewMenu');
+    }
+  });
+}
 
 /* ── LOGIN ── */
 function attemptLogin(){
@@ -532,8 +684,12 @@ function attemptLogin(){
   if(p === PASS){
     lsSet(SESS_KEY,'1');
     document.getElementById('loginError').textContent='';
-    loadFamiliaConfig();
-    show('viewMenu');
+    const _panelParam = new URLSearchParams(location.search).get('panel');
+    const _PMAP = {'cargar':'viewCargarFicha','datos':'viewDatosPasajero','docsalida':'viewDocSalida','resumen':'viewResumen','encuesta':'viewEncuestaFamilias'};
+    loadFamiliaConfig().then(()=>{
+      if(_panelParam && _PMAP[_panelParam]){ if(_panelParam==='resumen') loadResumenes(); show(_PMAP[_panelParam]); }
+      else show('viewMenu');
+    });
   } else {
     document.getElementById('loginError').textContent='Clave incorrecta.';
   }
@@ -555,23 +711,25 @@ document.getElementById('logoutBtn').addEventListener('click', ()=>{
 /* ── MENÚ ── */
 async function loadFamiliaConfig(){
   try {
-    const { data, error } = await supa.from('config_app').select('clave,valor').like('key', 'landing_%');
+    const { data, error } = await supa.from('config_app').select('clave,valor');
     if(error) throw error;
+    // Las keys en config_app tienen formato: landing_fbtn_descargar_ficha
+    // Los IDs de MENU_BTNS son: btn_descargar_ficha
+    // Por eso buscamos: landing_fbtn_ + id
+    let found = 0;
     if(data && data.length > 0){
-      // Hay config guardada: aplicar cada botón
-      MENU_BTNS.forEach(b => b.visible = false); // empezar en false
-      data.forEach(row=>{
-        const k = row.clave.replace('landing_','');
-        const btn = MENU_BTNS.find(b=>b.id===k);
-        if(btn) btn.visible = (row.valor == 1);
+      MENU_BTNS.forEach(b => {
+        const row = data.find(r => r.clave === 'landing_' + b.id);
+        if(row !== undefined){
+          b.visible = (row.valor == 1);
+          found++;
+        }
       });
-    } else {
-      // Sin config guardada aún: mostrar todo
-      MENU_BTNS.forEach(b => b.visible = true);
     }
+    // Si no se encontró ninguna fila → mostrar todo
+    if(found === 0) MENU_BTNS.forEach(b => b.visible = true);
   } catch(e) {
     console.error('loadFamiliaConfig error:', e);
-    // Si falla Supabase, mostrar todo
     MENU_BTNS.forEach(b => b.visible = true);
   }
   renderMenu();
@@ -581,7 +739,14 @@ function renderMenu(){
   const grid = document.getElementById('menuGrid');
   grid.innerHTML = '';
   MENU_BTNS.filter(b=>b.visible!==false).forEach(b=>{
-    if(b.type==='download'){
+    if(b.type==='link'){
+      const btn=document.createElement('button');
+      btn.type='button';
+      btn.className=`action-card ${b.color}`;
+      btn.innerHTML=cardHTML(b);
+      btn.addEventListener('click',()=>window.open(b.href,'_blank','noopener,noreferrer'));
+      grid.appendChild(btn);
+    } else if(b.type==='download'){
       const a = document.createElement('a');
       a.className=`action-card ${b.color}`;
       a.href=b.href; a.download='';
@@ -645,7 +810,7 @@ document.getElementById('btnSubirFicha').addEventListener('click', async ()=>{
   if(!fichaImgFrente){ errEl.textContent='Subí al menos la foto del frente de la ficha.'; return; }
 
   const btn = document.getElementById('btnSubirFicha');
-  btn.disabled=true; btn.textContent='Procesando…';
+  btn.disabled=true; btn.textContent='Enviando…';
   const prog = document.getElementById('fichaProgress');
   const fill = document.getElementById('fichaFill');
   prog.style.display='block'; fill.style.width='20%';
@@ -655,87 +820,80 @@ document.getElementById('btnSubirFicha').addEventListener('click', async ()=>{
     const imgs = [fichaImgFrente, fichaImgDorso].filter(Boolean);
 
     async function fileToCanvas(file) {
-      // Leer orientación EXIF manualmente
-      const orientation = await getExifOrientation(file);
+      // Leer orientación EXIF con exifr (funciona en Chrome Android y Safari iOS)
+      let orientation = 1;
+      try { const exif = await exifr.parse(file, ['Orientation']); orientation = exif?.Orientation || 1; } catch(e) {}
+
       const bitmap = await createImageBitmap(file);
       const canvas = document.createElement('canvas');
       const ctx = canvas.getContext('2d');
       const w = bitmap.width, h = bitmap.height;
-
-      // Si la foto está rotada 90 o 270 grados, intercambiar ancho/alto
-      if(orientation >= 5 && orientation <= 8){
-        canvas.width = h; canvas.height = w;
-      } else {
-        canvas.width = w; canvas.height = h;
-      }
+      const rotated = orientation >= 5 && orientation <= 8;
+      canvas.width  = rotated ? h : w;
+      canvas.height = rotated ? w : h;
 
       ctx.save();
       switch(orientation){
-        case 2: ctx.transform(-1,0,0,1,w,0); break;
-        case 3: ctx.transform(-1,0,0,-1,w,h); break;
-        case 4: ctx.transform(1,0,0,-1,0,h); break;
-        case 5: ctx.transform(0,1,1,0,0,0); break;
-        case 6: ctx.transform(0,1,-1,0,h,0); break;
-        case 7: ctx.transform(0,-1,-1,0,h,w); break;
-        case 8: ctx.transform(0,-1,1,0,0,w); break;
+        case 2: ctx.transform(-1, 0, 0,  1,  w, 0); break;
+        case 3: ctx.transform(-1, 0, 0, -1,  w, h); break;
+        case 4: ctx.transform( 1, 0, 0, -1,  0, h); break;
+        case 5: ctx.transform( 0, 1, 1,  0,  0, 0); break;
+        case 6: ctx.transform( 0, 1,-1,  0,  h, 0); break;
+        case 7: ctx.transform( 0,-1,-1,  0,  h, w); break;
+        case 8: ctx.transform( 0,-1, 1,  0,  0, w); break;
         default: break;
       }
       ctx.drawImage(bitmap, 0, 0);
       ctx.restore();
-      return canvas.toDataURL('image/jpeg', 0.85);
-    }
-
-    function getExifOrientation(file) {
-      return new Promise(resolve => {
-        const reader = new FileReader();
-        reader.onload = e => {
-          const view = new DataView(e.target.result);
-          if(view.getUint16(0, false) !== 0xFFD8){ resolve(1); return; }
-          const len = view.byteLength;
-          let offset = 2;
-          while(offset < len){
-            if(view.getUint16(offset+2, false) <= 8) break;
-            const marker = view.getUint16(offset, false);
-            offset += 2;
-            if(marker === 0xFFE1){
-              if(view.getUint32(offset+2, false) !== 0x45786966){ resolve(1); return; }
-              const little = view.getUint16(offset+8, false) === 0x4949;
-              offset += 10;
-              const tags = view.getUint16(offset, little);
-              offset += 2;
-              for(let i=0; i<tags; i++){
-                if(view.getUint16(offset+(i*12), little) === 0x0112){
-                  resolve(view.getUint16(offset+(i*12)+8, little)); return;
-                }
-              }
-            } else if((marker & 0xFF00) !== 0xFF00) break;
-            else offset += view.getUint16(offset, false);
-          }
-          resolve(1);
-        };
-        reader.readAsArrayBuffer(file.slice(0, 64*1024));
-      });
+      bitmap.close();
+      return canvas.toDataURL('image/jpeg', 0.9);
     }
 
     const dataUrls = await Promise.all(imgs.map(f => fileToCanvas(f)));
 
     fill.style.width='50%';
 
-    // Generar PDF con jsPDF
+    // Generar PDF con jsPDF — cada foto ocupa una página A4 completa
     const { jsPDF } = window.jspdf;
-    const doc = new jsPDF({ orientation:'portrait', unit:'mm', format:'a4' });
-    const pgW=210, pgH=297;
 
-    dataUrls.forEach((url, i)=>{
-      if(i>0) doc.addPage();
-      const tmpImg = new Image(); tmpImg.src = url;
-      const iw = tmpImg.naturalWidth || 800, ih = tmpImg.naturalHeight || 600;
-      const ratio = Math.min((pgW-20)/iw, (pgH-30)/ih);
+    // Pre-cargar dimensiones de todas las imágenes
+    const imgDims = await Promise.all(dataUrls.map(url => new Promise(res => {
+      const img = new Image();
+      img.onload = () => res({ w: img.naturalWidth, h: img.naturalHeight });
+      img.src = url;
+    })));
+
+    let doc = null;
+
+    dataUrls.forEach((url, i) => {
+      const { w: iw, h: ih } = imgDims[i];
+      const esVertical = ih >= iw;
+
+      // Orientar la página según la foto
+      const orient = esVertical ? 'portrait' : 'landscape';
+      const pgW = esVertical ? 210 : 297;
+      const pgH = esVertical ? 297 : 210;
+
+      if(i === 0){
+        doc = new jsPDF({ orientation: orient, unit: 'mm', format: 'a4' });
+      } else {
+        doc.addPage('a4', orient);
+      }
+
+      // Encabezado
+      doc.setFontSize(9); doc.setTextColor(150);
+      doc.text(`Ficha médica - ${nombre} - ${i===0?'Frente':'Dorso'}`, pgW/2, 8, {align:'center'});
+
+      // Imagen ocupa casi toda la página
+      const margen = 8;
+      const dispW = pgW - margen*2;
+      const dispH = pgH - 14; // espacio para el encabezado
+      const ratio = Math.min(dispW/iw, dispH/ih);
       const w = iw*ratio, h = ih*ratio;
-      const x = (pgW-w)/2, y = 20;
-      doc.addImage(url,'JPEG',x,y,w,h,undefined,'MEDIUM');
-      doc.setFontSize(9); doc.setTextColor(120);
-      doc.text(`Ficha médica - ${nombre} - ${i===0?'Frente':'Dorso'}`, pgW/2, 12, {align:'center'});
+      const x = (pgW - w)/2;
+      const y = 12;
+
+      doc.addImage(url, 'JPEG', x, y, w, h, undefined, 'MEDIUM');
     });
 
     fill.style.width='70%';
@@ -772,14 +930,14 @@ document.getElementById('btnSubirFicha').addEventListener('click', async ()=>{
       document.getElementById('fichaDorso').value='';
       document.getElementById('prevFrente').style.display='none';
       document.getElementById('prevDorso').style.display='none';
-      btn.disabled=false; btn.innerHTML='Generar PDF y enviar <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="width:17px;height:17px"><path d="M22 2L11 13"/><path d="M22 2 15 22 11 13 2 9l20-7z"/></svg>';
+      btn.disabled=false; btn.innerHTML='Enviar <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="width:17px;height:17px"><path d="M22 2L11 13"/><path d="M22 2 15 22 11 13 2 9l20-7z"/></svg>';
       prog.style.display='none'; fill.style.width='0%';
     }, 3000);
 
   } catch(e){
     console.error(e);
     errEl.textContent='Hubo un error al enviar la ficha. Intentá de nuevo.';
-    btn.disabled=false; btn.textContent='Generar PDF y enviar';
+    btn.disabled=false; btn.textContent='Enviar';
     prog.style.display='none';
   }
 });
@@ -788,7 +946,10 @@ document.getElementById('btnSubirFicha').addEventListener('click', async ()=>{
    DATOS DEL PASAJERO
    ============================================================ */
 document.getElementById('btnEnviarDatos').addEventListener('click', async ()=>{
-  const nombre = document.getElementById('datosNombre').value.trim();
+  const apellido = document.getElementById('datosApellido').value.trim();
+  const nombreInput = document.getElementById('datosNombreInput').value.trim();
+  const nombre = apellido && nombreInput ? apellido + ', ' + nombreInput : '';
+  const colegio = document.getElementById('datosColegio').value;
   const medicas = document.getElementById('datosMedicas').value.trim();
   const dieta = document.getElementById('datosDieta').value.trim();
   const obs = document.getElementById('datosObs').value.trim();
@@ -796,7 +957,8 @@ document.getElementById('btnEnviarDatos').addEventListener('click', async ()=>{
   const succEl = document.getElementById('datosSuccess');
   errEl.textContent=''; succEl.style.display='none';
 
-  if(!nombre){ errEl.textContent='Ingresá el nombre y apellido del pasajero.'; return; }
+  if(!apellido || !nombreInput){ errEl.textContent='Ingresá el nombre y el apellido del pasajero.'; return; }
+  if(!colegio){ errEl.textContent='Seleccioná el colegio del pasajero.'; return; }
 
   const btn = document.getElementById('btnEnviarDatos');
   btn.disabled = true; btn.textContent = 'Enviando...';
@@ -804,6 +966,7 @@ document.getElementById('btnEnviarDatos').addEventListener('click', async ()=>{
   try {
     const { error:dbErr } = await supa.from('datos_familia').insert([{
       nombre_pasajero: nombre,
+      colegio: colegio,
       observaciones_medicas: medicas,
       dieta_alimenticia: dieta,
       observaciones: obs
@@ -813,7 +976,9 @@ document.getElementById('btnEnviarDatos').addEventListener('click', async ()=>{
     succEl.style.display='block';
     btn.textContent='✓ Enviado';
     setTimeout(()=>{
-      document.getElementById('datosNombre').value='';
+      document.getElementById('datosApellido').value='';
+      document.getElementById('datosNombreInput').value='';
+      document.getElementById('datosColegio').value='';
       document.getElementById('datosMedicas').value='';
       document.getElementById('datosDieta').value='';
       document.getElementById('datosObs').value='';
@@ -859,7 +1024,8 @@ async function loadResumenes(){
     const _fotos = r.fotos || [];
     window['_lb_'+r.id] = _fotos;
     const fotosHTML = _fotos.length ? `<div class="foto-grid">${_fotos.map(url=>`<img src="${url}" alt="foto" onclick="openLightbox('${url}',window['_lb_'+'${r.id}'])" loading="lazy">`).join('')}</div>` : '';
-    const videosHTML = r.videos?.length ? r.videos.map(url=>`<div class="video-wrap"><video controls playsinline preload="metadata" src="${url}"></video></div>`).join('') : '';
+    const streamUrl = url => url.includes('r2.dev') ? `https://wakeup-upload-worker.elorzaleo.workers.dev/stream/${encodeURIComponent(url.replace(/^https:\/\/pub-[^.]+\.r2\.dev\//, ''))}` : url;
+    const videosHTML = r.videos?.length ? r.videos.map(url=>`<div class="video-wrap"><video controls playsinline preload="metadata" src="${streamUrl(url)}"></video></div>`).join('') : '';
 
     el.innerHTML=`
       <button class="resumen-toggle" aria-expanded="${i===0}" type="button" onclick="toggleResumen(this,'${bodyId}')">
@@ -904,13 +1070,12 @@ function toggleResumen(btn, bodyId){
 async function loadComments(resumenId){
   const el = document.getElementById(`coments-${resumenId}`);
   if(!el) return;
-  const { data } = await supa.from('comentarios_resumen').select('*').eq('resumen_id', resumenId).order('created_at');
+  const { data } = await supa.from('comentarios_resumen').select('*').eq('resumen_id', resumenId).eq('oculto', false).order('destacado',{ascending:false}).order('created_at',{ascending:true});
   if(!data||!data.length){ el.innerHTML='<div style="color:var(--muted);font-size:.82rem;">Sé el primero en comentar 👇</div>'; return; }
   el.innerHTML = data.map(c=>`
     <div class="comentario-item">
       <div class="comentario-nombre">${c.nombre}</div>
       <div class="comentario-txt">${c.comentario}</div>
-      <div class="comentario-fecha">${new Date(c.created_at).toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})}</div>
     </div>`).join('');
 }
 
@@ -1019,6 +1184,17 @@ document.addEventListener('keydown',e=>{
   if(e.key==='ArrowRight'&&lbIdx<lbUrls.length-1){lbIdx++;showLbImage();}
   if(e.key==='ArrowLeft'&&lbIdx>0){lbIdx--;showLbImage();}
   if(e.key==='Escape') document.getElementById('lightbox').classList.remove('open');
+});
+
+/* ── ACORDEÓN DOC SALIDA ── */
+document.getElementById('docList').addEventListener('click', e=>{
+  const btn = e.target.closest('.tip-toggle');
+  if(!btn) return;
+  const body = btn.nextElementSibling;
+  const open = body.classList.contains('open');
+  document.querySelectorAll('#docList .tip-body').forEach(b=>b.classList.remove('open'));
+  document.querySelectorAll('#docList .tip-toggle').forEach(b=>b.setAttribute('aria-expanded','false'));
+  if(!open){ body.classList.add('open'); btn.setAttribute('aria-expanded','true'); }
 });
 
 /* ============================================================
