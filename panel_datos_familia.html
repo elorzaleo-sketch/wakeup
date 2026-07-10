@@ -96,7 +96,7 @@ body{font-family:'Outfit',sans-serif;color:var(--text);background:var(--ink);min
   </div>
   <div class="search-bar">
     <span class="si">🔍</span>
-    <input type="text" id="buscador" placeholder="Buscar por nombre del pasajero…" oninput="filtrar()">
+    <input type="text" id="buscador" placeholder="Buscar por nombre o colegio…" oninput="filtrar()">
   </div>
   <div id="lista"><div class="empty-state">Cargando…</div></div>
 </div>
@@ -217,9 +217,21 @@ function campo(label, valor, campoKey, id){
   return `<div class="ef-field"><div class="ef-label">${label}</div><div class="ef-val">${escHTML(val)}</div></div>`;
 }
 
+const COLEGIOS = ['Berazategui','El Encuentro','Emanuel','Hay Vida En Jesús','M.T Alvear','Menoyo','Zion'];
+
+function campoColegio(valor, id){
+  const val = (valor||'').trim();
+  if(editMode){
+    const opts = COLEGIOS.map(c => `<option value="${escHTML(c)}"${c===val?' selected':''}>${escHTML(c)}</option>`).join('');
+    return `<div class="ef-field"><div class="ef-label">Colegio</div><select class="ef-input" data-id="${id}" data-campo="colegio" onchange="guardarCampo(this)"><option value=""${!val?' selected':''} disabled>Seleccionar…</option>${opts}</select></div>`;
+  }
+  if(!val) return `<div class="ef-field"><div class="ef-label">Colegio</div><div class="ef-val empty">Sin especificar</div></div>`;
+  return `<div class="ef-field"><div class="ef-label">Colegio</div><div class="ef-val">${escHTML(val)}</div></div>`;
+}
+
 function filtrar(){
   const q = document.getElementById('buscador').value.toLowerCase().trim();
-  const filtrados = registros.filter(r => (r.nombre_pasajero||'').toLowerCase().includes(q));
+  const filtrados = registros.filter(r => (r.nombre_pasajero||'').toLowerCase().includes(q) || (r.colegio||'').toLowerCase().includes(q));
   const el = document.getElementById('lista');
   if(!filtrados.length){
     el.innerHTML = '<div class="empty-state">No se encontraron registros.</div>';
@@ -232,6 +244,7 @@ function filtrar(){
         <span class="card-nombre">${escHTML(r.nombre_pasajero)}</span>
         <span class="card-fecha">${fecha}</span>
       </div>
+      ${campoColegio(r.colegio, r.id)}
       ${campo('Observaciones médicas', r.observaciones_medicas, 'observaciones_medicas', r.id)}
       ${campo('Dietas alimenticias', r.dieta_alimenticia, 'dieta_alimenticia', r.id)}
       ${campo('Observaciones', r.observaciones, 'observaciones', r.id)}
