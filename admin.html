@@ -83,6 +83,9 @@
   .student-photo{width:40px;height:40px;border-radius:50%;object-fit:cover;border:2px solid var(--border);cursor:zoom-in;transition:border-color .15s;}
   .student-photo:hover{border-color:var(--cyan);}
   .no-photo{width:40px;height:40px;border-radius:50%;background:var(--surface);border:2px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:16px;}
+  .id-chip{font-family:monospace;font-size:11px;color:var(--muted);background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:3px 7px;cursor:pointer;white-space:nowrap;transition:all .15s;}
+  .id-chip:hover{border-color:var(--cyan);color:var(--cyan);}
+  .id-chip.copied{border-color:var(--green);color:var(--green);}
   .badge{display:inline-block;padding:2px 9px;border-radius:20px;font-size:11px;font-weight:500;background:rgba(93,180,201,.12);color:var(--cyan);}
   .check-done{color:var(--green);font-size:17px;cursor:pointer;}
   .check-pending{color:#333;font-size:17px;cursor:pointer;}
@@ -269,6 +272,7 @@
       <table id="alumnosTable" style="display:none">
         <thead><tr>
           <th>Foto</th>
+          <th>ID</th>
           <th class="sortable" onclick="sortBy('apellido')">Apellido</th>
           <th class="sortable" onclick="sortBy('nombre')">Nombre</th>
           <th class="sortable" onclick="sortBy('apodo')">N. Pref.</th>
@@ -648,6 +652,7 @@
           ?`<img class="student-photo" src="${a.foto_url}" alt="${a.nombre}" onclick="openModal('${a.foto_url}','${(a.nombre||'')} ${(a.apellido||'')}')">`
           :`<div class="no-photo">👤</div>`}
         </td>
+        <td><span class="id-chip" title="Click para copiar el ID completo" onclick="copyId('${a.id}',this)">${(a.id||'').slice(0,8)}</span></td>
         <td><input class="obs-input" style="font-weight:700;width:100%;min-width:100px" value="${toTC(a.apellido)}"
             onblur="if(!isReadOnly)saveFieldTC('${a.id}','apellido',this.value,this)" ${isReadOnly?'readonly':''}></td>
         <td><input class="obs-input" style="width:100%;min-width:120px" value="${toTC(a.nombre)}"
@@ -683,6 +688,18 @@
           ${isReadOnly?'':`<button onclick="askDeleteAlumno('`+a.id+`','`+a.nombre+` `+a.apellido+`')" style="background:none;border:none;color:#333;font-size:16px;cursor:pointer;padding:2px 8px;border-radius:6px;transition:color .15s" onmouseover="this.style.color='var(--pink)'" onmouseout="this.style.color='#333'">🗑</button>`}
         </td>
       </tr>`).join('');
+  }
+
+  function copyId(id,el){
+    const original=el.textContent;
+    const done=()=>{el.textContent='✓';el.classList.add('copied');setTimeout(()=>{el.textContent=original;el.classList.remove('copied');},1100);};
+    if(navigator.clipboard&&navigator.clipboard.writeText){
+      navigator.clipboard.writeText(id).then(done).catch(done);
+    }else{
+      const ta=document.createElement('textarea');ta.value=id;document.body.appendChild(ta);ta.select();
+      try{document.execCommand('copy');}catch(e){}
+      document.body.removeChild(ta);done();
+    }
   }
 
   const toTC = s => (s||'').toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
