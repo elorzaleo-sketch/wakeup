@@ -25,15 +25,24 @@ body{font-family:'Outfit',sans-serif;color:var(--text);background:var(--ink);min
 .topbar h1{font-family:'Bricolage Grotesque',sans-serif;font-size:1.1rem;font-weight:700;}
 .topbar a{color:var(--muted);font-size:.83rem;text-decoration:none;padding:6px 14px;border:1.5px solid var(--line);border-radius:99px;transition:.15s;}
 .topbar a:hover{color:var(--text);border-color:var(--cyan);}
+.topbar-actions{display:flex;align-items:center;gap:8px;}
+.edit-toggle{font-family:'Outfit',sans-serif;font-size:.83rem;font-weight:600;padding:6px 14px;border-radius:99px;border:1.5px solid var(--line);background:transparent;color:var(--muted);cursor:pointer;transition:.15s;}
+.edit-toggle:hover{color:var(--text);border-color:var(--cyan);}
+.edit-toggle.active{color:var(--ink);background:var(--cyan);border-color:var(--cyan);}
 .container{max-width:760px;margin:0 auto;padding:20px 20px 80px;}
 .search-bar{position:relative;margin-bottom:16px;}
 .search-bar input{width:100%;font-family:'Outfit',sans-serif;font-size:.95rem;padding:12px 14px 12px 36px;border:1.5px solid var(--line);border-radius:11px;background:rgba(255,255,255,.04);color:var(--text);}
 .search-bar input:focus{outline:none;border-color:var(--cyan);box-shadow:0 0 0 3px rgba(93,180,201,.15);}
 .search-bar .si{position:absolute;left:11px;top:50%;transform:translateY(-50%);color:var(--muted);}
-.stats{display:grid;grid-template-columns:1fr;gap:10px;margin-bottom:18px;}
+.stats{display:flex;flex-direction:column;gap:10px;margin-bottom:18px;}
+.stats-sub{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
 .stat{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;text-align:center;}
 .stat .val{font-family:'Bricolage Grotesque',sans-serif;font-size:2rem;font-weight:800;color:var(--cyan);}
 .stat .lbl{font-size:.78rem;color:var(--muted);margin-top:4px;}
+.stat.mini{padding:12px 8px;}
+.stat.mini .val{font-size:1.4rem;}
+.stat.mini .lbl{font-size:.68rem;}
+@media(max-width:420px){.stats-sub{gap:6px;}.stat.mini{padding:10px 4px;}.stat.mini .val{font-size:1.15rem;}.stat.mini .lbl{font-size:.6rem;}}
 .ef-card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px 20px;margin-bottom:12px;}
 .card-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px;}
 .card-nombre{font-weight:700;font-size:1rem;}
@@ -50,16 +59,40 @@ body{font-family:'Outfit',sans-serif;color:var(--text);background:var(--ink);min
 .toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(80px);background:#1e2e31;border:1px solid rgba(93,180,201,.3);border-radius:12px;padding:10px 18px;font-size:.86rem;color:var(--text);transition:transform .3s cubic-bezier(.34,1.56,.64,1),opacity .3s;opacity:0;z-index:99;pointer-events:none;}
 .toast.show{transform:translateX(-50%) translateY(0);opacity:1;}
 .empty-state{color:var(--muted);font-size:.88rem;text-align:center;padding:30px 10px;}
+.ef-input{width:100%;font-family:'Outfit',sans-serif;font-size:.9rem;line-height:1.5;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;background:rgba(255,255,255,.05);color:var(--text);resize:vertical;}
+.ef-input:focus{outline:none;border-color:var(--cyan);}
+.pw-overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;align-items:center;justify-content:center;z-index:200;padding:20px;}
+.pw-overlay.show{display:flex;}
+.pw-box{background:#12181a;border:1px solid var(--line);border-radius:16px;padding:24px;max-width:320px;width:100%;}
+.pw-box h3{font-family:'Bricolage Grotesque',sans-serif;font-size:1.05rem;margin-bottom:6px;}
+.pw-box p{font-size:.85rem;color:var(--muted);margin-bottom:14px;}
+.pw-box input{width:100%;font-family:'Outfit',sans-serif;font-size:.95rem;padding:11px 14px;border:1.5px solid var(--line);border-radius:11px;background:rgba(255,255,255,.04);color:var(--text);margin-bottom:8px;box-sizing:border-box;}
+.pw-box input:focus{outline:none;border-color:var(--cyan);}
+.pw-error{color:#ff5fae;font-size:.8rem;min-height:16px;margin-bottom:4px;}
+.pw-actions{display:flex;gap:8px;margin-top:6px;}
+.pw-actions button{flex:1;padding:10px;border-radius:10px;font-family:'Outfit',sans-serif;font-size:.85rem;font-weight:600;cursor:pointer;transition:.15s;}
+.pw-cancel{background:transparent;border:1.5px solid var(--line);color:var(--muted);}
+.pw-cancel:hover{color:var(--text);}
+.pw-confirm{background:var(--cyan);border:1.5px solid var(--cyan);color:var(--ink);}
+.pw-confirm:hover{opacity:.88;}
 </style>
 </head>
 <body>
 <div class="topbar">
   <h1>🩺 Datos de familias</h1>
-  <a href="/#accesos">Panel →</a>
+  <div class="topbar-actions">
+    <button class="edit-toggle" id="editToggle" type="button">✏️ Editar</button>
+    <a href="/#accesos">Panel →</a>
+  </div>
 </div>
 <div class="container">
   <div class="stats">
     <div class="stat"><div class="val" id="statTotal">—</div><div class="lbl">Pasajeros con datos cargados</div></div>
+    <div class="stats-sub">
+      <div class="stat mini"><div class="val" id="statMedicas">—</div><div class="lbl">Con obs. médicas</div></div>
+      <div class="stat mini"><div class="val" id="statDieta">—</div><div class="lbl">Con dieta</div></div>
+      <div class="stat mini"><div class="val" id="statObs">—</div><div class="lbl">Con observaciones</div></div>
+    </div>
   </div>
   <div class="search-bar">
     <span class="si">🔍</span>
@@ -68,6 +101,19 @@ body{font-family:'Outfit',sans-serif;color:var(--text);background:var(--ink);min
   <div id="lista"><div class="empty-state">Cargando…</div></div>
 </div>
 <div class="toast" id="toast"></div>
+
+<div class="pw-overlay" id="pwOverlay">
+  <div class="pw-box">
+    <h3>Modo edición</h3>
+    <p>Ingresá la contraseña para editar los datos.</p>
+    <input type="password" id="pwInput" placeholder="Contraseña" autocomplete="off">
+    <p class="pw-error" id="pwError"></p>
+    <div class="pw-actions">
+      <button type="button" class="pw-cancel" id="pwCancel">Cancelar</button>
+      <button type="button" class="pw-confirm" id="pwConfirm">Ingresar</button>
+    </div>
+  </div>
+</div>
 
 <script>
 const SUPA_URL = "https://mzousqdahqterfawhwsz.supabase.co";
@@ -89,16 +135,84 @@ function escHTML(s){
 
 let registros = [];
 
+const EDIT_PASSWORD = 'Wakeupadmin26!';
+let editMode = false;
+const editToggle = document.getElementById('editToggle');
+const pwOverlay = document.getElementById('pwOverlay');
+const pwInput = document.getElementById('pwInput');
+const pwError = document.getElementById('pwError');
+const pwCancel = document.getElementById('pwCancel');
+const pwConfirm = document.getElementById('pwConfirm');
+
+function abrirModalPw(){
+  pwError.textContent = '';
+  pwInput.value = '';
+  pwOverlay.classList.add('show');
+  setTimeout(()=>pwInput.focus(), 50);
+}
+function cerrarModalPw(){
+  pwOverlay.classList.remove('show');
+}
+function intentarDesbloquear(){
+  if(pwInput.value === EDIT_PASSWORD){
+    editMode = true;
+    editToggle.textContent = '🔒 Salir de edición';
+    editToggle.classList.add('active');
+    cerrarModalPw();
+    filtrar();
+    showToast('Modo edición activado.');
+  } else {
+    pwError.textContent = 'Contraseña incorrecta.';
+  }
+}
+editToggle.addEventListener('click', ()=>{
+  if(editMode){
+    editMode = false;
+    editToggle.textContent = '✏️ Editar';
+    editToggle.classList.remove('active');
+    filtrar();
+  } else {
+    abrirModalPw();
+  }
+});
+pwCancel.addEventListener('click', cerrarModalPw);
+pwConfirm.addEventListener('click', intentarDesbloquear);
+pwInput.addEventListener('keydown', (e)=>{ if(e.key === 'Enter') intentarDesbloquear(); });
+pwOverlay.addEventListener('click', (e)=>{ if(e.target === pwOverlay) cerrarModalPw(); });
+
+function actualizarStats(){
+  document.getElementById('statTotal').textContent = registros.length;
+  document.getElementById('statMedicas').textContent = registros.filter(r => (r.observaciones_medicas||'').trim()).length;
+  document.getElementById('statDieta').textContent = registros.filter(r => (r.dieta_alimenticia||'').trim()).length;
+  document.getElementById('statObs').textContent = registros.filter(r => (r.observaciones||'').trim()).length;
+}
+
+async function guardarCampo(el){
+  const id = el.dataset.id;
+  const campoKey = el.dataset.campo;
+  const valor = el.value.trim();
+  const reg = registros.find(r => r.id === id);
+  if(reg && (reg[campoKey]||'').trim() === valor) return;
+  const { error } = await supa.from('datos_familia').update({ [campoKey]: valor }).eq('id', id);
+  if(error){ console.error(error); showToast('No se pudo guardar el cambio.'); return; }
+  if(reg) reg[campoKey] = valor;
+  actualizarStats();
+  showToast('Cambio guardado.');
+}
+
 async function cargar(){
   const { data, error } = await supa.from('datos_familia').select('*').order('created_at', { ascending:false });
   if(error){ console.error(error); document.getElementById('lista').innerHTML = '<div class="empty-state">Hubo un error al cargar los datos.</div>'; return; }
   registros = data || [];
-  document.getElementById('statTotal').textContent = registros.length;
+  actualizarStats();
   filtrar();
 }
 
-function campo(label, valor){
+function campo(label, valor, campoKey, id){
   const val = (valor||'').trim();
+  if(editMode){
+    return `<div class="ef-field"><div class="ef-label">${label}</div><textarea class="ef-input" rows="2" data-id="${id}" data-campo="${campoKey}" onblur="guardarCampo(this)">${escHTML(val)}</textarea></div>`;
+  }
   if(!val) return `<div class="ef-field"><div class="ef-label">${label}</div><div class="ef-val empty">Sin especificar</div></div>`;
   return `<div class="ef-field"><div class="ef-label">${label}</div><div class="ef-val">${escHTML(val)}</div></div>`;
 }
@@ -118,9 +232,9 @@ function filtrar(){
         <span class="card-nombre">${escHTML(r.nombre_pasajero)}</span>
         <span class="card-fecha">${fecha}</span>
       </div>
-      ${campo('Observaciones médicas', r.observaciones_medicas)}
-      ${campo('Dietas alimenticias', r.dieta_alimenticia)}
-      ${campo('Observaciones', r.observaciones)}
+      ${campo('Observaciones médicas', r.observaciones_medicas, 'observaciones_medicas', r.id)}
+      ${campo('Dietas alimenticias', r.dieta_alimenticia, 'dieta_alimenticia', r.id)}
+      ${campo('Observaciones', r.observaciones, 'observaciones', r.id)}
       <div class="card-actions">
         <button class="del-btn" type="button" onclick="borrar('${r.id}')">🗑️ Eliminar</button>
       </div>
@@ -133,7 +247,7 @@ async function borrar(id){
   const { error } = await supa.from('datos_familia').delete().eq('id', id);
   if(error){ console.error(error); showToast('No se pudo eliminar.'); return; }
   registros = registros.filter(r => r.id !== id);
-  document.getElementById('statTotal').textContent = registros.length;
+  actualizarStats();
   filtrar();
   showToast('Registro eliminado.');
 }
