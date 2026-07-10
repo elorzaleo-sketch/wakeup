@@ -340,9 +340,15 @@ textarea{resize:vertical;min-height:80px;}
   <h2 class="panel-head">🩺 Datos del pasajero</h2>
   <p class="panel-sub">Contanos sobre tratamientos, dietas o cualquier detalle que debamos tener en cuenta.</p>
 
-  <div class="field">
-    <label for="datosNombre">Nombre y apellido del pasajero</label>
-    <input type="text" id="datosNombre" placeholder="Ej: Valentina García" autocomplete="off">
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+    <div class="field">
+      <label for="datosApellido">Apellido del pasajero</label>
+      <input type="text" id="datosApellido" placeholder="Ej: García" autocomplete="off">
+    </div>
+    <div class="field">
+      <label for="datosNombreInput">Nombre del pasajero</label>
+      <input type="text" id="datosNombreInput" placeholder="Ej: Valentina" autocomplete="off">
+    </div>
   </div>
 
   <div class="field">
@@ -926,7 +932,9 @@ document.getElementById('btnSubirFicha').addEventListener('click', async ()=>{
    DATOS DEL PASAJERO
    ============================================================ */
 document.getElementById('btnEnviarDatos').addEventListener('click', async ()=>{
-  const nombre = document.getElementById('datosNombre').value.trim();
+  const apellido = document.getElementById('datosApellido').value.trim();
+  const nombreInput = document.getElementById('datosNombreInput').value.trim();
+  const nombre = apellido && nombreInput ? apellido + ', ' + nombreInput : '';
   const medicas = document.getElementById('datosMedicas').value.trim();
   const dieta = document.getElementById('datosDieta').value.trim();
   const obs = document.getElementById('datosObs').value.trim();
@@ -934,7 +942,7 @@ document.getElementById('btnEnviarDatos').addEventListener('click', async ()=>{
   const succEl = document.getElementById('datosSuccess');
   errEl.textContent=''; succEl.style.display='none';
 
-  if(!nombre){ errEl.textContent='Ingresá el nombre y apellido del pasajero.'; return; }
+  if(!apellido || !nombreInput){ errEl.textContent='Ingresá el nombre y el apellido del pasajero.'; return; }
 
   const btn = document.getElementById('btnEnviarDatos');
   btn.disabled = true; btn.textContent = 'Enviando...';
@@ -951,7 +959,8 @@ document.getElementById('btnEnviarDatos').addEventListener('click', async ()=>{
     succEl.style.display='block';
     btn.textContent='✓ Enviado';
     setTimeout(()=>{
-      document.getElementById('datosNombre').value='';
+      document.getElementById('datosApellido').value='';
+      document.getElementById('datosNombreInput').value='';
       document.getElementById('datosMedicas').value='';
       document.getElementById('datosDieta').value='';
       document.getElementById('datosObs').value='';
