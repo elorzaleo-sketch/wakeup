@@ -619,7 +619,7 @@ const supa = supabase.createClient(SUPA_URL, SUPA_KEY);
 const MENU_BTNS = [
   { id:"fbtn_descargar_ficha", label:"Descargar ficha de salud", icon:"⬇️", sub:"Descargá el formulario para completar e imprimir", type:"download", href:"/FICHA_MEDICA_2026.pdf", color:"card-cyan" },
   { id:"fbtn_cargar_ficha",    label:"Cargar ficha de salud",    icon:"📤", sub:"Subí la ficha completada y firmada",              type:"panel", panel:"viewCargarFicha", color:"card-magenta" },
-  { id:"fbtn_datos_pasajero",  label:"Datos del pasajero",       icon:"🩺", sub:"Observaciones médicas, dieta y comentarios",     type:"panel", panel:"viewDatosPasajero", color:"card-cyan" },
+  { id:"fbtn_datos_pasajero",  label:"Observaciones médicas, dietas y comentarios", icon:"🩺", sub:"Datos del pasajero",     type:"panel", panel:"viewDatosPasajero", color:"card-cyan" },
   { id:"fbtn_doc_salida",      label:"Información del viaje y Documentación", icon:"📋", sub:"Info importante antes de partir",          type:"panel", panel:"viewDocSalida",  color:"card-green" },
   { id:"fbtn_resumen",         label:"Resumen del día",          icon:"📸", sub:"Se habilitará luego de comenzado el viaje",             type:"panel", panel:"viewResumen",    color:"card-cyan" },
   { id:"fbtn_encuesta_fam",    label:"Tu opinión",               icon:"💬", sub:"Contanos cómo viviste el viaje",                  type:"panel", panel:"viewEncuestaFamilias", color:"card-magenta" },
