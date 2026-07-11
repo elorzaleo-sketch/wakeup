@@ -61,6 +61,7 @@ body{font-family:'Outfit',sans-serif;color:var(--text);background:var(--ink);min
 .empty-state{color:var(--muted);font-size:.88rem;text-align:center;padding:30px 10px;}
 .ef-input{width:100%;font-family:'Outfit',sans-serif;font-size:.9rem;line-height:1.5;padding:9px 11px;border:1.5px solid var(--line);border-radius:9px;background:rgba(255,255,255,.05);color:var(--text);resize:vertical;}
 .ef-input:focus{outline:none;border-color:var(--cyan);}
+.ef-input::placeholder{color:#7d8a8d;opacity:1;}
 .pw-overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;align-items:center;justify-content:center;z-index:200;padding:20px;}
 .pw-overlay.show{display:flex;}
 .pw-box{background:#12181a;border:1px solid var(--line);border-radius:16px;padding:24px;max-width:320px;width:100%;}
@@ -78,6 +79,8 @@ body{font-family:'Outfit',sans-serif;color:var(--text);background:var(--ink);min
 .update-photos-btn{font-family:'Outfit',sans-serif;font-size:.83rem;font-weight:600;padding:6px 14px;border-radius:99px;border:1.5px solid var(--cyan);background:transparent;color:var(--cyan);cursor:pointer;transition:.15s;}
 .update-photos-btn:hover{background:var(--cyan);color:var(--ink);}
 .update-photos-btn:disabled{opacity:.5;cursor:default;}
+.print-btn{font-family:'Outfit',sans-serif;font-size:.83rem;font-weight:600;padding:6px 14px;border-radius:99px;border:1.5px solid var(--line);background:transparent;color:var(--muted);cursor:pointer;transition:.15s;}
+.print-btn:hover{color:var(--text);border-color:var(--cyan);}
 .card-photo-row{display:flex;align-items:center;gap:10px;margin-bottom:12px;}
 .card-photo{width:52px;height:52px;border-radius:50%;object-fit:cover;border:2px solid var(--line);flex-shrink:0;cursor:zoom-in;}
 .card-photo-empty{width:52px;height:52px;border-radius:50%;background:rgba(255,255,255,.05);border:2px solid var(--line);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;color:var(--muted);}
@@ -93,6 +96,24 @@ body{font-family:'Outfit',sans-serif;color:var(--text);background:var(--ink);min
 .link-result:hover{background:rgba(255,255,255,.06);}
 .link-result img,.link-result .ph{width:26px;height:26px;border-radius:50%;object-fit:cover;flex-shrink:0;}
 .link-clear{font-size:.75rem;color:var(--muted);background:none;border:none;cursor:pointer;text-decoration:underline;margin-top:4px;padding:0;}
+
+@media print{
+  @page{ size:A4; margin:14mm 12mm; }
+  html,body{ background:#fff !important; background-image:none !important; color:#111 !important; }
+  .topbar, .search-bar, .stats, .toast, .pw-overlay{ display:none !important; }
+  .container{ max-width:100%; margin:0; padding:0; }
+  .ef-card{ background:#fff !important; border:1px solid #ccc !important; border-radius:8px; box-shadow:none !important; break-inside:avoid; page-break-inside:avoid; margin-bottom:10px; padding:12px 14px; }
+  .card-head{ margin-bottom:8px; }
+  .card-nombre{ color:#111 !important; }
+  .card-fecha{ color:#555 !important; }
+  .ef-label{ color:#555 !important; }
+  .ef-val{ color:#111 !important; }
+  .ef-val.empty{ color:#888 !important; }
+  .divider{ border-top-color:#ddd; }
+  .card-photo{ border-color:#ccc !important; }
+  .card-photo-empty{ background:#f0f0f0 !important; border-color:#ccc !important; color:#999 !important; }
+  .link-status, .link-picker, .link-clear, .card-actions{ display:none !important; }
+}
 </style>
 </head>
 <body>
@@ -100,6 +121,7 @@ body{font-family:'Outfit',sans-serif;color:var(--text);background:var(--ink);min
   <h1>🩺 Datos de familias</h1>
   <div class="topbar-actions">
     <button class="update-photos-btn" id="updatePhotosBtn" type="button" onclick="actualizarFotos()">🔄 Actualizar fotos</button>
+    <button class="print-btn" id="printBtn" type="button" onclick="window.print()">🖨️ Imprimir / PDF</button>
     <button class="edit-toggle" id="editToggle" type="button">✏️ Editar</button>
     <a href="/#accesos">Panel →</a>
   </div>
@@ -311,13 +333,29 @@ function onLinkBlur(el){
 }
 
 const EDIT_PASSWORD = 'Wakeupadmin26!';
-let editMode = false;
+const EDIT_KEY = 'wakeup_familia_edit';
+function lsGet(k){ try{ return localStorage.getItem(k); }catch(e){ return null; } }
+function lsSet(k,v){ try{ localStorage.setItem(k,v); }catch(e){} }
+function lsDel(k){ try{ localStorage.removeItem(k); }catch(e){} }
+
+let editMode = lsGet(EDIT_KEY) === '1';
 const editToggle = document.getElementById('editToggle');
 const pwOverlay = document.getElementById('pwOverlay');
 const pwInput = document.getElementById('pwInput');
 const pwError = document.getElementById('pwError');
 const pwCancel = document.getElementById('pwCancel');
 const pwConfirm = document.getElementById('pwConfirm');
+
+function reflejarEstadoEdicion(){
+  if(editMode){
+    editToggle.textContent = '🔒 Salir de edición';
+    editToggle.classList.add('active');
+  } else {
+    editToggle.textContent = '✏️ Editar';
+    editToggle.classList.remove('active');
+  }
+}
+reflejarEstadoEdicion();
 
 function abrirModalPw(){
   pwError.textContent = '';
@@ -331,8 +369,8 @@ function cerrarModalPw(){
 function intentarDesbloquear(){
   if(pwInput.value === EDIT_PASSWORD){
     editMode = true;
-    editToggle.textContent = '🔒 Salir de edición';
-    editToggle.classList.add('active');
+    lsSet(EDIT_KEY,'1');
+    reflejarEstadoEdicion();
     cerrarModalPw();
     filtrar();
     showToast('Modo edición activado.');
@@ -343,8 +381,8 @@ function intentarDesbloquear(){
 editToggle.addEventListener('click', ()=>{
   if(editMode){
     editMode = false;
-    editToggle.textContent = '✏️ Editar';
-    editToggle.classList.remove('active');
+    lsDel(EDIT_KEY);
+    reflejarEstadoEdicion();
     filtrar();
   } else {
     abrirModalPw();
@@ -385,10 +423,11 @@ async function cargar(){
   filtrar();
 }
 
-function campo(label, valor, campoKey, id){
+function campo(label, valor, campoKey, id, placeholder){
   const val = (valor||'').trim();
   if(editMode){
-    return `<div class="ef-field"><div class="ef-label">${label}</div><textarea class="ef-input" rows="2" data-id="${id}" data-campo="${campoKey}" onblur="guardarCampo(this)">${escHTML(val)}</textarea></div>`;
+    const ph = placeholder ? ` placeholder="${escHTML(placeholder)}"` : '';
+    return `<div class="ef-field"><div class="ef-label">${label}</div><textarea class="ef-input" rows="2" data-id="${id}" data-campo="${campoKey}"${ph} onblur="guardarCampo(this)">${escHTML(val)}</textarea></div>`;
   }
   if(!val) return `<div class="ef-field"><div class="ef-label">${label}</div><div class="ef-val empty">Sin especificar</div></div>`;
   return `<div class="ef-field"><div class="ef-label">${label}</div><div class="ef-val">${escHTML(val)}</div></div>`;
@@ -423,7 +462,7 @@ function filtrar(){
       </div>
       ${bloqueVinculo(r)}
       ${campoColegio(r.colegio, r.id)}
-      ${campo('Observaciones médicas', r.observaciones_medicas, 'observaciones_medicas', r.id)}
+      ${campo('Observaciones médicas y medicamentos', r.observaciones_medicas, 'observaciones_medicas', r.id, 'Tratamientos médicos actuales o relevantes, limitaciones físicas y/o medicamentos que esté tomando (medicamento, concentración, frecuencia en que lo toma).')}
       ${campo('Dietas alimenticias', r.dieta_alimenticia, 'dieta_alimenticia', r.id)}
       ${campo('Observaciones', r.observaciones, 'observaciones', r.id)}
       <div class="card-actions">
@@ -442,6 +481,24 @@ async function borrar(id){
   filtrar();
   showToast('Registro eliminado.');
 }
+
+// Al imprimir (botón o Ctrl+P) forzamos la vista de solo lectura, aunque esté en modo edición,
+// para no imprimir textareas/selects vacíos. Al terminar, vuelve al estado que tenía.
+let _editModeAntesDeImprimir = null;
+window.addEventListener('beforeprint', ()=>{
+  if(editMode){
+    _editModeAntesDeImprimir = true;
+    editMode = false;
+    filtrar();
+  }
+});
+window.addEventListener('afterprint', ()=>{
+  if(_editModeAntesDeImprimir){
+    editMode = true;
+    _editModeAntesDeImprimir = null;
+    filtrar();
+  }
+});
 
 cargar();
 </script>
