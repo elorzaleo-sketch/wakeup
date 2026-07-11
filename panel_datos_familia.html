@@ -139,6 +139,7 @@ body{font-family:'Outfit',sans-serif;color:var(--text);background:var(--ink);min
   <div class="topbar-actions">
     <button class="update-photos-btn" id="updatePhotosBtn" type="button" onclick="actualizarFotos()">🔄 Actualizar fotos</button>
     <button class="print-btn" id="printBtn" type="button" onclick="window.print()">🖨️ Imprimir / PDF</button>
+    <button class="print-btn" id="exportWordBtn" type="button" onclick="exportDocxFamilias()">⬇ Exportar a Word</button>
     <button class="edit-toggle" id="editToggle" type="button">✏️ Editar</button>
     <a href="/#accesos">Panel →</a>
   </div>
@@ -516,6 +517,109 @@ window.addEventListener('afterprint', ()=>{
     filtrar();
   }
 });
+
+function loadScript(src){
+  return new Promise((res,rej)=>{
+    if(document.querySelector(`script[src="${src}"]`)) return res();
+    const s = document.createElement('script'); s.src = src; s.onload = res; s.onerror = rej; document.head.appendChild(s);
+  });
+}
+
+async function imgToArrayBuffer(url){
+  try{ const r = await fetch(url); return await r.arrayBuffer(); }catch{ return null; }
+}
+
+function registrosFiltradosActuales(){
+  const q = document.getElementById('buscador').value.toLowerCase().trim();
+  return registros.filter(r => (r.nombre_pasajero||'').toLowerCase().includes(q) || (r.colegio||'').toLowerCase().includes(q));
+}
+
+async function exportDocxFamilias(){
+  const btn = document.getElementById('exportWordBtn');
+  const original = btn.textContent;
+  btn.disabled = true; btn.textContent = 'Cargando librería…';
+  try{
+    await loadScript('https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js');
+    await loadScript('https://unpkg.com/docx@7.8.2/build/index.js');
+
+    const filtrados = registrosFiltradosActuales();
+    if(!filtrados.length){ showToast('No hay registros para exportar.'); btn.disabled = false; btn.textContent = original; return; }
+
+    const imgMap = {};
+    for(let i=0;i<filtrados.length;i++){
+      const r = filtrados[i];
+      const url = r._alumno && r._alumno.foto_url;
+      if(url){ btn.textContent = `Cargando fotos… ${i+1}/${filtrados.length}`; imgMap[r.id] = await imgToArrayBuffer(url); }
+    }
+    btn.textContent = 'Generando archivo…';
+
+    const docxLib = window.docx || {};
+    const { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell,
+            ImageRun, AlignmentType, WidthType, BorderStyle, VerticalAlign } = docxLib;
+    if(!Document) throw new Error('Librería no cargada');
+
+    const gb = { style:BorderStyle.SINGLE, size:1, color:'CCCCCC' };
+    const borders = { top:gb, bottom:gb, left:gb, right:gb };
+
+    const TEXT_W = 7600;  // twips
+    const PHOTO_W = 2200; // twips
+    const totalWidth = TEXT_W + PHOTO_W;
+
+    const etiqueta = t => new Paragraph({ spacing:{before:120,after:20}, children:[new TextRun({ text:t.toUpperCase(), bold:true, size:15, font:'Arial', color:'888888' })] });
+    const valor = t => new Paragraph({ spacing:{after:0}, children:[new TextRun({
+      text: (t && t.trim()) ? t : 'Sin especificar',
+      italics: !(t && t.trim()), size:20, font:'Arial', color:(t && t.trim()) ? '111111' : '999999'
+    })] });
+
+    const bloques = [];
+    filtrados.forEach(r=>{
+      const buf = imgMap[r.id];
+      const fotoCellChildren = buf
+        ? [new Paragraph({ alignment:AlignmentType.CENTER, children:[new ImageRun({ data:buf, type:'jpeg', transformation:{ width:130, height:170 } })] })]
+        : [new Paragraph({ alignment:AlignmentType.CENTER, children:[new TextRun({ text:'Sin foto', size:16, font:'Arial', color:'999999' })] })];
+
+      const tabla = new Table({
+        width:{ size:totalWidth, type:WidthType.DXA },
+        columnWidths:[TEXT_W, PHOTO_W],
+        rows:[ new TableRow({ children:[
+          new TableCell({
+            borders, width:{ size:TEXT_W, type:WidthType.DXA }, margins:{ top:120, bottom:120, left:140, right:140 }, verticalAlign:VerticalAlign.TOP,
+            children:[
+              new Paragraph({ spacing:{after:40}, children:[new TextRun({ text:r.nombre_pasajero||'', bold:true, size:24, font:'Arial' })] }),
+              etiqueta('Colegio'), valor(r.colegio),
+              etiqueta('Observaciones médicas y medicamentos'), valor(r.observaciones_medicas),
+              etiqueta('Dietas alimenticias'), valor(r.dieta_alimenticia),
+              etiqueta('Observaciones'), valor(r.observaciones)
+            ]
+          }),
+          new TableCell({
+            borders, width:{ size:PHOTO_W, type:WidthType.DXA }, margins:{ top:120, bottom:120, left:80, right:80 }, verticalAlign:VerticalAlign.CENTER,
+            children: fotoCellChildren
+          })
+        ]})]
+      });
+      bloques.push(tabla);
+      bloques.push(new Paragraph({ spacing:{after:220}, children:[] }));
+    });
+
+    const today = new Date().toLocaleDateString('es-AR');
+    const doc = new Document({ sections:[{
+      properties:{ page:{ size:{ width:12240, height:15840 }, margin:{ top:1080, right:900, bottom:1080, left:900 } } },
+      children:[
+        new Paragraph({ spacing:{after:120}, children:[new TextRun({ text:'Wake Up Viajes — Datos de familias', bold:true, size:28, font:'Arial' })] }),
+        new Paragraph({ spacing:{after:320}, children:[new TextRun({ text:`Exportado el ${today} · ${filtrados.length} pasajeros`, size:18, font:'Arial', color:'888888' })] }),
+        ...bloques
+      ]
+    }]});
+
+    const blob = await Packer.toBlob(doc);
+    saveAs(blob, `wakeup-datos-familias-${today.replace(/\//g,'-')}.docx`);
+  } catch(err){
+    console.error(err);
+    showToast('No se pudo generar el Word: ' + err.message);
+  }
+  btn.disabled = false; btn.textContent = original;
+}
 
 cargar();
 </script>
