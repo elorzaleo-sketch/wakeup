@@ -103,34 +103,33 @@ body{font-family:'Outfit',sans-serif;color:var(--text);background:var(--ink);min
   .topbar, .search-bar, .stats, .toast, .pw-overlay{ display:none !important; }
   .container{ max-width:100%; margin:0; padding:0; }
 
-  /* Tarjeta a dos columnas: texto a la izquierda, foto grande a la derecha ocupando todo el alto. */
+  /* Tarjeta con la foto anclada a la derecha, ocupando todo el alto disponible. */
   .ef-card{
-    display:grid;
-    grid-template-columns: 1fr 132px;
-    column-gap:14px;
+    position:relative;
     background:#fff !important; border:1px solid #ccc !important; border-radius:8px;
     box-shadow:none !important; break-inside:avoid; page-break-inside:avoid;
-    margin-bottom:10px; padding:12px 14px;
-  }
-  .ef-card > *{ grid-column:1; }
-  .ef-card > .card-photo-row{
-    grid-column:2; grid-row:1 / -1; align-self:stretch;
-    display:flex !important; flex-direction:column; margin:0 !important;
+    margin-bottom:10px; min-height:120px;
+    padding:12px 150px 12px 14px; /* deja el hueco de la foto a la derecha */
   }
   .card-head{ margin-bottom:8px; }
+  .card-fecha{ display:none !important; } /* no hace falta la fecha de carga en el impreso */
   .card-nombre{ color:#111 !important; }
-  .card-fecha{ color:#555 !important; }
   .ef-label{ color:#555 !important; }
   .ef-val{ color:#111 !important; }
   .ef-val.empty{ color:#888 !important; }
   .divider{ border-top-color:#ddd; }
+
+  .card-photo-row{
+    position:absolute; top:12px; right:14px; bottom:12px; width:126px;
+    display:block !important; margin:0 !important; overflow:hidden;
+  }
+  .link-status{ display:none !important; }
   .card-photo, .card-photo-empty{
-    width:100%; height:100%; min-height:150px; flex:1;
-    border-radius:10px; border-width:1px;
+    width:100%; height:100%; border-radius:10px; border-width:1px;
   }
   .card-photo{ object-fit:cover; border-color:#ccc !important; }
   .card-photo-empty{ background:#f0f0f0 !important; border-color:#ccc !important; color:#999 !important; font-size:34px; }
-  .link-status, .link-picker, .link-clear, .card-actions{ display:none !important; }
+  .link-picker, .link-clear, .card-actions{ display:none !important; }
 }
 </style>
 </head>
