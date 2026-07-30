@@ -105,6 +105,11 @@ select option{background:#1a2224;}
 .faltante-item{display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--card);border:1px solid var(--line);border-radius:10px;margin-bottom:8px;font-size:.88rem;}
 .faltante-item .dot{width:8px;height:8px;border-radius:50%;background:var(--magenta);flex-shrink:0;}
 
+.resumen-fichas{background:var(--card);border:1px solid var(--line);border-radius:13px;padding:12px 16px;margin-bottom:14px;font-size:.86rem;text-align:center;color:var(--muted);}
+.resumen-fichas strong{font-weight:700;}
+.resumen-fichas .r-ok{color:var(--green);}
+.resumen-fichas .r-falta{color:var(--magenta);}
+
 /* Listado de pasajeros editable */
 .pasajero-input{flex:1;min-width:0;background:transparent;border:1px solid var(--line);border-radius:8px;padding:6px 8px;font-size:.85rem;color:var(--text);font-family:'Outfit',sans-serif;transition:border-color .15s;}
 .pasajero-input:focus{outline:none;border-color:var(--cyan);}
@@ -123,6 +128,7 @@ select option{background:#1a2224;}
   <a href="/#accesos" style="font-size:.83rem;font-weight:600;color:var(--muted);text-decoration:none;padding:6px 14px;border:1.5px solid var(--line);border-radius:99px;transition:.15s;">Panel →</a>
 </div>
 <div class="container">
+  <div class="resumen-fichas" id="resumenFichas">Cargando resumen…</div>
   <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
     <p class="section-title" style="margin:0;">Fichas recibidas</p>
     <div style="display:flex;gap:8px;flex-wrap:wrap;">
@@ -187,6 +193,7 @@ async function loadFichas(){
   const {data}=await supa.from('fichas_salud').select('*').order('created_at',{ascending:false});
   allFichas=data||[];
   filterFichas();
+  updateResumenFichas();
 }
 
 function escAttr(s){return (s||'').toString().replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
@@ -335,29 +342,53 @@ function loadScript(src){
 const toTC = s => (s||'').toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
 
 // ── FALTANTES: pasajeros del listado que todavía no subieron su ficha de salud ──
-async function openFaltantes(){
-  document.getElementById('faltantesOverlay').classList.add('open');
-  const body=document.getElementById('faltantesBody');
-  body.innerHTML='<div style="text-align:center;color:var(--muted);padding:20px;font-size:.85rem;">Cargando…</div>';
+let allPasajeros=[];
 
-  const {data:pasajeros,error}=await supa.from('pasajeros').select('*').order('apellido');
-  if(error||!pasajeros||pasajeros.length===0){
-    body.innerHTML='<div style="text-align:center;color:var(--muted);padding:20px;font-size:.85rem;">No hay listado de pasajeros cargado aún.<br>Usá <strong>Gestionar listado</strong> para subir el Excel.</div>';
-    return;
-  }
-
-  // Cada ficha guarda el nombre completo en un solo campo (nombre_pasajero);
-  // lo partimos en palabras normalizadas (sin tildes ni mayúsculas) para poder cruzarlo.
+// Cada ficha guarda el nombre completo en un solo campo (nombre_pasajero);
+// lo partimos en palabras normalizadas (sin tildes ni mayúsculas) para poder cruzarlo.
+// Falta = ninguna ficha tiene el apellido Y al menos un nombre de pila en común.
+function computeFaltantes(pasajeros){
   const registrados=allFichas.map(f=>normalizar(f.nombre_pasajero).split(' ').filter(Boolean));
-
-  // Falta = ninguna ficha tiene el apellido Y al menos un nombre de pila en común.
-  const faltantes=pasajeros.filter(p=>{
+  return pasajeros.filter(p=>{
     const apellido=normalizar(p.apellido);
     const nombres=normalizar(p.nombre).split(' ').filter(Boolean);
     return !registrados.some(palabras=>
       palabras.includes(apellido) && nombres.some(n=>palabras.includes(n))
     );
   });
+}
+
+async function loadPasajeros(){
+  const {data}=await supa.from('pasajeros').select('*').order('apellido');
+  allPasajeros=data||[];
+  updateResumenFichas();
+  return allPasajeros;
+}
+
+function updateResumenFichas(){
+  const el=document.getElementById('resumenFichas');
+  if(!el) return;
+  if(!allPasajeros.length){
+    el.innerHTML='Cargá el listado de pasajeros con <strong>Gestionar listado</strong> para ver cuántas fichas faltan.';
+    return;
+  }
+  const faltantes=computeFaltantes(allPasajeros);
+  const subidas=allPasajeros.length-faltantes.length;
+  el.innerHTML=`<strong class="r-ok">${subidas}</strong> fichas subidas · <strong class="r-falta">${faltantes.length}</strong> faltan · de ${allPasajeros.length} pasajeros`;
+}
+
+async function openFaltantes(){
+  document.getElementById('faltantesOverlay').classList.add('open');
+  const body=document.getElementById('faltantesBody');
+  body.innerHTML='<div style="text-align:center;color:var(--muted);padding:20px;font-size:.85rem;">Cargando…</div>';
+
+  const pasajeros=await loadPasajeros();
+  if(!pasajeros||pasajeros.length===0){
+    body.innerHTML='<div style="text-align:center;color:var(--muted);padding:20px;font-size:.85rem;">No hay listado de pasajeros cargado aún.<br>Usá <strong>Gestionar listado</strong> para subir el Excel.</div>';
+    return;
+  }
+
+  const faltantes=computeFaltantes(pasajeros);
 
   if(faltantes.length===0){
     body.innerHTML=`<div style="text-align:center;padding:20px;color:var(--green);font-size:.9rem;">✓ ¡Todos los ${pasajeros.length} pasajeros subieron su ficha!</div>`;
@@ -433,6 +464,7 @@ document.getElementById('pasajerosList').addEventListener('click', async e=>{
   if(error){showToast('Error al eliminar: '+error.message);btn.disabled=false;return;}
   showToast('Pasajero eliminado ✓');
   await renderPasajerosList();
+  await loadPasajeros();
 });
 
 async function procesarExcel(input){
@@ -459,6 +491,7 @@ async function procesarExcel(input){
     if(error){showToast('Error al guardar: '+error.message);return;}
     input.value='';
     await renderPasajerosList();
+    await loadPasajeros();
     showToast('Listado actualizado ✓');
   };
   reader.readAsArrayBuffer(file);
@@ -473,6 +506,7 @@ document.getElementById('btnSortApellido').addEventListener('click', ()=>{
 });
 
 loadFichas();
+loadPasajeros();
 </script>
 
 <script>
