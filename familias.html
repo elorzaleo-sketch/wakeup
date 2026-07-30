@@ -330,7 +330,7 @@ textarea{resize:vertical;min-height:80px;}
     </button>
   </div>
   <p class="error" id="fichaError"></p>
-  <p class="success" id="fichaSuccess" style="display:none;">✓ Ficha enviada correctamente. ¡Gracias!</p>
+  <p class="success" id="fichaSuccess" style="display:none;">✓ Ficha enviada correctamente. ¡Gracias! Si tenés otro hijo/a, completá sus datos y volvé a enviar.</p>
   <button class="back" id="backFromFicha" type="button">← Volver</button>
 </section>
 
@@ -920,19 +920,21 @@ document.getElementById('btnSubirFicha').addEventListener('click', async ()=>{
 
     fill.style.width='100%';
     succEl.style.display='block';
-    btn.textContent='✓ Enviada';
-    // Reset
-    setTimeout(()=>{
-      fichaImgFrente=null; fichaImgDorso=null;
-      document.getElementById('fichaApellido').value='';
-      document.getElementById('fichaNombreInput').value='';
-      document.getElementById('fichaFrente').value='';
-      document.getElementById('fichaDorso').value='';
-      document.getElementById('prevFrente').style.display='none';
-      document.getElementById('prevDorso').style.display='none';
-      btn.disabled=false; btn.innerHTML='Enviar <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="width:17px;height:17px"><path d="M22 2L11 13"/><path d="M22 2 15 22 11 13 2 9l20-7z"/></svg>';
-      prog.style.display='none'; fill.style.width='0%';
-    }, 3000);
+
+    // Reset inmediato (antes esperaba 3s con el botón deshabilitado):
+    // si el padre ya estaba escribiendo los datos del segundo hijo en ese
+    // lapso, ese texto se borraba y el botón seguía sin responder, dando
+    // la sensación de que no se podía cargar una segunda ficha.
+    fichaImgFrente=null; fichaImgDorso=null;
+    document.getElementById('fichaApellido').value='';
+    document.getElementById('fichaNombreInput').value='';
+    document.getElementById('fichaFrente').value='';
+    document.getElementById('fichaDorso').value='';
+    document.getElementById('prevFrente').style.display='none';
+    document.getElementById('prevDorso').style.display='none';
+    btn.disabled=false; btn.innerHTML='Enviar <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="width:17px;height:17px"><path d="M22 2L11 13"/><path d="M22 2 15 22 11 13 2 9l20-7z"/></svg>';
+    prog.style.display='none'; fill.style.width='0%';
+    setTimeout(()=>{ succEl.style.display='none'; }, 4000);
 
   } catch(e){
     console.error(e);
