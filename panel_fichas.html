@@ -131,9 +131,12 @@ select option{background:#1a2224;}
       <button class="btn btn-outline" id="btnDescTodo" type="button" style="width:auto;padding:8px 16px;font-size:.82rem;">⬇️ Descargar todo</button>
     </div>
   </div>
-  <div class="search-bar">
-    <span class="si">🔍</span>
-    <input type="text" id="fichaSearch" placeholder="Buscar por apellido o nombre…" oninput="filterFichas()">
+  <div style="display:flex;gap:8px;align-items:center;">
+    <div class="search-bar" style="flex:1;">
+      <span class="si">🔍</span>
+      <input type="text" id="fichaSearch" placeholder="Buscar por apellido o nombre…" oninput="filterFichas()">
+    </div>
+    <button class="frow-btn cyan" id="btnSortApellido" type="button" style="flex:0 0 auto;">Apellido ↕</button>
   </div>
   <div id="fichasList"><div style="color:var(--muted);font-size:.88rem;text-align:center;padding:16px;">Cargando…</div></div>
 </div>
@@ -188,9 +191,22 @@ async function loadFichas(){
 
 function escAttr(s){return (s||'').toString().replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
 
+let sortApellido=null; // null | 'asc' | 'desc'
+
+function getApellidoKey(f){
+  // El nombre se guarda como "Apellido, Nombre"; ordenamos por la parte antes de la coma.
+  return normalizar((f.nombre_pasajero||'').split(',')[0]);
+}
+
 function filterFichas(){
   const q=document.getElementById('fichaSearch').value.toLowerCase();
-  const filtered=allFichas.filter(f=>(f.nombre_pasajero||'').toLowerCase().includes(q));
+  let filtered=allFichas.filter(f=>(f.nombre_pasajero||'').toLowerCase().includes(q));
+  if(sortApellido){
+    filtered=[...filtered].sort((a,b)=>{
+      const cmp=getApellidoKey(a).localeCompare(getApellidoKey(b),'es');
+      return sortApellido==='asc'?cmp:-cmp;
+    });
+  }
   const el=document.getElementById('fichasList');
   if(!filtered.length){el.innerHTML='<div style="color:var(--muted);font-size:.88rem;text-align:center;padding:20px;">No se encontraron fichas.</div>';return;}
   el.innerHTML=filtered.map(f=>{
@@ -303,7 +319,10 @@ document.getElementById('fichasList').addEventListener('click', async e=>{
 function normalizar(t){
   return (t||'')
     .normalize('NFD').replace(/[̀-ͯ]/g,'')
-    .toLowerCase().trim().replace(/\s+/g,' ');
+    .toLowerCase().trim()
+    .replace(/[^a-z0-9\s]/g,' ')
+    .replace(/\s+/g,' ')
+    .trim();
 }
 
 function loadScript(src){
@@ -447,6 +466,11 @@ async function procesarExcel(input){
 
 document.getElementById('btnFaltantes').addEventListener('click', openFaltantes);
 document.getElementById('btnPasajeros').addEventListener('click', openPasajeros);
+document.getElementById('btnSortApellido').addEventListener('click', ()=>{
+  sortApellido = sortApellido==='asc' ? 'desc' : 'asc';
+  document.getElementById('btnSortApellido').textContent = sortApellido==='asc' ? 'Apellido A→Z' : 'Apellido Z→A';
+  filterFichas();
+});
 
 loadFichas();
 </script>
