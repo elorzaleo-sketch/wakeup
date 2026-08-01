@@ -900,7 +900,13 @@ document.getElementById('btnSubirFicha').addEventListener('click', async ()=>{
 
     // Convertir a Blob
     const pdfBlob = doc.output('blob');
-    const fileName = `${nombre.replace(/\s+/g,'_')}_${Date.now()}.pdf`;
+    // Nombre de archivo seguro para Supabase Storage: sin tildes, comas ni otros
+    // caracteres especiales (con ellos, la subida al bucket fallaba con error).
+    const nombreArchivo = nombre
+      .normalize('NFD').replace(/[̀-ͯ]/g,'')
+      .replace(/[^a-zA-Z0-9]+/g,'_')
+      .replace(/^_+|_+$/g,'');
+    const fileName = `${nombreArchivo}_${Date.now()}.pdf`;
 
     fill.style.width='80%';
 
