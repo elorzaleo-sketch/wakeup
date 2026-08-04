@@ -244,10 +244,13 @@ async function saveFichaNombre(id, value, el){
     return;
   }
   if(el) el.style.borderColor='var(--cyan)';
-  const {error}=await supa.from('fichas_salud').update({nombre_pasajero:nombre}).eq('id',id);
-  if(error){
-    if(el) el.style.borderColor='#ff5fae';
-    showToast('Error al guardar: '+error.message);
+  // .select() es necesario para poder distinguir "se guardó" de "no había permiso
+  // y no se modificó ninguna fila" (Supabase no tira error en ese caso, solo
+  // devuelve 0 filas, y sin .select() el cliente no se entera).
+  const {data,error}=await supa.from('fichas_salud').update({nombre_pasajero:nombre}).eq('id',id).select();
+  if(error || !data || !data.length){
+    if(el){ el.style.borderColor='#ff5fae'; if(original) el.value=original.nombre_pasajero; }
+    showToast(error ? 'Error al guardar: '+error.message : 'No se pudo guardar (sin permisos). Avisá al administrador.');
   } else {
     if(original) original.nombre_pasajero=nombre;
     if(el){
@@ -350,10 +353,13 @@ let allPasajeros=[];
 function computeFaltantes(pasajeros){
   const registrados=allFichas.map(f=>normalizar(f.nombre_pasajero).split(' ').filter(Boolean));
   return pasajeros.filter(p=>{
-    const apellido=normalizar(p.apellido);
+    // El apellido puede tener más de una palabra (ej: "Skamarda Paris"), así que
+    // hay que exigir que TODAS sus palabras estén presentes, no compararlo como un solo token.
+    const apellidoTokens=normalizar(p.apellido).split(' ').filter(Boolean);
     const nombres=normalizar(p.nombre).split(' ').filter(Boolean);
+    if(!apellidoTokens.length) return true;
     return !registrados.some(palabras=>
-      palabras.includes(apellido) && nombres.some(n=>palabras.includes(n))
+      apellidoTokens.every(t=>palabras.includes(t)) && nombres.some(n=>palabras.includes(n))
     );
   });
 }
@@ -444,10 +450,12 @@ async function savePasajeroCampo(id,field,value,el){
   const normalizado=toTC(value.trim());
   if(el){el.value=normalizado;el.style.borderColor='var(--cyan)';}
   const update={};update[field]=normalizado||null;
-  const {error}=await supa.from('pasajeros').update(update).eq('id',id);
-  if(error){
+  // .select() para poder detectar si la fila no se actualizó por falta de permisos
+  // (Supabase no devuelve error en ese caso, solo 0 filas afectadas).
+  const {data,error}=await supa.from('pasajeros').update(update).eq('id',id).select();
+  if(error || !data || !data.length){
     if(el)el.style.borderColor='#ff5fae';
-    showToast('Error al guardar: '+error.message);
+    showToast(error ? 'Error al guardar: '+error.message : 'No se pudo guardar (sin permisos). Avisá al administrador.');
   } else {
     if(el){el.style.borderColor='var(--cyan)';setTimeout(()=>{el.style.borderColor='var(--line)';},1200);}
     showToast('Guardado ✓');
