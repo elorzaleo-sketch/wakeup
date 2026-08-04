@@ -145,12 +145,13 @@ body{font-family:'Outfit',sans-serif;color:var(--text);background:var(--ink);min
     <button class="update-photos-btn" id="updatePhotosBtn" type="button" onclick="actualizarFotos()">🔄 Actualizar fotos</button>
     <button class="print-btn" id="printBtn" type="button" onclick="window.print()">🖨️ Imprimir / PDF</button>
     <button class="print-btn" id="exportWordBtn" type="button" onclick="exportDocxFamilias()">⬇ Exportar a Word</button>
+    <button class="print-btn" id="exportDietasBtn" type="button" onclick="exportarDietas()">🥗 Exportar dietas</button>
     <button class="edit-toggle" id="editToggle" type="button">✏️ Editar</button>
     <a href="/#accesos">Panel →</a>
   </div>
 </div>
 <div class="container">
-  <h1 class="print-title">Observaciones médicas, dietas y comentarios</h1>
+  <h1 class="print-title" id="printTitle">Observaciones médicas, dietas y comentarios</h1>
   <div class="stats">
     <div class="stat"><div class="val" id="statTotal">—</div><div class="lbl">Pasajeros con datos cargados</div></div>
     <div class="stats-sub">
@@ -494,6 +495,42 @@ function filtrar(){
       </div>
     </div>`;
   }).join('');
+}
+
+// ── EXPORTAR DIETAS: PDF (vía impresión) con nombre, foto y dieta, solo de
+// los pasajeros que tienen algo cargado en "Dietas alimenticias". ──
+function renderListaDietas(lista){
+  document.getElementById('lista').innerHTML = lista.map(r=>`<div class="ef-card">
+      <div class="card-head">
+        <span class="card-nombre">${escHTML(r.nombre_pasajero)}</span>
+      </div>
+      ${bloqueVinculo(r)}
+      <div class="ef-field"><div class="ef-label">Dietas alimenticias</div><div class="ef-val">${escHTML((r.dieta_alimenticia||'').trim())}</div></div>
+    </div>`).join('');
+}
+
+function exportarDietas(){
+  const conDieta = registros.filter(r => (r.dieta_alimenticia||'').trim());
+  if(!conDieta.length){ showToast('No hay pasajeros con dietas cargadas.'); return; }
+
+  const editModeOriginal = editMode;
+  const tituloEl = document.getElementById('printTitle');
+  const tituloOriginal = tituloEl.textContent;
+
+  editMode = false; // vista de solo lectura para el PDF, sin importar el modo actual del panel
+  tituloEl.textContent = 'Dietas alimenticias';
+  renderListaDietas(conDieta);
+
+  const restaurar = ()=>{
+    editMode = editModeOriginal;
+    tituloEl.textContent = tituloOriginal;
+    filtrar();
+    window.removeEventListener('afterprint', restaurar);
+  };
+  window.addEventListener('afterprint', restaurar);
+
+  // Esperar al próximo frame para que el DOM se termine de actualizar antes de imprimir.
+  setTimeout(()=>window.print(), 60);
 }
 
 async function borrar(id){
