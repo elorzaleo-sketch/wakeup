@@ -101,7 +101,7 @@ body{font-family:'Outfit',sans-serif;color:var(--text);background:var(--ink);min
 @media print{
   @page{ size:A4; margin:14mm 12mm; }
   html,body{ background:#fff !important; background-image:none !important; color:#111 !important; }
-  .topbar, .search-bar, .stats, .toast, .pw-overlay{ display:none !important; }
+  .topbar, .search-row, .stats, .toast, .pw-overlay{ display:none !important; }
   .container{ max-width:100%; margin:0; padding:0; }
   .print-title{
     display:block !important; font-family:'Bricolage Grotesque',sans-serif;
@@ -160,9 +160,12 @@ body{font-family:'Outfit',sans-serif;color:var(--text);background:var(--ink);min
       <div class="stat mini"><div class="val" id="statObs">—</div><div class="lbl">Con observaciones</div></div>
     </div>
   </div>
-  <div class="search-bar">
-    <span class="si">🔍</span>
-    <input type="text" id="buscador" placeholder="Buscar por nombre o colegio…" oninput="filtrar()">
+  <div class="search-row" style="display:flex;gap:8px;align-items:center;">
+    <div class="search-bar" style="flex:1;">
+      <span class="si">🔍</span>
+      <input type="text" id="buscador" placeholder="Buscar por nombre o colegio…" oninput="filtrar()">
+    </div>
+    <button class="print-btn" id="btnOrdenAlfabetico" type="button" style="flex:0 0 auto;">Apellido ↕</button>
   </div>
   <div id="lista"><div class="empty-state">Cargando…</div></div>
 </div>
@@ -470,9 +473,22 @@ function campoColegio(valor, id){
   return `<div class="ef-field"><div class="ef-label">Colegio</div><div class="ef-val">${escHTML(val)}</div></div>`;
 }
 
+let sortAlfabetico = null; // null | 'asc' | 'desc'
+
+function getApellidoKey(r){
+  // El nombre se guarda como "Apellido, Nombre"; ordenamos por la parte antes de la coma.
+  return normalizar((r.nombre_pasajero||'').split(',')[0]);
+}
+
 function filtrar(){
   const q = document.getElementById('buscador').value.toLowerCase().trim();
-  const filtrados = registros.filter(r => (r.nombre_pasajero||'').toLowerCase().includes(q) || (r.colegio||'').toLowerCase().includes(q));
+  let filtrados = registros.filter(r => (r.nombre_pasajero||'').toLowerCase().includes(q) || (r.colegio||'').toLowerCase().includes(q));
+  if(sortAlfabetico){
+    filtrados = [...filtrados].sort((a,b)=>{
+      const cmp = getApellidoKey(a).localeCompare(getApellidoKey(b),'es');
+      return sortAlfabetico==='asc' ? cmp : -cmp;
+    });
+  }
   const el = document.getElementById('lista');
   if(!filtrados.length){
     el.innerHTML = '<div class="empty-state">No se encontraron registros.</div>';
@@ -663,6 +679,12 @@ async function exportDocxFamilias(){
   }
   btn.disabled = false; btn.textContent = original;
 }
+
+document.getElementById('btnOrdenAlfabetico').addEventListener('click', ()=>{
+  sortAlfabetico = sortAlfabetico==='asc' ? 'desc' : 'asc';
+  document.getElementById('btnOrdenAlfabetico').textContent = sortAlfabetico==='asc' ? 'Apellido A→Z' : 'Apellido Z→A';
+  filtrar();
+});
 
 cargar();
 </script>
