@@ -434,8 +434,15 @@ async function guardarCampo(el){
   const valor = el.value.trim();
   const reg = registros.find(r => r.id === id);
   if(reg && (reg[campoKey]||'').trim() === valor) return;
-  const { error } = await supa.from('datos_familia').update({ [campoKey]: valor }).eq('id', id);
-  if(error){ console.error(error); showToast('No se pudo guardar el cambio.'); return; }
+  // .select() para poder detectar si la fila no se actualizó por falta de permisos
+  // (Supabase no devuelve error en ese caso, solo 0 filas afectadas, y sin
+  // .select() el cliente no tiene forma de notarlo).
+  const { data, error } = await supa.from('datos_familia').update({ [campoKey]: valor }).eq('id', id).select();
+  if(error || !data || !data.length){
+    console.error(error || 'update sin filas afectadas (posible RLS)');
+    showToast(error ? 'No se pudo guardar el cambio.' : 'No se pudo guardar (sin permisos). Avisá al administrador.');
+    return;
+  }
   if(reg) reg[campoKey] = valor;
   actualizarStats();
   showToast('Cambio guardado.');
