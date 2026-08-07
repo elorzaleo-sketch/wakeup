@@ -266,6 +266,7 @@
       <span style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:1px">Columnas:</span>
       <span class="col-toggle" onclick="toggleCol('playlist',this)">Playlist</span>
       <span class="col-toggle" onclick="toggleColGroup(['pantalon','campera','bota'],this)">Ropa</span>
+      <span class="col-toggle" onclick="toggleColGroup(['nombre_padre','tel_padre','nombre_madre','tel_madre'],this)">Datos de padres</span>
     </div>
     <div class="table-wrap">
       <div class="loading" id="loadingState">Cargando alumnos...</div>
@@ -283,6 +284,10 @@
           <th data-col="pantalon">Pantalón</th>
           <th data-col="campera">Campera</th>
           <th data-col="bota">Bota</th>
+          <th data-col="nombre_padre">Nombre padre</th>
+          <th data-col="tel_padre">Tel. padre</th>
+          <th data-col="nombre_madre">Nombre madre</th>
+          <th data-col="tel_madre">Tel. madre</th>
           <th>Obs. médicas</th>
           <th>Dieta</th>
           <th>Observaciones</th>
@@ -666,6 +671,14 @@
         <td data-col="pantalon" style="text-align:center"><select class="obs-input" style="width:70px" ${isReadOnly?'disabled':''} onchange="saveField('${a.id}','talle_pantalon',this.value,this)"><option value=''>—</option><option ${a.talle_pantalon==='XS'?'selected':''}>XS</option><option ${a.talle_pantalon==='S'?'selected':''}>S</option><option ${a.talle_pantalon==='M'?'selected':''}>M</option><option ${a.talle_pantalon==='L'?'selected':''}>L</option><option ${a.talle_pantalon==='XL'?'selected':''}>XL</option><option ${a.talle_pantalon==='XXL'?'selected':''}>XXL</option></select></td>
         <td data-col="campera" style="text-align:center"><select class="obs-input" style="width:70px" ${isReadOnly?'disabled':''} onchange="saveField('${a.id}','talle_campera',this.value,this)"><option value=''>—</option><option ${a.talle_campera==='XS'?'selected':''}>XS</option><option ${a.talle_campera==='S'?'selected':''}>S</option><option ${a.talle_campera==='M'?'selected':''}>M</option><option ${a.talle_campera==='L'?'selected':''}>L</option><option ${a.talle_campera==='XL'?'selected':''}>XL</option><option ${a.talle_campera==='XXL'?'selected':''}>XXL</option></select></td>
         <td data-col="bota" style="text-align:center"><select class="obs-input" style="width:64px" ${isReadOnly?'disabled':''} onchange="saveField('${a.id}','talle_bota',this.value,this)"><option value=''>—</option><option ${a.talle_bota==='33'?'selected':''}>33</option><option ${a.talle_bota==='34'?'selected':''}>34</option><option ${a.talle_bota==='35'?'selected':''}>35</option><option ${a.talle_bota==='36'?'selected':''}>36</option><option ${a.talle_bota==='37'?'selected':''}>37</option><option ${a.talle_bota==='38'?'selected':''}>38</option><option ${a.talle_bota==='39'?'selected':''}>39</option><option ${a.talle_bota==='40'?'selected':''}>40</option><option ${a.talle_bota==='41'?'selected':''}>41</option><option ${a.talle_bota==='42'?'selected':''}>42</option><option ${a.talle_bota==='43'?'selected':''}>43</option><option ${a.talle_bota==='44'?'selected':''}>44</option><option ${a.talle_bota==='45'?'selected':''}>45</option><option ${a.talle_bota==='46'?'selected':''}>46</option><option ${a.talle_bota==='47'?'selected':''}>47</option><option ${a.talle_bota==='48'?'selected':''}>48</option><option ${a.talle_bota==='49'?'selected':''}>49</option><option ${a.talle_bota==='50'?'selected':''}>50</option></select></td>
+        <td data-col="nombre_padre"><input class="obs-input" style="width:100%;min-width:110px" value="${a.nombre_padre||''}"
+            onblur="if(!isReadOnly)saveField('${a.id}','nombre_padre',this.value,this)" ${isReadOnly?'readonly':''}></td>
+        <td data-col="tel_padre"><input class="obs-input" style="width:100%;min-width:100px" value="${a.telefono_padre||''}"
+            onblur="if(!isReadOnly)saveField('${a.id}','telefono_padre',this.value,this)" ${isReadOnly?'readonly':''}></td>
+        <td data-col="nombre_madre"><input class="obs-input" style="width:100%;min-width:110px" value="${a.nombre_madre||''}"
+            onblur="if(!isReadOnly)saveField('${a.id}','nombre_madre',this.value,this)" ${isReadOnly?'readonly':''}></td>
+        <td data-col="tel_madre"><input class="obs-input" style="width:100%;min-width:100px" value="${a.telefono_madre||''}"
+            onblur="if(!isReadOnly)saveField('${a.id}','telefono_madre',this.value,this)" ${isReadOnly?'readonly':''}></td>
         <td class="obs-cell">
           <input class="obs-input" placeholder="Sin observaciones" value="${a.obs_salud||''}"
             id="obs_salud_${a.id}" onblur="if(!isReadOnly)saveField('${a.id}','obs_salud',this.value,this)" ${isReadOnly?'readonly':''}>
@@ -982,7 +995,7 @@
 
       // Column config per mode
       const configs={
-        fichas:{colWidths:[1300,1300,1100,1400,800,900,900,900,1300],headers:['Apellido','Nombre completo','N. Pref.','Colegio','Sexo','Pantalón','Campera','Bota','Foto']},
+        fichas:{colWidths:[1300,1300,1100,1400,4800],headers:['Apellido','Nombre completo','N. Pref.','Colegio','Foto']},
         obs:   {colWidths:[1000,1000,800,1100,750,750,750,750,1100,1100,1000],headers:['Apellido','Nombre completo','N. Pref.','Colegio','Sexo','Pantalón','Campera','Bota','Obs. médicas','Dieta','Foto']},
         padres:{colWidths:[1100,1100,1200,800,900,900,900,1400,1500,1400],headers:['Apellido','Nombre completo','Colegio','Sexo','Pantalón','Campera','Bota','Nombre padre','Tel. padre','Nombre madre']}
       };
@@ -996,9 +1009,9 @@
         children:[new Paragraph({children:[new TextRun({text:text||'—',size:18,font:'Arial',color:color||'000000'})]})]
       });
 
-      const mkPhotoCell=(buf,idx)=>buf
+      const mkPhotoCell=(buf,idx,size)=>buf
         ?new TableCell({borders,width:{size:colWidths[idx],type:WidthType.DXA},margins:{top:60,bottom:60,left:60,right:60},verticalAlign:VerticalAlign.CENTER,
-            children:[new Paragraph({alignment:AlignmentType.CENTER,children:[new ImageRun({data:buf,type:'jpeg',transformation:{width:75,height:75}})]})]})
+            children:[new Paragraph({alignment:AlignmentType.CENTER,children:[new ImageRun({data:buf,type:'jpeg',transformation:{width:size||75,height:size||75}})]})]})
         :mkCell('Sin foto',idx,'888888');
 
       const headerRow=new TableRow({
@@ -1014,7 +1027,7 @@
       const dataRows=filtered.map(a=>{
         const buf=imgMap[a.id];
         if(mode==='fichas'){
-          return new TableRow({children:[mkCell(a.apellido,0),mkCell(a.nombre,1),mkCell(a.apodo,2),mkCell(a.colegio,3),mkCell(a.sexo,4),mkCell(a.talle_pantalon,5),mkCell(a.talle_campera,6),mkCell(a.talle_bota,7),mkPhotoCell(buf,8)]});
+          return new TableRow({children:[mkCell(a.apellido,0),mkCell(a.nombre,1),mkCell(a.apodo,2),mkCell(a.colegio,3),mkPhotoCell(buf,4,260)]});
         }
         if(mode==='obs'){
           return new TableRow({children:[
