@@ -264,9 +264,8 @@
 
     <div class="toggle-cols">
       <span style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:1px">Columnas:</span>
-      <span class="col-toggle" onclick="toggleCol('playlist',this)">Playlist</span>
-      <span class="col-toggle" onclick="toggleColGroup(['pantalon','campera','bota'],this)">Ropa</span>
-      <span class="col-toggle" onclick="toggleColGroup(['nombre_padre','tel_padre','nombre_madre','tel_madre'],this)">Datos de padres</span>
+      <span class="col-toggle" data-cols='["pantalon","campera","bota"]' onclick="toggleColGroup(['pantalon','campera','bota'],this)">Ropa</span>
+      <span class="col-toggle" data-cols='["nombre_padre","tel_padre","nombre_madre","tel_madre"]' onclick="toggleColGroup(['nombre_padre','tel_padre','nombre_madre','tel_madre'],this)">Datos de padres</span>
     </div>
     <div class="table-wrap">
       <div class="loading" id="loadingState">Cargando alumnos...</div>
@@ -280,18 +279,17 @@
           <th class="sortable" onclick="sortBy('colegio')">Colegio</th>
           <th class="sortable" onclick="sortBy('edad')">Edad</th>
           <th class="sortable" onclick="sortBy('sexo')">Sexo</th>
-          <th data-col="playlist">Playlist</th>
           <th data-col="pantalon">Pantalón</th>
           <th data-col="campera">Campera</th>
           <th data-col="bota">Bota</th>
-          <th data-col="nombre_padre">Nombre padre</th>
-          <th data-col="tel_padre">Tel. padre</th>
-          <th data-col="nombre_madre">Nombre madre</th>
-          <th data-col="tel_madre">Tel. madre</th>
           <th>Obs. médicas</th>
           <th>Dieta</th>
           <th>Observaciones</th>
           <th>Revisado ✓</th>
+          <th data-col="nombre_padre">Nombre padre</th>
+          <th data-col="tel_padre">Tel. padre</th>
+          <th data-col="nombre_madre">Nombre madre</th>
+          <th data-col="tel_madre">Tel. madre</th>
           <th></th>
         </tr></thead>
         <tbody id="tableBody"></tbody>
@@ -667,18 +665,9 @@
         <td><select class="obs-input" style="width:120px" ${isReadOnly?'disabled':''} onchange="saveField('${a.id}','colegio',this.value,this)"><option value=''>—</option><option ${a.colegio==='Berazategui'?'selected':''}>Berazategui</option><option ${a.colegio==='El Encuentro'?'selected':''}>El Encuentro</option><option ${a.colegio==='Emanuel'?'selected':''}>Emanuel</option><option ${a.colegio==='Hay Vida En Jesús'?'selected':''}>Hay Vida En Jesús</option><option ${a.colegio==='M. T Alvear'?'selected':''}>M. T Alvear</option><option ${a.colegio==='Menoyo'?'selected':''}>Menoyo</option><option ${a.colegio==='Zion'?'selected':''}>Zion</option></select></td>
         <td><select class="obs-input" style="width:60px" ${isReadOnly?'disabled':''} onchange="saveField('${a.id}','edad',this.value,this)"><option value=''>—</option><option ${a.edad==='17'?'selected':''}>17</option><option ${a.edad==='18'?'selected':''}>18</option><option ${a.edad==='19'?'selected':''}>19</option></select></td>
         <td style="font-size:12px;color:var(--muted)">${a.sexo||'—'}</td>
-        <td data-col="playlist" style="color:var(--muted);font-size:12px">${a.playlist||'—'}</td>
         <td data-col="pantalon" style="text-align:center"><select class="obs-input" style="width:70px" ${isReadOnly?'disabled':''} onchange="saveField('${a.id}','talle_pantalon',this.value,this)"><option value=''>—</option><option ${a.talle_pantalon==='XS'?'selected':''}>XS</option><option ${a.talle_pantalon==='S'?'selected':''}>S</option><option ${a.talle_pantalon==='M'?'selected':''}>M</option><option ${a.talle_pantalon==='L'?'selected':''}>L</option><option ${a.talle_pantalon==='XL'?'selected':''}>XL</option><option ${a.talle_pantalon==='XXL'?'selected':''}>XXL</option></select></td>
         <td data-col="campera" style="text-align:center"><select class="obs-input" style="width:70px" ${isReadOnly?'disabled':''} onchange="saveField('${a.id}','talle_campera',this.value,this)"><option value=''>—</option><option ${a.talle_campera==='XS'?'selected':''}>XS</option><option ${a.talle_campera==='S'?'selected':''}>S</option><option ${a.talle_campera==='M'?'selected':''}>M</option><option ${a.talle_campera==='L'?'selected':''}>L</option><option ${a.talle_campera==='XL'?'selected':''}>XL</option><option ${a.talle_campera==='XXL'?'selected':''}>XXL</option></select></td>
         <td data-col="bota" style="text-align:center"><select class="obs-input" style="width:64px" ${isReadOnly?'disabled':''} onchange="saveField('${a.id}','talle_bota',this.value,this)"><option value=''>—</option><option ${a.talle_bota==='33'?'selected':''}>33</option><option ${a.talle_bota==='34'?'selected':''}>34</option><option ${a.talle_bota==='35'?'selected':''}>35</option><option ${a.talle_bota==='36'?'selected':''}>36</option><option ${a.talle_bota==='37'?'selected':''}>37</option><option ${a.talle_bota==='38'?'selected':''}>38</option><option ${a.talle_bota==='39'?'selected':''}>39</option><option ${a.talle_bota==='40'?'selected':''}>40</option><option ${a.talle_bota==='41'?'selected':''}>41</option><option ${a.talle_bota==='42'?'selected':''}>42</option><option ${a.talle_bota==='43'?'selected':''}>43</option><option ${a.talle_bota==='44'?'selected':''}>44</option><option ${a.talle_bota==='45'?'selected':''}>45</option><option ${a.talle_bota==='46'?'selected':''}>46</option><option ${a.talle_bota==='47'?'selected':''}>47</option><option ${a.talle_bota==='48'?'selected':''}>48</option><option ${a.talle_bota==='49'?'selected':''}>49</option><option ${a.talle_bota==='50'?'selected':''}>50</option></select></td>
-        <td data-col="nombre_padre"><input class="obs-input" style="width:100%;min-width:110px" value="${a.nombre_padre||''}"
-            onblur="if(!isReadOnly)saveField('${a.id}','nombre_padre',this.value,this)" ${isReadOnly?'readonly':''}></td>
-        <td data-col="tel_padre"><input class="obs-input" style="width:100%;min-width:100px" value="${a.telefono_padre||''}"
-            onblur="if(!isReadOnly)saveField('${a.id}','telefono_padre',this.value,this)" ${isReadOnly?'readonly':''}></td>
-        <td data-col="nombre_madre"><input class="obs-input" style="width:100%;min-width:110px" value="${a.nombre_madre||''}"
-            onblur="if(!isReadOnly)saveField('${a.id}','nombre_madre',this.value,this)" ${isReadOnly?'readonly':''}></td>
-        <td data-col="tel_madre"><input class="obs-input" style="width:100%;min-width:100px" value="${a.telefono_madre||''}"
-            onblur="if(!isReadOnly)saveField('${a.id}','telefono_madre',this.value,this)" ${isReadOnly?'readonly':''}></td>
         <td class="obs-cell">
           <input class="obs-input" placeholder="Sin observaciones" value="${a.obs_salud||''}"
             id="obs_salud_${a.id}" onblur="if(!isReadOnly)saveField('${a.id}','obs_salud',this.value,this)" ${isReadOnly?'readonly':''}>
@@ -697,10 +686,19 @@
             ${a.check_completado?'✓':'○'}
           </span>
         </td>
+        <td data-col="nombre_padre"><input class="obs-input" style="width:100%;min-width:110px" value="${a.nombre_padre||''}"
+            onblur="if(!isReadOnly)saveField('${a.id}','nombre_padre',this.value,this)" ${isReadOnly?'readonly':''}></td>
+        <td data-col="tel_padre"><input class="obs-input" style="width:100%;min-width:100px" value="${a.telefono_padre||''}"
+            onblur="if(!isReadOnly)saveField('${a.id}','telefono_padre',this.value,this)" ${isReadOnly?'readonly':''}></td>
+        <td data-col="nombre_madre"><input class="obs-input" style="width:100%;min-width:110px" value="${a.nombre_madre||''}"
+            onblur="if(!isReadOnly)saveField('${a.id}','nombre_madre',this.value,this)" ${isReadOnly?'readonly':''}></td>
+        <td data-col="tel_madre"><input class="obs-input" style="width:100%;min-width:100px" value="${a.telefono_madre||''}"
+            onblur="if(!isReadOnly)saveField('${a.id}','telefono_madre',this.value,this)" ${isReadOnly?'readonly':''}></td>
         <td>
           ${isReadOnly?'':`<button onclick="askDeleteAlumno('`+a.id+`','`+a.nombre+` `+a.apellido+`')" style="background:none;border:none;color:#333;font-size:16px;cursor:pointer;padding:2px 8px;border-radius:6px;transition:color .15s" onmouseover="this.style.color='var(--pink)'" onmouseout="this.style.color='#333'">🗑</button>`}
         </td>
       </tr>`).join('');
+    reapplyHiddenCols();
   }
 
   function copyId(id,el){
@@ -749,7 +747,6 @@
       if(a) a.check_completado=!current;
       updateStats();
       renderTable();
-      reapplyHiddenCols();
     }
   }
 
@@ -920,6 +917,33 @@
   }
 
   const hiddenCols=new Set();
+  const HIDDEN_COLS_KEY='wakeup_hidden_cols';
+
+  function saveHiddenCols(){
+    try{ localStorage.setItem(HIDDEN_COLS_KEY, JSON.stringify([...hiddenCols])); }catch(e){}
+  }
+
+  function loadHiddenCols(){
+    try{
+      const saved=JSON.parse(localStorage.getItem(HIDDEN_COLS_KEY)||'[]');
+      saved.forEach(c=>hiddenCols.add(c));
+    }catch(e){}
+  }
+
+  function syncColToggleButtons(){
+    document.querySelectorAll('.col-toggle[data-cols]').forEach(btn=>{
+      const cols=JSON.parse(btn.dataset.cols);
+      if(cols.every(c=>hiddenCols.has(c))) btn.classList.add('hidden');
+      else btn.classList.remove('hidden');
+    });
+  }
+
+  // Aplica las columnas ocultas guardadas apenas carga la página (antes de iniciar sesión)
+  loadHiddenCols();
+  document.addEventListener('DOMContentLoaded', ()=>{
+    reapplyHiddenCols();
+    syncColToggleButtons();
+  });
 
   function toggleColGroup(cols, btn){
     const allHidden = cols.every(c => hiddenCols.has(c));
@@ -935,6 +959,7 @@
         el.style.display = hiddenCols.has(col) ? 'none' : '';
       });
     });
+    saveHiddenCols();
   }
 
   function toggleCol(col, btn){
@@ -949,6 +974,7 @@
     document.querySelectorAll('[data-col="'+col+'"]').forEach(el=>{
       el.style.display=hiddenCols.has(col)?'none':'';
     });
+    saveHiddenCols();
   }
 
   function loadScript(src){
