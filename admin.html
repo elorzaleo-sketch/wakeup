@@ -1021,7 +1021,7 @@
 
       // Column config per mode
       const configs={
-        fichas:{colWidths:[1300,1300,1100,1400,4800],headers:['Apellido','Nombre completo','N. Pref.','Colegio','Foto']},
+        fichas:{colWidths:[1300,1300,1100,1400,2700],headers:['Apellido','Nombre completo','N. Pref.','Colegio','Foto']},
         obs:   {colWidths:[1000,1000,800,1100,750,750,750,750,1100,1100,1000],headers:['Apellido','Nombre completo','N. Pref.','Colegio','Sexo','Pantalón','Campera','Bota','Obs. médicas','Dieta','Foto']},
         padres:{colWidths:[1100,1100,1200,800,900,900,900,1400,1500,1400],headers:['Apellido','Nombre completo','Colegio','Sexo','Pantalón','Campera','Bota','Nombre padre','Tel. padre','Nombre madre']}
       };
@@ -1053,7 +1053,7 @@
       const dataRows=filtered.map(a=>{
         const buf=imgMap[a.id];
         if(mode==='fichas'){
-          return new TableRow({children:[mkCell(a.apellido,0),mkCell(a.nombre,1),mkCell(a.apodo,2),mkCell(a.colegio,3),mkPhotoCell(buf,4,260)]});
+          return new TableRow({children:[mkCell(a.apellido,0),mkCell(a.nombre,1),mkCell(a.apodo,2),mkCell(a.colegio,3),mkPhotoCell(buf,4,150)]});
         }
         if(mode==='obs'){
           return new TableRow({children:[
