@@ -267,10 +267,13 @@ document.getElementById('btnDescTodo').addEventListener('click', async ()=>{
   const btn = document.getElementById('btnDescTodo');
   btn.disabled=true; btn.textContent='Preparando ZIP…';
   try{
+    // Siempre en orden alfabético por apellido al descargar, sin importar
+    // el orden que esté aplicado en ese momento en la lista de pantalla.
+    const ordenadas=[...allFichas].sort((a,b)=>getApellidoKey(a).localeCompare(getApellidoKey(b),'es'));
     const zip = new JSZip();
-    for(let i=0; i<allFichas.length; i++){
-      const f = allFichas[i];
-      btn.textContent = `Descargando ${i+1}/${allFichas.length}…`;
+    for(let i=0; i<ordenadas.length; i++){
+      const f = ordenadas[i];
+      btn.textContent = `Descargando ${i+1}/${ordenadas.length}…`;
       const res = await fetch(f.url_pdf);
       const blob = await res.blob();
       zip.file(f.nombre_pasajero.replace(/[^a-zA-Z0-9áéíóúÁÉÍÓÚñÑ ,_-]/g,'_') + '.pdf', blob);
