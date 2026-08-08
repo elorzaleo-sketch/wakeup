@@ -145,7 +145,8 @@ body{font-family:'Outfit',sans-serif;color:var(--text);background:var(--ink);min
     <button class="update-photos-btn" id="updatePhotosBtn" type="button" onclick="actualizarFotos()">🔄 Actualizar fotos</button>
     <button class="print-btn" id="printBtn" type="button" onclick="window.print()">🖨️ Imprimir / PDF</button>
     <button class="print-btn" id="exportWordBtn" type="button" onclick="exportDocxFamilias()">⬇ Exportar a Word</button>
-    <button class="print-btn" id="exportDietasBtn" type="button" onclick="exportarDietas()">🥗 Exportar dietas</button>
+    <button class="print-btn" id="exportDietasBtn" type="button" onclick="exportarDietas()">🥗 Exportar dietas (PDF)</button>
+    <button class="print-btn" id="exportDietasWordBtn" type="button" onclick="exportarDietasDocx()">🥗 Exportar dietas (Word)</button>
     <button class="edit-toggle" id="editToggle" type="button">✏️ Editar</button>
     <a href="/#accesos">Panel →</a>
   </div>
@@ -532,40 +533,204 @@ function renderListaDietas(lista){
     </div>`).join('');
 }
 
+// Detecta si un buffer de imagen es JPEG o PNG mirando sus primeros bytes
+// (las fotos vienen de Supabase Storage y no siempre son jpeg).
+function detectarFormatoImagen(buf){
+  if(!buf || buf.byteLength < 4) return 'JPEG';
+  const b = new Uint8Array(buf.slice(0,4));
+  if(b[0]===0x89 && b[1]===0x50 && b[2]===0x4E && b[3]===0x47) return 'PNG';
+  return 'JPEG';
+}
+
+// Exporta un PDF real (generado con jsPDF, sin pasar por la ventana de impresión
+// del navegador) con los pasajeros que tienen "Dietas alimenticias" cargadas.
+// Al no depender de window.print(), evita errores como "There was an error
+// while reading a stream" que puede tirar el motor de impresión de Chrome.
 async function exportarDietas(){
   const conDieta = registros.filter(r => (r.dieta_alimenticia||'').trim());
   if(!conDieta.length){ showToast('No hay pasajeros con dietas cargadas.'); return; }
 
-  const editModeOriginal = editMode;
-  const tituloEl = document.getElementById('printTitle');
-  const tituloOriginal = tituloEl.textContent;
+  const btn = document.getElementById('exportDietasBtn');
+  const original = btn.textContent;
+  btn.disabled = true; btn.textContent = 'Cargando librería…';
+  try{
+    await loadScript('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js');
+    const { jsPDF } = window.jspdf || {};
+    if(!jsPDF) throw new Error('Librería no cargada');
 
-  editMode = false; // vista de solo lectura para el PDF, sin importar el modo actual del panel
-  tituloEl.textContent = 'Dietas alimenticias';
-  renderListaDietas(conDieta);
+    const imgMap = {};
+    for(let i=0;i<conDieta.length;i++){
+      const r = conDieta[i];
+      const url = r._alumno && r._alumno.foto_url;
+      if(url){ btn.textContent = `Cargando fotos… ${i+1}/${conDieta.length}`; imgMap[r.id] = await imgToArrayBuffer(url); }
+    }
+    btn.textContent = 'Generando PDF…';
 
-  const restaurar = ()=>{
-    editMode = editModeOriginal;
-    tituloEl.textContent = tituloOriginal;
-    filtrar();
-    window.removeEventListener('afterprint', restaurar);
-  };
-  window.addEventListener('afterprint', restaurar);
+    const doc = new jsPDF({ unit:'mm', format:'a4' });
+    const pageW = doc.internal.pageSize.getWidth();
+    const pageH = doc.internal.pageSize.getHeight();
+    const marginX = 14, marginTop = 18, marginBottom = 16;
+    const photoSize = 26;
+    const textW = pageW - marginX*2 - photoSize - 10;
+    const today = new Date().toLocaleDateString('es-AR');
 
-  // Esperar a que todas las fotos terminen de cargar (o fallen) antes de imprimir.
-  // Sin esto, window.print() podía dispararse con las fotos todavía descargándose
-  // desde Supabase, y el PDF quedaba con las fotos en blanco / incompleto.
-  const imgs = Array.from(document.querySelectorAll('#lista img.card-photo'));
-  await Promise.all(imgs.map(img=>{
-    if(img.complete) return Promise.resolve();
-    return new Promise(res=>{
-      img.addEventListener('load', res, {once:true});
-      img.addEventListener('error', res, {once:true});
+    let y = marginTop;
+    doc.setFont('helvetica','bold'); doc.setFontSize(15); doc.setTextColor(20);
+    doc.text('Wake Up Viajes — Dietas alimenticias', marginX, y);
+    y += 6;
+    doc.setFont('helvetica','normal'); doc.setFontSize(9); doc.setTextColor(130);
+    doc.text(`Exportado el ${today} · ${conDieta.length} pasajero(s)`, marginX, y);
+    doc.setTextColor(20);
+    y += 9;
+
+    conDieta.forEach(r=>{
+      doc.setFont('helvetica','bold'); doc.setFontSize(11);
+      const nombreLines = doc.splitTextToSize(r.nombre_pasajero||'Sin nombre', textW);
+      doc.setFont('helvetica','normal'); doc.setFontSize(9.5);
+      const dietaLines = doc.splitTextToSize((r.dieta_alimenticia||'').trim(), textW);
+      const colegioLines = r.colegio ? [`Colegio: ${r.colegio}`] : [];
+
+      const blockH = Math.max(
+        photoSize + 6,
+        8 + nombreLines.length*5 + (colegioLines.length?4.6:0) + 4.6 + dietaLines.length*4.4 + 5
+      );
+
+      if(y + blockH > pageH - marginBottom){
+        doc.addPage();
+        y = marginTop;
+      }
+
+      doc.setDrawColor(210);
+      doc.roundedRect(marginX, y, pageW-marginX*2, blockH, 2, 2);
+
+      let ty = y + 6;
+      doc.setFont('helvetica','bold'); doc.setFontSize(11); doc.setTextColor(20);
+      doc.text(nombreLines, marginX+4, ty);
+      ty += nombreLines.length*5;
+
+      if(colegioLines.length){
+        doc.setFont('helvetica','normal'); doc.setFontSize(8.5); doc.setTextColor(120);
+        doc.text(colegioLines, marginX+4, ty);
+        ty += 4.6;
+      }
+
+      doc.setFont('helvetica','bold'); doc.setFontSize(7.5); doc.setTextColor(140);
+      doc.text('DIETAS ALIMENTICIAS', marginX+4, ty);
+      ty += 4.4;
+      doc.setFont('helvetica','normal'); doc.setFontSize(9.5); doc.setTextColor(20);
+      doc.text(dietaLines, marginX+4, ty);
+
+      const buf = imgMap[r.id];
+      const photoX = pageW - marginX - photoSize - 3;
+      const photoY = y + (blockH-photoSize)/2;
+      if(buf){
+        try{
+          doc.addImage(new Uint8Array(buf), detectarFormatoImagen(buf), photoX, photoY, photoSize, photoSize, undefined, 'FAST');
+        }catch(e){ console.error('No se pudo insertar foto en el PDF', e); }
+      } else {
+        doc.setDrawColor(220); doc.setFillColor(245,245,245);
+        doc.roundedRect(photoX, photoY, photoSize, photoSize, 2, 2, 'FD');
+        doc.setFontSize(7); doc.setTextColor(160);
+        doc.text('Sin foto', photoX+photoSize/2, photoY+photoSize/2, { align:'center' });
+        doc.setTextColor(20);
+      }
+
+      y += blockH + 5;
     });
-  }));
 
-  // Un par de frames extra para que el layout termine de acomodarse tras cargar las fotos.
-  requestAnimationFrame(()=>requestAnimationFrame(()=>window.print()));
+    doc.save(`wakeup-dietas-${today.replace(/\//g,'-')}.pdf`);
+  }catch(err){
+    console.error(err);
+    showToast('No se pudo generar el PDF: ' + err.message);
+  }
+  btn.disabled = false; btn.textContent = original;
+}
+
+// Exporta a Word (.docx) solo los pasajeros con "Dietas alimenticias" cargadas
+// (a diferencia de "Exportar a Word", que exporta todos los registros filtrados).
+async function exportarDietasDocx(){
+  const conDieta = registros.filter(r => (r.dieta_alimenticia||'').trim());
+  if(!conDieta.length){ showToast('No hay pasajeros con dietas cargadas.'); return; }
+
+  const btn = document.getElementById('exportDietasWordBtn');
+  const original = btn.textContent;
+  btn.disabled = true; btn.textContent = 'Cargando librería…';
+  try{
+    await loadScript('https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js');
+    await loadScript('https://unpkg.com/docx@7.8.2/build/index.js');
+
+    const imgMap = {};
+    for(let i=0;i<conDieta.length;i++){
+      const r = conDieta[i];
+      const url = r._alumno && r._alumno.foto_url;
+      if(url){ btn.textContent = `Cargando fotos… ${i+1}/${conDieta.length}`; imgMap[r.id] = await imgToArrayBuffer(url); }
+    }
+    btn.textContent = 'Generando archivo…';
+
+    const docxLib = window.docx || {};
+    const { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell,
+            ImageRun, AlignmentType, WidthType, BorderStyle, VerticalAlign } = docxLib;
+    if(!Document) throw new Error('Librería no cargada');
+
+    const gb = { style:BorderStyle.SINGLE, size:1, color:'CCCCCC' };
+    const borders = { top:gb, bottom:gb, left:gb, right:gb };
+
+    const TEXT_W = 7600;
+    const PHOTO_W = 2200;
+    const totalWidth = TEXT_W + PHOTO_W;
+
+    const etiqueta = t => new Paragraph({ spacing:{before:120,after:20}, children:[new TextRun({ text:t.toUpperCase(), bold:true, size:15, font:'Arial', color:'888888' })] });
+    const valor = t => new Paragraph({ spacing:{after:0}, children:[new TextRun({
+      text: (t && t.trim()) ? t : 'Sin especificar',
+      italics: !(t && t.trim()), size:20, font:'Arial', color:(t && t.trim()) ? '111111' : '999999'
+    })] });
+
+    const bloques = [];
+    conDieta.forEach(r=>{
+      const buf = imgMap[r.id];
+      const fotoCellChildren = buf
+        ? [new Paragraph({ alignment:AlignmentType.CENTER, children:[new ImageRun({ data:buf, type:detectarFormatoImagen(buf)==='PNG'?'png':'jpeg', transformation:{ width:130, height:170 } })] })]
+        : [new Paragraph({ alignment:AlignmentType.CENTER, children:[new TextRun({ text:'Sin foto', size:16, font:'Arial', color:'999999' })] })];
+
+      const tabla = new Table({
+        width:{ size:totalWidth, type:WidthType.DXA },
+        columnWidths:[TEXT_W, PHOTO_W],
+        rows:[ new TableRow({ children:[
+          new TableCell({
+            borders, width:{ size:TEXT_W, type:WidthType.DXA }, margins:{ top:120, bottom:120, left:140, right:140 }, verticalAlign:VerticalAlign.TOP,
+            children:[
+              new Paragraph({ spacing:{after:40}, children:[new TextRun({ text:r.nombre_pasajero||'', bold:true, size:24, font:'Arial' })] }),
+              etiqueta('Colegio'), valor(r.colegio),
+              etiqueta('Dietas alimenticias'), valor(r.dieta_alimenticia)
+            ]
+          }),
+          new TableCell({
+            borders, width:{ size:PHOTO_W, type:WidthType.DXA }, margins:{ top:120, bottom:120, left:80, right:80 }, verticalAlign:VerticalAlign.CENTER,
+            children: fotoCellChildren
+          })
+        ]})]
+      });
+      bloques.push(tabla);
+      bloques.push(new Paragraph({ spacing:{after:220}, children:[] }));
+    });
+
+    const today = new Date().toLocaleDateString('es-AR');
+    const doc = new Document({ sections:[{
+      properties:{ page:{ size:{ width:12240, height:15840 }, margin:{ top:1080, right:900, bottom:1080, left:900 } } },
+      children:[
+        new Paragraph({ spacing:{after:120}, children:[new TextRun({ text:'Wake Up Viajes — Dietas alimenticias', bold:true, size:28, font:'Arial' })] }),
+        new Paragraph({ spacing:{after:320}, children:[new TextRun({ text:`Exportado el ${today} · ${conDieta.length} pasajeros`, size:18, font:'Arial', color:'888888' })] }),
+        ...bloques
+      ]
+    }]});
+
+    const blob = await Packer.toBlob(doc);
+    saveAs(blob, `wakeup-dietas-${today.replace(/\//g,'-')}.docx`);
+  }catch(err){
+    console.error(err);
+    showToast('No se pudo generar el Word: ' + err.message);
+  }
+  btn.disabled = false; btn.textContent = original;
 }
 
 async function borrar(id){
