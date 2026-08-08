@@ -615,24 +615,42 @@
         alert('No hay alumnos vinculados todavía en Datos de familia.');
         return;
       }
-      const updates=vinculados.map(r=>{
-        const a=allAlumnos.find(x=>x.id===r.alumno_id);
-        return{
-          id:r.alumno_id,
-          obs_salud:(r.observaciones_medicas||'').trim()||(a?a.obs_salud:null)||null,
-          obs_dieta:(r.dieta_alimenticia||'').trim()||(a?a.obs_dieta:null)||null,
-          obs_general:(r.observaciones||'').trim()||(a?a.obs_general:null)||null
-        };
-      });
-      const {error:upErr}=await db.from('alumnos').upsert(updates,{onConflict:'id'});
-      if(upErr) throw upErr;
-      updates.forEach(u=>{
+      // Solo consideramos vínculos que apunten a un alumno que existe realmente
+      // en la tabla (evita intentar "actualizar" un id que ya no está).
+      const updates=vinculados
+        .filter(r=>allAlumnos.some(x=>x.id===r.alumno_id))
+        .map(r=>{
+          const a=allAlumnos.find(x=>x.id===r.alumno_id);
+          return{
+            id:r.alumno_id,
+            obs_salud:(r.observaciones_medicas||'').trim()||a.obs_salud||null,
+            obs_dieta:(r.dieta_alimenticia||'').trim()||a.obs_dieta||null,
+            obs_general:(r.observaciones||'').trim()||a.obs_general||null
+          };
+        });
+      const omitidos=vinculados.length-updates.length;
+      if(!updates.length){
+        alert('Ningún vínculo del panel de familias corresponde a un alumno existente.');
+        return;
+      }
+      // Update individual por alumno (nunca inserta filas nuevas, a diferencia de upsert).
+      const results=await Promise.all(updates.map(u=>
+        db.from('alumnos').update({obs_salud:u.obs_salud,obs_dieta:u.obs_dieta,obs_general:u.obs_general}).eq('id',u.id)
+      ));
+      const fallidos=results.filter(r=>r.error);
+      if(fallidos.length) console.error(fallidos.map(r=>r.error));
+      updates.forEach((u,i)=>{
+        if(results[i].error) return;
         const a=allAlumnos.find(x=>x.id===u.id);
         if(a){a.obs_salud=u.obs_salud;a.obs_dieta=u.obs_dieta;a.obs_general=u.obs_general;}
       });
       updateStats();
       renderTable();
-      alert(`D.M.O actualizado: ${updates.length} alumno(s) sincronizados desde Datos de familia.`);
+      const ok=updates.length-fallidos.length;
+      let msg=`D.M.O actualizado: ${ok} alumno(s) sincronizados desde Datos de familia.`;
+      if(fallidos.length) msg+=`\n${fallidos.length} no se pudieron guardar (ver consola).`;
+      if(omitidos) msg+=`\n${omitidos} vínculo(s) del panel de familias apuntaban a un alumno que ya no existe y se ignoraron.`;
+      alert(msg);
     }catch(err){
       console.error(err);
       alert('Error al actualizar D.M.O: '+err.message);
