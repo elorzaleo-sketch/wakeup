@@ -38,13 +38,14 @@
   /* ADMIN */
   #adminScreen{display:none;}
   #authScreen{display:none;align-items:center;justify-content:center;min-height:100vh;padding:20px;}
-  .topbar{background:var(--surface);border-bottom:1px solid var(--border);padding:12px 28px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;}
-  .topbar-left{display:flex;align-items:center;gap:12px;}
+  .topbar{background:var(--surface);border-bottom:1px solid var(--border);padding:12px 28px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;flex-wrap:wrap;row-gap:10px;}
+  .topbar-left{display:flex;align-items:center;gap:12px;min-width:0;}
   .topbar-logo{width:36px;height:36px;flex-shrink:0;}
   .topbar-logo svg{width:100%;height:100%;}
-  .topbar h1{font-family:'Syne',sans-serif;font-size:15px;font-weight:700;color:#fff;}
-  .topbar-right{display:flex;align-items:center;gap:12px;}
-  .logout-btn{background:transparent;border:1px solid var(--border);border-radius:8px;color:var(--muted);font-family:'DM Sans',sans-serif;font-size:13px;padding:7px 14px;cursor:pointer;transition:border-color .15s,color .15s;}
+  .topbar h1{font-family:'Syne',sans-serif;font-size:15px;font-weight:700;color:#fff;white-space:nowrap;}
+  .topbar h1 .topbar-sub{color:var(--muted);font-weight:500;}
+  .topbar-right{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+  .logout-btn{background:transparent;border:1px solid var(--border);border-radius:8px;color:var(--muted);font-family:'DM Sans',sans-serif;font-size:13px;padding:7px 14px;cursor:pointer;transition:border-color .15s,color .15s;white-space:nowrap;}
   .logout-btn:hover{border-color:var(--pink);color:var(--pink);}
   .main{padding:24px 28px;max-width:1300px;margin:0 auto;}
 
@@ -63,10 +64,26 @@
   .ctrl-search{min-width:200px;}
   .sort-btn{background:var(--card);border:1px solid var(--border);border-radius:10px;color:var(--muted);font-family:'DM Sans',sans-serif;font-size:13px;padding:9px 14px;cursor:pointer;transition:all .15s;white-space:nowrap;}
   .sort-btn.active{border-color:var(--cyan);color:var(--cyan);}
-  .export-btn{background:var(--cyan);border:none;border-radius:10px;color:#fff;font-family:'Syne',sans-serif;font-size:14px;font-weight:700;padding:10px 18px;cursor:pointer;margin-left:auto;transition:opacity .15s;white-space:nowrap;}
+  .export-btn{background:var(--cyan);border:none;border-radius:10px;color:#fff;font-family:'Syne',sans-serif;font-size:14px;font-weight:700;padding:10px 18px;cursor:pointer;transition:opacity .15s;white-space:nowrap;}
   .export-btn:hover{opacity:.9;}.export-btn:disabled{opacity:.5;cursor:not-allowed;}
   .export-obs-btn{background:transparent;border:1px solid var(--pink);border-radius:10px;color:var(--pink);font-family:'Syne',sans-serif;font-size:13px;font-weight:700;padding:10px 14px;cursor:pointer;transition:all .15s;white-space:nowrap;}
   .export-obs-btn:hover{background:var(--pink);color:#fff;}
+
+  /* Dropdowns (Filtros / Exportar / Acciones) */
+  .dropdown{position:relative;}
+  .dropdown.push-right{margin-left:auto;}
+  .dropdown-toggle{display:inline-flex;align-items:center;gap:6px;}
+  .dropdown-toggle::after{content:'▾';font-size:9px;opacity:.75;margin-left:1px;}
+  .dropdown-badge{display:inline-flex;align-items:center;justify-content:center;min-width:16px;height:16px;border-radius:50%;background:var(--cyan);color:#04222a;font-size:10px;font-weight:700;padding:0 4px;}
+  .dropdown-menu{display:none;flex-direction:column;gap:6px;position:absolute;top:calc(100% + 8px);left:0;background:var(--card);border:1px solid var(--border);border-radius:14px;padding:12px;min-width:230px;box-shadow:0 16px 40px rgba(0,0,0,.55);z-index:200;}
+  .dropdown.align-right .dropdown-menu{left:auto;right:0;}
+  .dropdown.open .dropdown-menu{display:flex;}
+  .dd-label{font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin:4px 2px 0;}
+  .dd-label:first-child{margin-top:0;}
+  .dd-item{background:transparent;border:1px solid var(--border);border-radius:9px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:13px;padding:9px 12px;cursor:pointer;text-align:left;transition:all .15s;white-space:normal;width:100%;line-height:1.3;}
+  .dd-item:hover{border-color:var(--cyan);color:var(--cyan);}
+  .dd-item:disabled{opacity:.5;cursor:not-allowed;}
+  .dropdown-menu .ctrl{width:100%;}
 
   /* Table */
   .table-wrap{background:var(--card);border:1px solid var(--border);border-radius:16px;overflow:hidden;overflow-x:auto;}
@@ -144,7 +161,26 @@
   .col-toggle{background:var(--card);border:1px solid var(--border);border-radius:8px;color:var(--muted);font-family:'DM Sans',sans-serif;font-size:12px;padding:5px 12px;cursor:pointer;transition:all .15s;user-select:none;}
   .col-toggle.hidden{background:transparent;border-color:#333;color:#444;text-decoration:line-through;}
   .col-toggle:hover{border-color:var(--cyan);color:var(--cyan);}
-  @media(max-width:700px){.main{padding:16px;}.topbar{padding:10px 16px;}.sort-btn{display:none;}}
+  .mobile-scroll-hint{display:none;font-size:11px;color:var(--muted);margin:-6px 0 10px;}
+  @media(max-width:700px){
+    .main{padding:14px;}
+    .topbar{padding:10px 14px;}
+    .topbar-right{justify-content:flex-end;flex:1 1 auto;}
+    .sort-btn{display:none;}
+    .stats-row{gap:8px;}
+    .stat-card{padding:12px 14px;}
+    .controls{flex-direction:column;align-items:stretch;gap:8px;}
+    .ctrl-search{min-width:0;}
+    .dropdown{width:100%;}
+    .dropdown.push-right{margin-left:0;}
+    .dropdown-toggle{width:100%;justify-content:space-between;}
+    .dropdown-menu{left:0;right:0;width:auto;}
+    .mobile-scroll-hint{display:block;}
+  }
+  @media(max-width:420px){
+    .topbar-sub{display:none;}
+    .logout-btn{padding:7px 10px;font-size:12px;}
+  }
 </style>
 </head>
 <body>
@@ -234,7 +270,7 @@
           <path class="c3" d="M340.79,308.19c61.93-63.95,63.68-165.92,2.44-231.99C281.99,10.12,180.18,4.14,111.72,61.05c68.45-43.62,160.36-33.5,217.5,28.14,57.13,61.64,60.25,154.06,11.57,219.01"/>
         </svg>
       </div>
-      <h1>Panel Admin — Wake Up</h1>
+      <h1>Panel Admin <span class="topbar-sub">— Wake Up</span></h1>
     </div>
     <div class="topbar-right">
       <a href="/#accesos" class="logout-btn" style="text-decoration:none;">← Panel</a>
@@ -256,23 +292,43 @@
 
     <div class="controls">
       <input type="text" id="searchInput" class="ctrl ctrl-search" placeholder="Buscar nombre o apellido..." oninput="renderTable()">
-      <select id="colegioFilter" class="ctrl" onchange="renderTable()">
-        <option value="">Todos los colegios</option>
-        <option>Berazategui</option><option>El Encuentro</option><option>Emanuel</option>
-        <option>Hay Vida En Jesús</option><option>M. T Alvear</option><option>Menoyo</option><option>Zion</option>
-      </select>
-      <select id="sexoFilter" class="ctrl" onchange="renderTable()">
-        <option value="">Todos los sexos</option>
-        <option>Masculino</option><option>Femenino</option><option>Prefiero no responder</option>
-      </select>
-      <button class="export-btn" onclick="exportDocx('fichas')" id="exportBtn">⬇ Fichas + fotos</button>
-      <button class="export-obs-btn" onclick="exportDocx('obs')" id="exportObsBtn">⬇ Observaciones</button>
-      <button class="export-obs-btn" onclick="exportDocx('padres')" id="exportPadresBtn" style="border-color:var(--green);color:var(--green)">⬇ Datos de padres</button>
-      <button class="export-obs-btn" onclick="exportExcel()" id="exportXlsBtn" style="border-color:#1d6f42;color:#1d6f42">⬇ Excel completo</button>
-      <button class="export-obs-btn" onclick="exportExcelRopa()" id="exportRopaBtn" style="border-color:#1d6f42;color:#1d6f42">⬇ Excel ropa</button>
-      <button class="faltantes-btn" onclick="openFaltantes()">👥 Ver faltantes</button>
-      <button class="faltantes-btn" onclick="openPasajeros()" id="gestionarBtn" style="border-color:var(--cyan);color:var(--cyan)">📋 Gestionar listado</button>
-      <button class="faltantes-btn" onclick="actualizarDMO()" id="dmoBtn" style="border-color:var(--pink);color:var(--pink)">🩺 Actualizar D.M.O</button>
+
+      <div class="dropdown" id="ddFiltros">
+        <button type="button" class="ctrl dropdown-toggle" onclick="toggleDropdown('ddFiltros')">🔎 Filtros<span class="dropdown-badge" id="filtrosBadge" style="display:none"></span></button>
+        <div class="dropdown-menu">
+          <div class="dd-label">Colegio</div>
+          <select id="colegioFilter" class="ctrl" onchange="renderTable();updateFiltrosBadge()">
+            <option value="">Todos los colegios</option>
+            <option>Berazategui</option><option>El Encuentro</option><option>Emanuel</option>
+            <option>Hay Vida En Jesús</option><option>M. T Alvear</option><option>Menoyo</option><option>Zion</option>
+          </select>
+          <div class="dd-label">Sexo</div>
+          <select id="sexoFilter" class="ctrl" onchange="renderTable();updateFiltrosBadge()">
+            <option value="">Todos los sexos</option>
+            <option>Masculino</option><option>Femenino</option><option>Prefiero no responder</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="dropdown align-right push-right" id="ddExport">
+        <button type="button" class="export-btn dropdown-toggle" onclick="toggleDropdown('ddExport')">⬇ Exportar</button>
+        <div class="dropdown-menu">
+          <button class="dd-item" onclick="exportDocx('fichas')" id="exportBtn">📋 Fichas + fotos</button>
+          <button class="dd-item" onclick="exportDocx('obs')" id="exportObsBtn">🩺 Observaciones</button>
+          <button class="dd-item" onclick="exportDocx('padres')" id="exportPadresBtn">👪 Datos de padres</button>
+          <button class="dd-item" onclick="exportExcel()" id="exportXlsBtn">📊 Excel completo</button>
+          <button class="dd-item" onclick="exportExcelRopa()" id="exportRopaBtn">👕 Excel ropa</button>
+        </div>
+      </div>
+
+      <div class="dropdown align-right" id="ddAcciones">
+        <button type="button" class="ctrl dropdown-toggle" onclick="toggleDropdown('ddAcciones')">⚙️ Acciones</button>
+        <div class="dropdown-menu">
+          <button class="dd-item" onclick="openFaltantes()">👥 Ver faltantes</button>
+          <button class="dd-item" onclick="openPasajeros()" id="gestionarBtn">📋 Gestionar listado</button>
+          <button class="dd-item" onclick="actualizarDMO()" id="dmoBtn">🩺 Actualizar D.M.O</button>
+        </div>
+      </div>
     </div>
 
     <div class="toggle-cols">
@@ -280,6 +336,7 @@
       <span class="col-toggle" data-cols='["pantalon","campera","bota"]' onclick="toggleColGroup(['pantalon','campera','bota'],this)">Ropa</span>
       <span class="col-toggle" data-cols='["nombre_padre","tel_padre","nombre_madre","tel_madre"]' onclick="toggleColGroup(['nombre_padre','tel_padre','nombre_madre','tel_madre'],this)">Datos de padres</span>
     </div>
+    <div class="mobile-scroll-hint">→ Deslizá la tabla hacia los costados para ver más columnas</div>
     <div class="table-wrap">
       <div class="loading" id="loadingState">Cargando alumnos...</div>
       <table id="alumnosTable" style="display:none">
@@ -870,7 +927,32 @@
 
   function closeTextModal(){document.getElementById('textModal').classList.remove('open');}
 
-  document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeModal();closeTextModal();}});
+  // ── Desplegables de la barra de controles (Filtros / Exportar / Acciones) ──
+  function toggleDropdown(id){
+    const el=document.getElementById(id);
+    const willOpen=!el.classList.contains('open');
+    document.querySelectorAll('.dropdown.open').forEach(d=>d.classList.remove('open'));
+    if(willOpen) el.classList.add('open');
+  }
+  function closeDropdowns(){
+    document.querySelectorAll('.dropdown.open').forEach(d=>d.classList.remove('open'));
+  }
+  // Cierra el desplegable al clickear afuera, pero no si el click fue dentro
+  // (así los <select> de Filtros se pueden usar con normalidad).
+  document.addEventListener('click',e=>{
+    document.querySelectorAll('.dropdown.open').forEach(d=>{
+      if(!d.contains(e.target)) d.classList.remove('open');
+    });
+  });
+  function updateFiltrosBadge(){
+    const badge=document.getElementById('filtrosBadge');
+    if(!badge) return;
+    const activos=[document.getElementById('colegioFilter').value,document.getElementById('sexoFilter').value].filter(Boolean).length;
+    if(activos){ badge.textContent=activos; badge.style.display='inline-flex'; }
+    else { badge.style.display='none'; }
+  }
+
+  document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeModal();closeTextModal();closeDropdowns();}});
 
   // ── EXPORT ──
   async function imgToArrayBuffer(url){
