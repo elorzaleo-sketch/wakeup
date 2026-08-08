@@ -260,6 +260,7 @@
       <button class="export-obs-btn" onclick="exportExcelRopa()" id="exportRopaBtn" style="border-color:#1d6f42;color:#1d6f42">⬇ Excel ropa</button>
       <button class="faltantes-btn" onclick="openFaltantes()">👥 Ver faltantes</button>
       <button class="faltantes-btn" onclick="openPasajeros()" id="gestionarBtn" style="border-color:var(--cyan);color:var(--cyan)">📋 Gestionar listado</button>
+      <button class="faltantes-btn" onclick="actualizarDMO()" id="dmoBtn" style="border-color:var(--pink);color:var(--pink)">🩺 Actualizar D.M.O</button>
     </div>
 
     <div class="toggle-cols">
@@ -593,6 +594,51 @@
     updateStats();
     renderTable();
     document.getElementById('alumnosTable').style.display='table';
+  }
+
+  // ── Actualizar D.M.O (Datos Médicos y Observaciones) ──
+  // Trae, desde "datos_familia", los registros ya vinculados a un alumno (alumno_id)
+  // y copia sus campos observaciones_medicas / dieta_alimenticia / observaciones
+  // hacia obs_salud / obs_dieta / obs_general del alumno correspondiente.
+  // Si el campo del panel de familias está vacío, se conserva lo que ya
+  // hubiera cargado en el admin (no lo borra).
+  async function actualizarDMO(){
+    const btn=document.getElementById('dmoBtn');
+    const original=btn.textContent;
+    btn.disabled=true; btn.textContent='Actualizando...';
+    try{
+      const {data:vinculados,error}=await db.from('datos_familia')
+        .select('alumno_id,observaciones_medicas,dieta_alimenticia,observaciones')
+        .not('alumno_id','is',null);
+      if(error) throw error;
+      if(!vinculados||!vinculados.length){
+        alert('No hay alumnos vinculados todavía en Datos de familia.');
+        return;
+      }
+      const updates=vinculados.map(r=>{
+        const a=allAlumnos.find(x=>x.id===r.alumno_id);
+        return{
+          id:r.alumno_id,
+          obs_salud:(r.observaciones_medicas||'').trim()||(a?a.obs_salud:null)||null,
+          obs_dieta:(r.dieta_alimenticia||'').trim()||(a?a.obs_dieta:null)||null,
+          obs_general:(r.observaciones||'').trim()||(a?a.obs_general:null)||null
+        };
+      });
+      const {error:upErr}=await db.from('alumnos').upsert(updates,{onConflict:'id'});
+      if(upErr) throw upErr;
+      updates.forEach(u=>{
+        const a=allAlumnos.find(x=>x.id===u.id);
+        if(a){a.obs_salud=u.obs_salud;a.obs_dieta=u.obs_dieta;a.obs_general=u.obs_general;}
+      });
+      updateStats();
+      renderTable();
+      alert(`D.M.O actualizado: ${updates.length} alumno(s) sincronizados desde Datos de familia.`);
+    }catch(err){
+      console.error(err);
+      alert('Error al actualizar D.M.O: '+err.message);
+    }finally{
+      btn.disabled=false; btn.textContent=original;
+    }
   }
 
   function updateStats(){
