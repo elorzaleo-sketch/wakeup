@@ -532,7 +532,7 @@ function renderListaDietas(lista){
     </div>`).join('');
 }
 
-function exportarDietas(){
+async function exportarDietas(){
   const conDieta = registros.filter(r => (r.dieta_alimenticia||'').trim());
   if(!conDieta.length){ showToast('No hay pasajeros con dietas cargadas.'); return; }
 
@@ -552,8 +552,20 @@ function exportarDietas(){
   };
   window.addEventListener('afterprint', restaurar);
 
-  // Esperar al próximo frame para que el DOM se termine de actualizar antes de imprimir.
-  setTimeout(()=>window.print(), 60);
+  // Esperar a que todas las fotos terminen de cargar (o fallen) antes de imprimir.
+  // Sin esto, window.print() podía dispararse con las fotos todavía descargándose
+  // desde Supabase, y el PDF quedaba con las fotos en blanco / incompleto.
+  const imgs = Array.from(document.querySelectorAll('#lista img.card-photo'));
+  await Promise.all(imgs.map(img=>{
+    if(img.complete) return Promise.resolve();
+    return new Promise(res=>{
+      img.addEventListener('load', res, {once:true});
+      img.addEventListener('error', res, {once:true});
+    });
+  }));
+
+  // Un par de frames extra para que el layout termine de acomodarse tras cargar las fotos.
+  requestAnimationFrame(()=>requestAnimationFrame(()=>window.print()));
 }
 
 async function borrar(id){
