@@ -50,13 +50,13 @@
   .main{padding:24px 28px;max-width:1300px;margin:0 auto;}
 
   /* Stats */
-  .stats-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:24px;}
-  .stat-card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:16px 18px;}
+  .stats-row{display:flex;flex-wrap:wrap;align-items:stretch;gap:12px;margin-bottom:24px;}
+  .stat-card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:16px 18px;flex:0 0 auto;min-width:110px;}
   .stat-label{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;}
   .stat-value{font-family:'Syne',sans-serif;font-size:26px;font-weight:700;color:#fff;}
   .stat-value.cyan{color:var(--cyan);}.stat-value.pink{color:var(--pink);}.stat-value.green{color:var(--green);}
-  .stat-card-wide{grid-column:1/-1;}
-  .colegios-mini{display:flex;flex-wrap:wrap;gap:6px;margin-top:2px;}
+  .stat-card-wide{flex:1 1 260px;min-width:220px;}
+  .colegios-mini{display:flex;flex-wrap:wrap;align-content:flex-start;gap:6px;margin-top:2px;}
   .colegio-chip{font-size:11px;color:var(--text);background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:3px 10px;white-space:nowrap;}
   .colegio-chip b{color:var(--cyan);font-weight:700;}
 
@@ -174,7 +174,8 @@
     .topbar-right{justify-content:flex-end;flex:1 1 auto;}
     .sort-btn{display:none;}
     .stats-row{gap:8px;}
-    .stat-card{padding:12px 14px;}
+    .stat-card{padding:12px 14px;flex:1 1 calc(50% - 8px);min-width:0;}
+    .stat-card-wide{flex:1 1 100%;}
     .controls{flex-direction:column;align-items:stretch;gap:8px;}
     .ctrl-search{min-width:0;}
     .dropdown{width:100%;}
@@ -291,6 +292,8 @@
     <div class="stats-row">
       <div class="stat-card"><div class="stat-label">Total alumnos</div><div class="stat-value cyan" id="statTotal">—</div></div>
       <div class="stat-card"><div class="stat-label">Con observaciones</div><div class="stat-value pink" id="statObs">—</div></div>
+      <div class="stat-card"><div class="stat-label">Varones</div><div class="stat-value" id="statVarones" style="color:#5D9CD9">—</div></div>
+      <div class="stat-card"><div class="stat-label">Mujeres</div><div class="stat-value" id="statMujeres" style="color:#E08FD9">—</div></div>
       <div class="stat-card stat-card-wide">
         <div class="stat-label">Por colegio</div>
         <div class="colegios-mini" id="colegiosMini">—</div>
@@ -752,8 +755,12 @@
   function updateStats(){
     const total=allAlumnos.length;
     const conObs=allAlumnos.filter(a=>a.obs_salud||a.obs_dieta).length;
+    const varones=allAlumnos.filter(a=>a.sexo==='Masculino').length;
+    const mujeres=allAlumnos.filter(a=>a.sexo==='Femenino').length;
     document.getElementById('statTotal').textContent=total;
     document.getElementById('statObs').textContent=conObs;
+    document.getElementById('statVarones').textContent=varones;
+    document.getElementById('statMujeres').textContent=mujeres;
     updateColegiosMini();
   }
 
