@@ -881,7 +881,7 @@
                      'Obs. médicas','Dieta','Observaciones',
                      'Nombre padre','Tel. padre','Nombre madre','Tel. madre','Revisado'];
       const rows=filtered.map(a=>[
-        a.apellido||'',a.nombre||'',a.apodo||'',a.sexo||'',a.edad||'',a.colegio||'',
+        toTC(a.apellido)||'',toTC(a.nombre)||'',a.apodo||'',a.sexo||'',a.edad||'',a.colegio||'',
         a.talle_pantalon||'',a.talle_campera||'',a.talle_bota||'',
         a.obs_salud||'',a.obs_dieta||'',a.obs_general||'',
         a.nombre_padre||'',a.telefono_padre||'',a.nombre_madre||'',a.telefono_madre||'',
@@ -905,7 +905,7 @@
       const filtered=getFiltered();
       const headers=['Apellido','Nombre completo','Sexo','Edad','Colegio','Pantalón','Campera','Bota','Observaciones'];
       const rows=filtered.map(a=>[
-        a.apellido||'',a.nombre||'',a.sexo||'',a.edad||'',a.colegio||'',
+        toTC(a.apellido)||'',toTC(a.nombre)||'',a.sexo||'',a.edad||'',a.colegio||'',
         a.talle_pantalon||'',a.talle_campera||'',a.talle_bota||'',
         a.obs_general||''
       ]);
@@ -1053,18 +1053,18 @@
       const dataRows=filtered.map(a=>{
         const buf=imgMap[a.id];
         if(mode==='fichas'){
-          return new TableRow({children:[mkCell(a.apellido,0),mkCell(a.nombre,1),mkCell(a.apodo,2),mkCell(a.colegio,3),mkPhotoCell(buf,4,150)]});
+          return new TableRow({children:[mkCell(toTC(a.apellido),0),mkCell(toTC(a.nombre),1),mkCell(a.apodo,2),mkCell(a.colegio,3),mkPhotoCell(buf,4,150)]});
         }
         if(mode==='obs'){
           return new TableRow({children:[
-            mkCell(a.apellido,0),mkCell(a.nombre,1),mkCell(a.apodo,2),mkCell(a.colegio,3),
+            mkCell(toTC(a.apellido),0),mkCell(toTC(a.nombre),1),mkCell(a.apodo,2),mkCell(a.colegio,3),
             mkCell(a.sexo,4),mkCell(a.talle_pantalon,5),mkCell(a.talle_campera,6),mkCell(a.talle_bota,7),
             mkCell(a.obs_salud,8,'CC0000'),mkCell(a.obs_dieta,9,'996600'),mkPhotoCell(buf,10)
           ]});
         }
         if(mode==='padres'){
           return new TableRow({children:[
-            mkCell(a.apellido,0),mkCell(a.nombre,1),mkCell(a.colegio,2),
+            mkCell(toTC(a.apellido),0),mkCell(toTC(a.nombre),1),mkCell(a.colegio,2),
             mkCell(a.sexo,3),mkCell(a.talle_pantalon,4),mkCell(a.talle_campera,5),mkCell(a.talle_bota,6),
             mkCell(a.nombre_padre,7),mkCell(a.telefono_padre,8),mkCell(a.nombre_madre,9)
           ]});
