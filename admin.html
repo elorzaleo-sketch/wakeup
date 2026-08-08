@@ -55,6 +55,10 @@
   .stat-label{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;}
   .stat-value{font-family:'Syne',sans-serif;font-size:26px;font-weight:700;color:#fff;}
   .stat-value.cyan{color:var(--cyan);}.stat-value.pink{color:var(--pink);}.stat-value.green{color:var(--green);}
+  .stat-card-wide{grid-column:1/-1;}
+  .colegios-mini{display:flex;flex-wrap:wrap;gap:6px;margin-top:2px;}
+  .colegio-chip{font-size:11px;color:var(--text);background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:3px 10px;white-space:nowrap;}
+  .colegio-chip b{color:var(--cyan);font-weight:700;}
 
   /* Controls */
   .controls{display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap;}
@@ -83,6 +87,8 @@
   .dd-item{background:transparent;border:1px solid var(--border);border-radius:9px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:13px;padding:9px 12px;cursor:pointer;text-align:left;transition:all .15s;white-space:normal;width:100%;line-height:1.3;}
   .dd-item:hover{border-color:var(--cyan);color:var(--cyan);}
   .dd-item:disabled{opacity:.5;cursor:not-allowed;}
+  .dd-check{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--text);padding:8px 2px 2px;cursor:pointer;user-select:none;}
+  .dd-check input{accent-color:var(--cyan);width:15px;height:15px;cursor:pointer;flex-shrink:0;}
   .dropdown-menu .ctrl{width:100%;}
 
   /* Table */
@@ -274,7 +280,6 @@
     </div>
     <div class="topbar-right">
       <a href="/#accesos" class="logout-btn" style="text-decoration:none;">← Panel</a>
-      <span id="totalBadge" style="font-size:13px;color:var(--muted)"></span>
       <button class="logout-btn" onclick="recargarDatos()" id="refreshBtn">↻ Actualizar</button>
       <button class="logout-btn" id="editBtn" onclick="openEditPrompt()" style="border-color:var(--cyan);color:var(--cyan)">✏️ Editar</button>
       <button class="logout-btn" id="exitEditBtn" onclick="exitEdit()" style="display:none">Salir de edición</button>
@@ -285,9 +290,11 @@
   <div class="main">
     <div class="stats-row">
       <div class="stat-card"><div class="stat-label">Total alumnos</div><div class="stat-value cyan" id="statTotal">—</div></div>
-      <div class="stat-card"><div class="stat-label">Con foto</div><div class="stat-value green" id="statFotos">—</div></div>
       <div class="stat-card"><div class="stat-label">Con observaciones</div><div class="stat-value pink" id="statObs">—</div></div>
-      <div class="stat-card"><div class="stat-label">Revisados</div><div class="stat-value" id="statRevisados">—</div></div>
+      <div class="stat-card stat-card-wide">
+        <div class="stat-label">Por colegio</div>
+        <div class="colegios-mini" id="colegiosMini">—</div>
+      </div>
     </div>
 
     <div class="controls">
@@ -307,6 +314,10 @@
             <option value="">Todos los sexos</option>
             <option>Masculino</option><option>Femenino</option><option>Prefiero no responder</option>
           </select>
+          <label class="dd-check">
+            <input type="checkbox" id="obsFilter" onchange="renderTable();updateFiltrosBadge()">
+            Con observaciones (médicas o dieta)
+          </label>
         </div>
       </div>
 
@@ -740,14 +751,24 @@
 
   function updateStats(){
     const total=allAlumnos.length;
-    const conFoto=allAlumnos.filter(a=>a.foto_url).length;
     const conObs=allAlumnos.filter(a=>a.obs_salud||a.obs_dieta).length;
-    const revisados=allAlumnos.filter(a=>a.check_completado).length;
     document.getElementById('statTotal').textContent=total;
-    document.getElementById('statFotos').textContent=conFoto;
     document.getElementById('statObs').textContent=conObs;
-    document.getElementById('statRevisados').textContent=revisados;
-    document.getElementById('totalBadge').textContent=total+' alumnos';
+    updateColegiosMini();
+  }
+
+  function updateColegiosMini(){
+    const el=document.getElementById('colegiosMini');
+    if(!el) return;
+    const counts={};
+    allAlumnos.forEach(a=>{
+      const c=a.colegio||'Sin colegio';
+      counts[c]=(counts[c]||0)+1;
+    });
+    const entries=Object.entries(counts).sort((a,b)=>b[1]-a[1]);
+    el.innerHTML=entries.length
+      ? entries.map(([nombre,n])=>`<span class="colegio-chip">${nombre}: <b>${n}</b></span>`).join('')
+      : '<span style="color:var(--muted);font-size:12px">Sin datos</span>';
   }
 
   function sortBy(field){
@@ -771,11 +792,13 @@
   function getFiltered(){
     const search=document.getElementById('searchInput').value.toLowerCase();
     const colegio=document.getElementById('colegioFilter').value;
+    const soloObs=document.getElementById('obsFilter').checked;
     let result=allAlumnos.filter(a=>{
       const ms=!search||(a.nombre||'').toLowerCase().includes(search)||(a.apellido||'').toLowerCase().includes(search);
       const mc=!colegio||a.colegio===colegio;
       const msexo=!document.getElementById('sexoFilter').value||a.sexo===document.getElementById('sexoFilter').value;
-      return ms&&mc&&msexo;
+      const mobs=!soloObs||a.obs_salud||a.obs_dieta;
+      return ms&&mc&&msexo&&mobs;
     });
     result.sort((a,b)=>{
       const va=(a[sortField]||'').toString().toLowerCase();
@@ -947,7 +970,8 @@
   function updateFiltrosBadge(){
     const badge=document.getElementById('filtrosBadge');
     if(!badge) return;
-    const activos=[document.getElementById('colegioFilter').value,document.getElementById('sexoFilter').value].filter(Boolean).length;
+    const activos=[document.getElementById('colegioFilter').value,document.getElementById('sexoFilter').value].filter(Boolean).length
+      + (document.getElementById('obsFilter').checked?1:0);
     if(activos){ badge.textContent=activos; badge.style.display='inline-flex'; }
     else { badge.style.display='none'; }
   }
