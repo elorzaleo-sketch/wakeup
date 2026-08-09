@@ -361,6 +361,7 @@
           <th class="sortable" onclick="sortBy('nombre')">Nombre</th>
           <th class="sortable" onclick="sortBy('apodo')">N. Pref.</th>
           <th class="sortable" onclick="sortBy('colegio')">Colegio</th>
+          <th class="sortable" onclick="sortBy('habitacion')">Habitación</th>
           <th class="sortable" onclick="sortBy('edad')">Edad</th>
           <th class="sortable" onclick="sortBy('sexo')">Sexo</th>
           <th data-col="pantalon">Pantalón</th>
@@ -402,152 +403,7 @@
   </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2">
-
-  // ── FALTANTES ──
-  async function openFaltantes(){
-    document.getElementById('faltantesOverlay').classList.add('open');
-    const body=document.getElementById('faltantesBody');
-    body.innerHTML='<div style="text-align:center;color:var(--muted);padding:20px;font-size:14px">Cargando...</div>';
-    
-    const {data:pasajeros,error}=await db.from('pasajeros').select('*').order('apellido');
-    if(error||!pasajeros||pasajeros.length===0){
-      body.innerHTML='<div style="text-align:center;color:var(--muted);padding:20px;font-size:14px">No hay listado cargado aún.<br>Usá <strong>Gestionar listado</strong> para subir el Excel.</div>';
-      return;
-    }
-
-    const registrados=allAlumnos.map(a=>({
-      apellido:(a.apellido||'').toLowerCase().trim(),
-      nombre:(a.nombre||'').toLowerCase().trim()
-    }));
-
-    const faltantes=pasajeros.filter(p=>
-      !registrados.some(r=>r.apellido===p.apellido.toLowerCase().trim()&&r.nombre===p.nombre.toLowerCase().trim())
-    );
-
-    if(faltantes.length===0){
-      body.innerHTML=`<div class="presentes-ok">✓ ¡Todos los ${pasajeros.length} pasajeros completaron la ficha!</div>`;
-      return;
-    }
-
-    body.innerHTML=`
-      <div class="faltantes-count">Faltan completar la ficha: <span>${faltantes.length} de ${pasajeros.length}</span> pasajeros</div>
-      ${faltantes.map(f=>`
-        <div class="faltante-item">
-          <div class="dot"></div>
-          <span><strong>${f.apellido}</strong>, ${f.nombre}</span>
-        </div>`).join('')}`;
-  }
-
-  function closeFaltantes(e){
-    if(!e||e.target===document.getElementById('faltantesOverlay'))
-      document.getElementById('faltantesOverlay').classList.remove('open');
-  }
-
-  // ── GESTIONAR PASAJEROS ──
-  async function openPasajeros(){
-    document.getElementById('pasajerosOverlay').classList.add('open');
-    document.getElementById('uploadZone').style.display='block';
-    await renderPasajerosList();
-  }
-
-  function closePasajeros(e){
-    if(!e||e.target===document.getElementById('pasajerosOverlay'))
-      document.getElementById('pasajerosOverlay').classList.remove('open');
-  }
-
-  async function renderPasajerosList(){
-    const {data,error}=await db.from('pasajeros').select('*').order('apellido');
-    const el=document.getElementById('pasajerosList');
-    if(error||!data||data.length===0){
-      el.innerHTML='<p style="font-size:13px;color:var(--muted);text-align:center;margin-top:8px">No hay pasajeros cargados aún.</p>';
-      return;
-    }
-    el.innerHTML=`
-      <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px">${data.length} pasajeros en el listado</div>
-      ${data.map(p=>`
-        <div class="faltante-item" style="justify-content:space-between">
-          <div style="display:flex;align-items:center;gap:10px">
-            <div class="dot" style="background:var(--cyan)"></div>
-            <span><strong>${p.apellido}</strong>, ${p.nombre}</span>
-          </div>
-          <button onclick="askDeletePasajero('${p.id}','${p.apellido} ${p.nombre}')"
-            style="background:none;border:none;color:#444;font-size:16px;cursor:pointer;padding:2px 6px;border-radius:6px;transition:color .15s"
-            onmouseover="this.style.color='var(--pink)'" onmouseout="this.style.color='#444'">✕</button>
-        </div>`).join('')}`;
-  }
-
-  async function procesarExcel(input){
-    if(!input.files||!input.files[0])return;
-    await loadScript('https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js');
-    const file=input.files[0];
-    const reader=new FileReader();
-    reader.onload=async function(e){
-      const data=new Uint8Array(e.target.result);
-      const wb=XLSX.read(data,{type:'array'});
-      const ws=wb.Sheets[wb.SheetNames[0]];
-      const rows=XLSX.utils.sheet_to_json(ws,{header:1});
-      // Use sheet_to_json with default object mode (uses first row as keys)
-      const objRows=XLSX.utils.sheet_to_json(ws,{defval:''});
-      // Detect key names (could be 'Apellido'/'Nombre' or column letters)
-      const nuevos=objRows.map(r=>{
-        // Try common key names
-        const apellido=(r['Apellido']||r['apellido']||r['APELLIDO']||Object.values(r)[0]||'').toString().trim();
-        const nombre=(r['Nombre']||r['nombre']||r['NOMBRE']||Object.values(r)[1]||'').toString().trim();
-        return {apellido,nombre};
-      }).filter(r=>r.apellido.length>0);
-
-      if(nuevos.length===0){alert('No se encontraron datos en el archivo.');return;}
-
-      // Ask confirm before replacing
-      if(!confirm(`¿Reemplazar el listado actual con ${nuevos.length} pasajeros del Excel?`))return;
-
-      // Delete all and re-insert
-      await db.from('pasajeros').delete().neq('id','00000000-0000-0000-0000-000000000000');
-      const {error}=await db.from('pasajeros').insert(nuevos);
-      if(error){alert('Error al guardar: '+error.message);return;}
-      input.value='';
-      await renderPasajerosList();
-    };
-    reader.readAsArrayBuffer(file);
-  }
-
-  // ── DELETE ALUMNO ──
-  let pendingDeleteId=null;
-  let pendingDeleteType=null;
-
-  function askDeleteAlumno(id,nombre){
-    pendingDeleteId=id;
-    pendingDeleteType='alumno';
-    document.getElementById('confirmMsg').innerHTML=`¿Querés eliminar la ficha de <strong>${nombre}</strong>?<br>Esta acción no se puede deshacer.`;
-    document.getElementById('confirmOverlay').classList.add('open');
-  }
-
-  function askDeletePasajero(id,nombre){
-    pendingDeleteId=id;
-    pendingDeleteType='pasajero';
-    document.getElementById('confirmMsg').innerHTML=`¿Querés eliminar a <strong>${nombre}</strong> del listado?`;
-    document.getElementById('confirmOverlay').classList.add('open');
-  }
-
-  function cancelDelete(){
-    pendingDeleteId=null;pendingDeleteType=null;
-    document.getElementById('confirmOverlay').classList.remove('open');
-  }
-
-  async function confirmDelete(){
-    if(!pendingDeleteId)return;
-    if(pendingDeleteType==='alumno'){
-      const {error}=await db.from('alumnos').delete().eq('id',pendingDeleteId);
-      if(error){alert('Error al eliminar: '+error.message);}
-      else{allAlumnos=allAlumnos.filter(a=>a.id!==pendingDeleteId);updateStats();renderTable();}
-    } else {
-      const {error}=await db.from('pasajeros').delete().eq('id',pendingDeleteId);
-      if(!error) await renderPasajerosList();
-    }
-    cancelDelete();
-  }
-</script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
   const SUPABASE_URL='https://mzousqdahqterfawhwsz.supabase.co';
   const SUPABASE_ANON_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im16b3VzcWRhaHF0ZXJmYXdod3N6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA1MTc4MzUsImV4cCI6MjA5NjA5MzgzNX0.EdSlcRdLD75OdYlwtZGLVgL_PGpJysWb_MKvuwGgj5Y';
@@ -789,6 +645,7 @@
          (field==='nombre'&&th.textContent.includes('Nombre'))||
          (field==='apodo'&&th.textContent.includes('Apodo'))||
          (field==='colegio'&&th.textContent.includes('Colegio'))||
+         (field==='habitacion'&&th.textContent.includes('Habitación'))||
          (field==='edad'&&th.textContent.includes('Edad'))){
         th.classList.add(sortDir==='asc'?'sort-asc':'sort-desc');
       }
@@ -836,6 +693,8 @@
         <td><input class="obs-input" style="width:100%;min-width:90px" value="${a.apodo||''}"
             onblur="if(!isReadOnly)saveField('${a.id}','apodo',this.value,this)" ${isReadOnly?'readonly':''}></td>
         <td><select class="obs-input" style="width:120px" ${isReadOnly?'disabled':''} onchange="saveField('${a.id}','colegio',this.value,this)"><option value=''>—</option><option ${a.colegio==='Berazategui'?'selected':''}>Berazategui</option><option ${a.colegio==='El Encuentro'?'selected':''}>El Encuentro</option><option ${a.colegio==='Emanuel'?'selected':''}>Emanuel</option><option ${a.colegio==='Hay Vida En Jesús'?'selected':''}>Hay Vida En Jesús</option><option ${a.colegio==='M. T Alvear'?'selected':''}>M. T Alvear</option><option ${a.colegio==='Menoyo'?'selected':''}>Menoyo</option><option ${a.colegio==='Zion'?'selected':''}>Zion</option></select></td>
+        <td><input class="obs-input" style="width:90px" value="${a.habitacion||''}"
+            onblur="if(!isReadOnly)saveField('${a.id}','habitacion',this.value,this)" ${isReadOnly?'readonly':''}></td>
         <td><select class="obs-input" style="width:60px" ${isReadOnly?'disabled':''} onchange="saveField('${a.id}','edad',this.value,this)"><option value=''>—</option><option ${a.edad==='17'?'selected':''}>17</option><option ${a.edad==='18'?'selected':''}>18</option><option ${a.edad==='19'?'selected':''}>19</option></select></td>
         <td style="font-size:12px;color:var(--muted)">${a.sexo||'—'}</td>
         <td data-col="pantalon" style="text-align:center"><select class="obs-input" style="width:70px" ${isReadOnly?'disabled':''} onchange="saveField('${a.id}','talle_pantalon',this.value,this)"><option value=''>—</option><option ${a.talle_pantalon==='XS'?'selected':''}>XS</option><option ${a.talle_pantalon==='S'?'selected':''}>S</option><option ${a.talle_pantalon==='M'?'selected':''}>M</option><option ${a.talle_pantalon==='L'?'selected':''}>L</option><option ${a.talle_pantalon==='XL'?'selected':''}>XL</option><option ${a.talle_pantalon==='XXL'?'selected':''}>XXL</option></select></td>
@@ -1318,6 +1177,19 @@
       .toLowerCase().trim().replace(/\s+/g,' ');
   }
 
+  // Busca un único alumno cuyo apellido coincida exacto (normalizado) y que
+  // comparta al menos un nombre de pila. Si hay 0 o más de 1 coincidencia,
+  // devuelve null (evita asignar habitación a la persona equivocada).
+  function buscarAlumnoPorNombre(apellido,nombre){
+    const ap=normalizar(apellido);
+    const noms=normalizar(nombre).split(' ').filter(Boolean);
+    const candidatos=allAlumnos.filter(a=>
+      normalizar(a.apellido)===ap &&
+      noms.some(n=>normalizar(a.nombre).split(' ').filter(Boolean).includes(n))
+    );
+    return candidatos.length===1?candidatos[0]:null;
+  }
+
   // ── FALTANTES ──
   async function openFaltantes(){
     document.getElementById('faltantesOverlay').classList.add('open');
@@ -1410,24 +1282,58 @@
       // Use sheet_to_json with default object mode (uses first row as keys)
       const objRows=XLSX.utils.sheet_to_json(ws,{defval:''});
       // Detect key names (could be 'Apellido'/'Nombre' or column letters)
-      const nuevos=objRows.map(r=>{
+      const parsed=objRows.map(r=>{
         // Try common key names
         const apellido=(r['Apellido']||r['apellido']||r['APELLIDO']||Object.values(r)[0]||'').toString().trim();
         const nombre=(r['Nombre']||r['nombre']||r['NOMBRE']||Object.values(r)[1]||'').toString().trim();
-        return {apellido,nombre};
+        const habitacion=(r['Habitación']||r['Habitacion']||r['habitación']||r['habitacion']||r['HABITACIÓN']||r['HABITACION']||'').toString().trim();
+        return {apellido,nombre,habitacion};
       }).filter(r=>r.apellido.length>0);
 
-      if(nuevos.length===0){alert('No se encontraron datos en el archivo.');return;}
+      if(parsed.length===0){alert('No se encontraron datos en el archivo.');return;}
 
       // Ask confirm before replacing
-      if(!confirm(`¿Reemplazar el listado actual con ${nuevos.length} pasajeros del Excel?`))return;
+      if(!confirm(`¿Reemplazar el listado actual con ${parsed.length} pasajeros del Excel?`))return;
 
       // Delete all and re-insert
+      const nuevos=parsed.map(({apellido,nombre})=>({apellido,nombre}));
       await db.from('pasajeros').delete().neq('id','00000000-0000-0000-0000-000000000000');
       const {error}=await db.from('pasajeros').insert(nuevos);
       if(error){alert('Error al guardar: '+error.message);return;}
       input.value='';
       await renderPasajerosList();
+
+      // Si el Excel trae columna "Habitación", intentamos asignarla a los
+      // alumnos ya cargados, matcheando por apellido + nombre de pila
+      // (mismo criterio que usa "Ver faltantes").
+      const conHabitacion=parsed.filter(r=>r.habitacion);
+      if(conHabitacion.length){
+        const updates=[];
+        let sinCoincidencia=0;
+        conHabitacion.forEach(r=>{
+          const alumno=buscarAlumnoPorNombre(r.apellido,r.nombre);
+          if(alumno) updates.push({id:alumno.id,habitacion:r.habitacion});
+          else sinCoincidencia++;
+        });
+        let asignadas=0;
+        if(updates.length){
+          const results=await Promise.all(updates.map(u=>
+            db.from('alumnos').update({habitacion:u.habitacion}).eq('id',u.id)
+          ));
+          updates.forEach((u,i)=>{
+            if(results[i].error){ console.error(results[i].error); return; }
+            asignadas++;
+            const a=allAlumnos.find(x=>x.id===u.id);
+            if(a) a.habitacion=u.habitacion;
+          });
+          updateStats();
+          renderTable();
+        }
+        let msg=`Listado actualizado: ${nuevos.length} pasajeros.`;
+        if(asignadas) msg+=`\nHabitación asignada a ${asignadas} alumno(s).`;
+        if(sinCoincidencia) msg+=`\n${sinCoincidencia} fila(s) con habitación pero sin un alumno coincidente (asignalas manualmente en la tabla).`;
+        alert(msg);
+      }
     };
     reader.readAsArrayBuffer(file);
   }
