@@ -145,6 +145,27 @@
   .modal .actions .btn{flex:1;justify-content:center;}
 
   .print-range{display:none;}
+
+  /* ===== Vista compacta (tabla, todo en pantalla / 1 hoja) ===== */
+  .table-view{display:none;}
+  .table-view.active{display:block;}
+  .rows.hidden-view,.ghead.hidden-view{display:none!important;}
+  .sched-table{width:100%;border-collapse:collapse;background:var(--surface);border:1px solid var(--line);
+    border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow);}
+  .sched-table th{background:var(--cyan);color:#fff;font-family:'Fredoka',sans-serif;font-weight:600;font-size:13px;
+    text-align:left;padding:8px 10px;}
+  .sched-table td{border-top:1px solid var(--line);padding:6px 10px;font-size:12px;vertical-align:top;}
+  .sched-table td.tday{white-space:nowrap;font-family:'Fredoka',sans-serif;}
+  .sched-table td.tday b{color:var(--pink);font-size:16px;}
+  .sched-table td.tday .tdname{display:block;color:var(--muted);font-size:10.5px;text-transform:capitalize;}
+  .sched-table td.tempty{color:var(--muted);}
+  .sched-table tr:nth-child(even) td{background:#f7fbfc;}
+  .tact{font-weight:700;color:var(--ink);margin-bottom:2px;}
+  .tact:last-child{margin-bottom:0;}
+  .tact.twarn{color:var(--warn);}
+  .tact.tfull{color:var(--green);}
+  .tact .ttime{font-weight:600;color:var(--muted);font-size:11px;}
+
   @media print{
     @page{ size:landscape; margin:10mm; }
     body{background:#fff;}
@@ -152,18 +173,10 @@
     .wrap{max-width:none!important;padding:0!important;}
     header{margin-bottom:8px;}
     .print-range{display:block;font-family:'Fredoka',sans-serif;font-weight:600;font-size:14px;color:var(--muted);margin:-4px 0 8px;}
-    .rows{gap:6px;}
-    .row{break-inside:avoid;box-shadow:none;border-color:#ccc;padding:8px;}
-    .ghead{position:static;padding:4px 6px;margin-bottom:4px;}
-    .daycell{min-height:0;padding:2px 4px;}
-    .daycell .dnum{font-size:24px;}
-    .daycell .dname{font-size:12px;}
-    .daycell .dmon{font-size:9px;}
-    .slot{padding:6px;gap:4px;}
-    .emoji{font-size:14px;width:17px;}
-    .actname{font-size:11.5px;}
-    .times label{font-size:8px;}
-    .timeshow{font-size:10.5px;gap:8px;}
+    .row{break-inside:avoid;box-shadow:none;border-color:#ccc;}
+    .ghead{position:static;}
+    .sched-table{box-shadow:none;}
+    .sched-table tr{break-inside:avoid;}
   }
 </style>
 </head>
@@ -210,6 +223,7 @@
   </div>
 
   <div class="rows" id="rows"></div>
+  <div class="table-view" id="tableView"></div>
 
   <div class="legend">
     <div class="item"><span class="swatch fullday"></span> ✅ Ocupa todo el día (misma actividad mañana + tarde)</div>
@@ -370,6 +384,12 @@ function buildStatus(){
 }
 
 /* ===================== RENDER ===================== */
+/* Dos vistas: "cards" (tarjetas, para editar día a día) y "table" (tabla
+   compacta, para ver todo el rango de un vistazo en pantalla y para que
+   entre en 1 sola hoja horizontal al exportar a PDF). */
+let viewMode = 'cards';
+function toggleView(){ viewMode = viewMode==='cards' ? 'table' : 'cards'; render(); }
+
 function render(){
   ensureDays();
   document.getElementById('modetag').className = "modetag " + (isAdmin?"edit":"view");
@@ -379,6 +399,11 @@ function render(){
     `Del ${state.from} al ${state.to} de ${MONTHS[state.month-1]} ${state.year}`;
 
   const status=buildStatus();
+
+  document.getElementById('rows').classList.toggle('hidden-view', viewMode!=='cards');
+  document.querySelector('.ghead').classList.toggle('hidden-view', viewMode!=='cards');
+  document.getElementById('tableView').classList.toggle('active', viewMode==='table');
+
   const rows=document.getElementById('rows'); rows.innerHTML="";
   daysList().forEach(d=>{
     const row=document.createElement('div'); row.className='row';
@@ -405,36 +430,42 @@ function render(){
     });
     rows.appendChild(row);
   });
+
+  if(viewMode==='table') renderTableView(status);
 }
 
-/* ===== Exportar a PDF en una sola hoja horizontal ===== */
-/* Reduce visualmente todo el cronograma (transform:scale) para que entre en
-   una sola página al imprimir/exportar a PDF, en vez de cortarse en 2 hojas.
-   El tamaño de página ya se fuerza a horizontal (@page{size:landscape} en el
-   CSS de impresión). */
-function printCronograma(){
-  const wrap=document.querySelector('.wrap');
-  const rowsEl=document.getElementById('rows');
-  wrap.style.transform='none';
-  requestAnimationFrame(()=>{
-    const PAGE_W=1050, PAGE_H=700; // área imprimible aprox. de una hoja A4/Carta horizontal con 10mm de margen
-    const HEADER_H=60; // título + rango de fechas (ya reducidos en el CSS de impresión)
-    const w=wrap.scrollWidth;
-    const h=rowsEl.scrollHeight+HEADER_H;
-    let scale=Math.min(PAGE_W/w, PAGE_H/h, 1);
-    scale=Math.max(scale, 0.4); // no reducir el texto más allá de lo legible
-    wrap.style.transformOrigin='top left';
-    wrap.style.transform=`scale(${scale})`;
-    setTimeout(()=>{
-      window.print();
-      wrap.style.transform='';
-    }, 80);
+/* Vista compacta: una tabla con 1 fila por día (en vez de una tarjeta grande
+   por día), pensada para verse entera en pantalla sin scroll y para entrar
+   en 1 sola hoja horizontal al imprimir/exportar a PDF. */
+function renderTableView(status){
+  const tv=document.getElementById('tableView');
+  let html='<table class="sched-table"><thead><tr><th>Día</th><th>🌅 Mañana</th><th>☀️ Tarde</th><th>🌙 Noche</th></tr></thead><tbody>';
+  daysList().forEach(d=>{
+    html+=`<tr><td class="tday"><b>${d}</b><span class="tdname">${weekday(d)}</span></td>`;
+    TURNOS.forEach(t=>{
+      const arr=state.data[d][t.key].filter(s=>s.act);
+      if(!arr.length){ html+='<td class="tempty">—</td>'; return; }
+      const cell=arr.map(s=>{
+        const a=ACT[s.act], st=status[s.act];
+        const cls = st==='warn'?' twarn':st==='fullday'?' tfull':'';
+        const flag = st==='warn'?' ⚠️':st==='fullday'?' ✅':'';
+        const times=[s.salida,s.llegada].filter(Boolean).join(' → ');
+        return `<div class="tact${cls}">${a?a.emoji:'⚠️'} ${a?a.name:s.act}${flag}${times?`<div class="ttime">${times}</div>`:''}</div>`;
+      }).join('');
+      html+=`<td>${cell}</td>`;
+    });
+    html+='</tr>';
   });
+  html+='</tbody></table>';
+  tv.innerHTML=html;
 }
-window.addEventListener('afterprint', ()=>{
-  const wrap=document.querySelector('.wrap');
-  if(wrap) wrap.style.transform='';
-});
+
+/* ===== Exportar a PDF en horizontal ===== */
+/* Imprime lo que esté visible en pantalla (tarjetas o tabla compacta). La
+   vista compacta está pensada para entrar en 1 sola hoja; la de tarjetas
+   es más cómoda de leer pero puede ocupar más de una hoja si el rango de
+   días es largo. */
+function printCronograma(){ window.print(); }
 
 function statusClass(st){ return st==="warn"?" warn":st==="fullday"?" fullday":""; }
 function flagEl(st){
@@ -489,12 +520,15 @@ function slotView(slot,status){
 
 function renderTools(){
   const t=document.getElementById('tools');
+  const viewBtn=`<button class="btn" onclick="toggleView()" title="Alterna entre tarjetas (para editar) y tabla compacta (todo en 1 vista/hoja)">${viewMode==='cards'?'🗂️ Vista compacta':'📇 Vista tarjetas'}</button>`;
   if(isAdmin){
     t.innerHTML=`<label class="btn" title="Reemplaza la lista de actividades para todos (Mensajes WhatsApp y este cronograma)">📊 Actividades (Excel)<input type="file" accept=".xlsx,.xls,.csv" style="display:none" onchange="handleActivitiesExcel(event)"></label>
+      ${viewBtn}
       <button class="btn" onclick="printCronograma()">📄 PDF</button>
       <button class="btn" onclick="logout()">🔒 Salir de edición</button>`;
   } else {
-    t.innerHTML=`<button class="btn" onclick="printCronograma()">📄 PDF</button>
+    t.innerHTML=`${viewBtn}
+      <button class="btn" onclick="printCronograma()">📄 PDF</button>
       <button class="btn primary" onclick="openLogin()">✏️ Editar</button>`;
   }
 }
