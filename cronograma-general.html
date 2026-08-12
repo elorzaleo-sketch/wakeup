@@ -144,9 +144,26 @@
   .modal .actions{display:flex;gap:9px;margin-top:18px;}
   .modal .actions .btn{flex:1;justify-content:center;}
 
+  .print-range{display:none;}
   @media print{
-    body{background:#fff;} .tools,.addslot,.delslot,.legend,.status,.rangebar .soft{display:none!important;}
-    .row{break-inside:avoid;box-shadow:none;border-color:#ccc;} .ghead{position:static;}
+    @page{ size:landscape; margin:10mm; }
+    body{background:#fff;}
+    .tools,.addslot,.delslot,.legend,.status,.rangebar{display:none!important;}
+    .wrap{max-width:none!important;padding:0!important;}
+    header{margin-bottom:8px;}
+    .print-range{display:block;font-family:'Fredoka',sans-serif;font-weight:600;font-size:14px;color:var(--muted);margin:-4px 0 8px;}
+    .rows{gap:6px;}
+    .row{break-inside:avoid;box-shadow:none;border-color:#ccc;padding:8px;}
+    .ghead{position:static;padding:4px 6px;margin-bottom:4px;}
+    .daycell{min-height:0;padding:2px 4px;}
+    .daycell .dnum{font-size:24px;}
+    .daycell .dname{font-size:12px;}
+    .daycell .dmon{font-size:9px;}
+    .slot{padding:6px;gap:4px;}
+    .emoji{font-size:14px;width:17px;}
+    .actname{font-size:11.5px;}
+    .times label{font-size:8px;}
+    .timeshow{font-size:10.5px;gap:8px;}
   }
 </style>
 </head>
@@ -180,6 +197,8 @@
       <div class="tools" id="tools"></div>
     </div>
   </header>
+
+  <div class="print-range" id="printRange"></div>
 
   <div class="rangebar" id="rangebar"></div>
 
@@ -356,6 +375,8 @@ function render(){
   document.getElementById('modetag').className = "modetag " + (isAdmin?"edit":"view");
   document.getElementById('modetag').textContent = isAdmin?"Editando":"Solo lectura";
   renderTools(); renderRange();
+  document.getElementById('printRange').textContent =
+    `Del ${state.from} al ${state.to} de ${MONTHS[state.month-1]} ${state.year}`;
 
   const status=buildStatus();
   const rows=document.getElementById('rows'); rows.innerHTML="";
@@ -385,6 +406,35 @@ function render(){
     rows.appendChild(row);
   });
 }
+
+/* ===== Exportar a PDF en una sola hoja horizontal ===== */
+/* Reduce visualmente todo el cronograma (transform:scale) para que entre en
+   una sola página al imprimir/exportar a PDF, en vez de cortarse en 2 hojas.
+   El tamaño de página ya se fuerza a horizontal (@page{size:landscape} en el
+   CSS de impresión). */
+function printCronograma(){
+  const wrap=document.querySelector('.wrap');
+  const rowsEl=document.getElementById('rows');
+  wrap.style.transform='none';
+  requestAnimationFrame(()=>{
+    const PAGE_W=1050, PAGE_H=700; // área imprimible aprox. de una hoja A4/Carta horizontal con 10mm de margen
+    const HEADER_H=60; // título + rango de fechas (ya reducidos en el CSS de impresión)
+    const w=wrap.scrollWidth;
+    const h=rowsEl.scrollHeight+HEADER_H;
+    let scale=Math.min(PAGE_W/w, PAGE_H/h, 1);
+    scale=Math.max(scale, 0.4); // no reducir el texto más allá de lo legible
+    wrap.style.transformOrigin='top left';
+    wrap.style.transform=`scale(${scale})`;
+    setTimeout(()=>{
+      window.print();
+      wrap.style.transform='';
+    }, 80);
+  });
+}
+window.addEventListener('afterprint', ()=>{
+  const wrap=document.querySelector('.wrap');
+  if(wrap) wrap.style.transform='';
+});
 
 function statusClass(st){ return st==="warn"?" warn":st==="fullday"?" fullday":""; }
 function flagEl(st){
@@ -441,10 +491,10 @@ function renderTools(){
   const t=document.getElementById('tools');
   if(isAdmin){
     t.innerHTML=`<label class="btn" title="Reemplaza la lista de actividades para todos (Mensajes WhatsApp y este cronograma)">📊 Actividades (Excel)<input type="file" accept=".xlsx,.xls,.csv" style="display:none" onchange="handleActivitiesExcel(event)"></label>
-      <button class="btn" onclick="window.print()">📄 PDF</button>
+      <button class="btn" onclick="printCronograma()">📄 PDF</button>
       <button class="btn" onclick="logout()">🔒 Salir de edición</button>`;
   } else {
-    t.innerHTML=`<button class="btn" onclick="window.print()">📄 PDF</button>
+    t.innerHTML=`<button class="btn" onclick="printCronograma()">📄 PDF</button>
       <button class="btn primary" onclick="openLogin()">✏️ Editar</button>`;
   }
 }
