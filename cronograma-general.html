@@ -215,6 +215,7 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script>
 /* ===================== CONFIG SUPABASE ===================== */
 const SUPA_URL = "https://mzousqdahqterfawhwsz.supabase.co";
@@ -259,6 +260,42 @@ async function fetchActivities(){
     }
   }catch(e){ console.error(e); }
   return false;
+}
+
+/* Sube una lista nueva de actividades a Supabase (borra todo e inserta de
+   nuevo), usando la sesión autenticada del admin logueado. Al estar logueado,
+   este pedido va con el JWT del usuario, no como anónimo — por eso funciona
+   incluso si la tabla exige estar autenticado para escribir. */
+async function pushActivities(list){
+  try{
+    const del = await sb.from('actividades').delete().gte('orden', 0);
+    if(del.error) throw del.error;
+    const rows = list.map((a,i)=>({nombre:a.nombre, emoji:a.emoji, detalle:a.detalle, orden:i}));
+    const ins = await sb.from('actividades').insert(rows);
+    if(ins.error) throw ins.error;
+    return true;
+  }catch(e){ console.error(e); return false; }
+}
+
+async function handleActivitiesExcel(e){
+  const file=e.target.files[0]; if(!file) return;
+  e.target.value='';
+  if(!isAdmin){ setStatus('Tenés que estar en modo edición',true); return; }
+  setStatus('Leyendo Excel…');
+  try{
+    const wb=XLSX.read(await file.arrayBuffer());
+    const rows=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]]);
+    const parsed=rows.map(r=>{
+      const k=Object.keys(r);
+      const get=(...names)=>{ for(const n of names){ const f=k.find(x=>x.toLowerCase().trim().startsWith(n)); if(f) return String(r[f]); } return ''; };
+      return { nombre:get('actividad','nombre'), emoji:get('emoji')||'📌', detalle:get('detalle','detalles') };
+    }).filter(a=>a.nombre);
+    if(!parsed.length){ setStatus('No encontré filas válidas en el Excel',true); return; }
+    setStatus('Guardando actividades…');
+    const ok=await pushActivities(parsed);
+    if(ok){ await fetchActivities(); render(); setStatus('✓ Actividades actualizadas ('+parsed.length+')'); }
+    else{ setStatus('Error al guardar en la base (revisá permisos)',true); }
+  }catch(err){ console.error(err); setStatus('Error al leer el Excel',true); }
 }
 
 /* Convierte los ids numéricos viejos (guardados antes del cambio) a nombre,
@@ -387,7 +424,8 @@ function slotView(slot,status){
 function renderTools(){
   const t=document.getElementById('tools');
   if(isAdmin){
-    t.innerHTML=`<button class="btn" onclick="window.print()">📄 PDF</button>
+    t.innerHTML=`<label class="btn" title="Reemplaza la lista de actividades para todos (Mensajes WhatsApp y este cronograma)">📊 Actividades (Excel)<input type="file" accept=".xlsx,.xls,.csv" style="display:none" onchange="handleActivitiesExcel(event)"></label>
+      <button class="btn" onclick="window.print()">📄 PDF</button>
       <button class="btn" onclick="logout()">🔒 Salir de edición</button>`;
   } else {
     t.innerHTML=`<button class="btn" onclick="window.print()">📄 PDF</button>
