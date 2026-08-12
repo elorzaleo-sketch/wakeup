@@ -277,6 +277,22 @@ async function pushActivities(list){
   }catch(e){ console.error(e); return false; }
 }
 
+/* Busca, entre TODAS las hojas del archivo, la que tenga una columna que
+   empiece con alguno de los prefijos dados. Si se usara siempre la primera
+   hoja del libro, un Excel con otra hoja antes (aunque esté oculta, como
+   "HABITACIONES") terminaría leyéndose mal y no encontraría ninguna fila. */
+function pickRowsByHeaders(wb, prefixes){
+  let fallback=null;
+  for(const name of wb.SheetNames){
+    const rows=XLSX.utils.sheet_to_json(wb.Sheets[name]);
+    if(!rows.length) continue;
+    if(!fallback) fallback=rows;
+    const keys=Object.keys(rows[0]).map(x=>x.toLowerCase().trim());
+    if(prefixes.some(p=>keys.some(k=>k.startsWith(p)))) return rows;
+  }
+  return fallback||[];
+}
+
 async function handleActivitiesExcel(e){
   const file=e.target.files[0]; if(!file) return;
   e.target.value='';
@@ -284,7 +300,7 @@ async function handleActivitiesExcel(e){
   setStatus('Leyendo Excel…');
   try{
     const wb=XLSX.read(await file.arrayBuffer());
-    const rows=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]]);
+    const rows=pickRowsByHeaders(wb, ['actividad','nombre']);
     const parsed=rows.map(r=>{
       const k=Object.keys(r);
       const get=(...names)=>{ for(const n of names){ const f=k.find(x=>x.toLowerCase().trim().startsWith(n)); if(f) return String(r[f]); } return ''; };
