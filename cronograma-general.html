@@ -225,7 +225,10 @@ const sb = window.supabase.createClient(SUPA_URL, SUPA_KEY);
 const WEEKDAYS = ["Domingo","Lunes","Martes","Miércoles","Jueves","Viernes","Sábado"];
 const MONTHS = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
 const TURNOS = [{key:"manana",icon:"🌅",label:"Mañana"},{key:"tarde",icon:"☀️",label:"Tarde"},{key:"noche",icon:"🌙",label:"Noche"}];
-const ACTIVITIES = [
+/* Lista vieja hardcodeada (id numérico -> nombre). Ya no se usa para mostrar
+   actividades: queda solo para poder migrar cronogramas guardados antes del
+   cambio, que tenían slot.act = id numérico en vez de nombre. */
+const LEGACY_ACTIVITIES = [
   {id:1,name:"Circuito Chico, Punto Panorámico",emoji:"🚌"},{id:2,name:"Adventure City Tour",emoji:"🏙️"},
   {id:3,name:"Ski",emoji:"🏂"},{id:4,name:"Piedras Blancas De Día",emoji:"❄️"},
   {id:5,name:"Adventure Day (Tom Wesley)",emoji:"🎒"},{id:6,name:"Canopy",emoji:"🌲"},
@@ -237,7 +240,40 @@ const ACTIVITIES = [
   {id:17,name:"Piedras Blancas De Noche",emoji:"🌜"},{id:18,name:"Centro libre / compras",emoji:"🛍️"},
   {id:19,name:"Llegada al hotel",emoji:"🏨"},{id:20,name:"Salida del hotel",emoji:"🏨"},
 ];
-const ACT = Object.fromEntries(ACTIVITIES.map(a=>[a.id,a]));
+const LEGACY_ID_TO_NAME = Object.fromEntries(LEGACY_ACTIVITIES.map(a=>[a.id,a.name]));
+
+/* Lista real de actividades: ahora se trae de la tabla `actividades` en
+   Supabase (la misma que actualiza "Mensajes WhatsApp" al cargar el Excel).
+   Se identifican por nombre, no por id. */
+let ACTIVITIES = LEGACY_ACTIVITIES.map(({name,emoji})=>({name,emoji})); // fallback hasta que cargue Supabase
+let ACT = Object.fromEntries(ACTIVITIES.map(a=>[a.name,a]));
+
+async function fetchActivities(){
+  try{
+    const {data,error}=await sb.from('actividades').select('nombre,emoji,orden').order('orden',{ascending:true});
+    if(error) throw error;
+    if(data && data.length){
+      ACTIVITIES = data.map(d=>({name:d.nombre, emoji:d.emoji||'📌'}));
+      ACT = Object.fromEntries(ACTIVITIES.map(a=>[a.name,a]));
+      return true;
+    }
+  }catch(e){ console.error(e); }
+  return false;
+}
+
+/* Convierte los ids numéricos viejos (guardados antes del cambio) a nombre,
+   para que los cronogramas ya guardados sigan mostrándose bien. */
+function migrateLegacyIds(data){
+  Object.values(data||{}).forEach(day=>{
+    TURNOS.forEach(t=>{
+      (day[t.key]||[]).forEach(slot=>{
+        if(typeof slot.act==='number'){ slot.act = LEGACY_ID_TO_NAME[slot.act] || ""; }
+        else if(typeof slot.act==='string' && slot.act && /^\d+$/.test(slot.act)){ slot.act = LEGACY_ID_TO_NAME[Number(slot.act)] || slot.act; }
+      });
+    });
+  });
+  return data;
+}
 
 let state = { year:2026, month:8, from:15, to:22, data:{} }; // month 1-12
 let isAdmin = false;
@@ -308,10 +344,13 @@ function slotEdit(d,turno,idx,slot,status){
   const a=slot.act?ACT[slot.act]:null, st=slot.act?status[slot.act]:"normal";
   const wrap=document.createElement('div'); wrap.className='slot'+statusClass(st);
   const top=document.createElement('div'); top.className='slot-top';
-  top.innerHTML=`<span class="emoji">${a?a.emoji:"➕"}</span>`;
+  top.innerHTML=`<span class="emoji">${a?a.emoji:(slot.act?"⚠️":"➕")}</span>`;
   const sel=document.createElement('select'); sel.className='act';
-  sel.innerHTML=`<option value="">— Elegir actividad —</option>`+ACTIVITIES.map(x=>`<option value="${x.id}" ${x.id==slot.act?"selected":""}>${x.emoji} ${x.name}</option>`).join("");
-  sel.onchange=e=>{ slot.act=e.target.value?Number(e.target.value):""; queueSave(); render(); };
+  let selOpts=`<option value="">— Elegir actividad —</option>`;
+  if(slot.act && !ACT[slot.act]) selOpts+=`<option value="${slot.act}" selected>⚠️ ${slot.act} (ya no está en la lista)</option>`;
+  selOpts+=ACTIVITIES.map(x=>`<option value="${x.name}" ${x.name===slot.act?"selected":""}>${x.emoji} ${x.name}</option>`).join("");
+  sel.innerHTML=selOpts;
+  sel.onchange=e=>{ slot.act=e.target.value||""; queueSave(); render(); };
   top.appendChild(sel);
   if(idx>0||slot.act){
     const del=document.createElement('button'); del.className='delslot'; del.title='Quitar'; del.textContent='×';
@@ -334,7 +373,7 @@ function slotView(slot,status){
   const a=ACT[slot.act], st=status[slot.act];
   const wrap=document.createElement('div'); wrap.className='slot readonly'+statusClass(st);
   const top=document.createElement('div'); top.className='slot-top';
-  top.innerHTML=`<span class="emoji">${a.emoji}</span><span class="actname">${a.name}</span>`;
+  top.innerHTML=`<span class="emoji">${a?a.emoji:"⚠️"}</span><span class="actname">${a?a.name:slot.act}</span>`;
   wrap.appendChild(top);
   const f=flagEl(st); if(f)wrap.appendChild(f);
   if(slot.salida||slot.llegada){
@@ -401,7 +440,7 @@ async function loadFromDB(){
     const {data,error}=await sb.from('cronograma').select('data').eq('id','general').single();
     if(error) throw error;
     const d=data&&data.data;
-    if(d&&d.from){ state={year:d.year||2026,month:d.month||8,from:d.from,to:d.to,data:d.data||{}}; }
+    if(d&&d.from){ state={year:d.year||2026,month:d.month||8,from:d.from,to:d.to,data:migrateLegacyIds(d.data||{})}; }
   }catch(e){ setStatus("Sin conexión a la base",true); }
   ensureDays();
 }
@@ -419,7 +458,11 @@ function subscribeRealtime(){
     sb.channel('cron').on('postgres_changes',{event:'UPDATE',schema:'public',table:'cronograma'},payload=>{
       if(isAdmin) return; // si estás editando, no te piso los cambios
       const d=payload.new&&payload.new.data;
-      if(d&&d.from){ state={year:d.year||2026,month:d.month||8,from:d.from,to:d.to,data:d.data||{}}; render(); }
+      if(d&&d.from){ state={year:d.year||2026,month:d.month||8,from:d.from,to:d.to,data:migrateLegacyIds(d.data||{})}; render(); }
+    }).subscribe();
+    // Si en "Mensajes WhatsApp" suben un Excel nuevo de actividades, se refleja acá al toque
+    sb.channel('acts').on('postgres_changes',{event:'*',schema:'public',table:'actividades'},async ()=>{
+      await fetchActivities(); render();
     }).subscribe();
   }catch(e){}
 }
@@ -444,7 +487,7 @@ async function logout(){ await sb.auth.signOut(); isAdmin=false; render(); }
 /* ===================== INIT ===================== */
 (async function init(){
   try{ const {data:{session}}=await sb.auth.getSession(); isAdmin=!!session; }catch(e){}
-  await loadFromDB();
+  await Promise.all([fetchActivities(), loadFromDB()]);
   render();
   subscribeRealtime();
 })();
