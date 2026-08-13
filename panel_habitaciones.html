@@ -8,6 +8,8 @@
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.2/dist/jspdf.plugin.autotable.min.js"></script>
 <style>
   :root{
     --cyan:#5DB4C9; --magenta:#F11D8C; --green:#199432; --ink:#080808;
@@ -60,6 +62,25 @@
   .stat{background:rgba(255,255,255,.03);border:1px solid var(--line);border-radius:12px;padding:12px;text-align:center;}
   .stat b{display:block;font-family:'Bricolage Grotesque',sans-serif;font-size:1.4rem;}
   .stat span{font-size:.72rem;color:var(--muted);}
+
+  .toolbar-row{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-start;justify-content:space-between;margin-bottom:14px;}
+  .search-box{position:relative;flex:1;min-width:220px;}
+  input[type=search]{width:100%;font-family:'Outfit',sans-serif;font-size:.88rem;padding:10px 13px;border:1.5px solid var(--line);border-radius:12px;background:rgba(255,255,255,.04);color:var(--text);}
+  input[type=search]:focus{outline:none;border-color:var(--cyan);}
+  .search-results{margin-top:8px;display:flex;flex-direction:column;gap:6px;}
+  .search-result{display:flex;align-items:center;justify-content:space-between;gap:8px;background:rgba(255,255,255,.03);border:1px solid var(--line);border-radius:10px;padding:8px 12px;font-size:.84rem;}
+  .search-result .sr-name{font-weight:600;}
+  .search-result .sr-status{font-size:.76rem;color:var(--muted);}
+  .search-result .sr-status.unassigned{color:var(--magenta);}
+  .search-result a{font-family:'Outfit',sans-serif;font-size:.76rem;font-weight:600;color:var(--cyan);text-decoration:none;white-space:nowrap;}
+  .search-result a:hover{text-decoration:underline;}
+
+  .export-wrap{position:relative;flex:0 0 auto;}
+  .export-menu{position:absolute;right:0;top:calc(100% + 6px);background:#141414;border:1px solid var(--line);border-radius:12px;padding:6px;display:flex;flex-direction:column;gap:2px;min-width:170px;z-index:30;box-shadow:0 12px 28px -10px rgba(0,0,0,.5);}
+  .export-menu button{appearance:none;cursor:pointer;text-align:left;font-family:'Outfit',sans-serif;font-size:.84rem;font-weight:500;color:var(--text);background:transparent;border:none;border-radius:8px;padding:9px 11px;}
+  .export-menu button:hover{background:rgba(255,255,255,.06);}
+
+  .room-card.highlight{border-color:var(--cyan);box-shadow:0 0 0 3px rgba(93,180,201,.25);}
   .sexo-section{margin-bottom:22px;}
   .sexo-heading{display:flex;align-items:center;gap:10px;margin:0 0 10px;}
   .sexo-heading b{font-weight:700;font-size:.92rem;}
@@ -156,6 +177,19 @@
 
         <!-- GRILLA EDITABLE -->
         <div class="panel">
+          <div class="toolbar-row">
+            <div class="search-box">
+              <input type="search" id="searchInput" placeholder="Buscar alumno por nombre o apellido...">
+              <div class="search-results" id="searchResults"></div>
+            </div>
+            <div class="export-wrap">
+              <button class="btn btn-secondary" id="btnExportToggle" type="button">Exportar ▾</button>
+              <div class="export-menu hide" id="exportMenu">
+                <button type="button" id="btnExportPdf">📄 Exportar a PDF</button>
+                <button type="button" id="btnExportExcel">📊 Exportar a Excel</button>
+              </div>
+            </div>
+          </div>
           <h2>Grilla de habitaciones</h2>
           <p class="muted-note" style="margin-top:-4px;margin-bottom:10px;">Acá podés asignar o liberar cualquier cama, sin restricción de sexo/colegio (se marca con ⚠ si no coincide).</p>
           <div id="rooms"></div>
@@ -691,6 +725,7 @@ function renderRooms(){
 
       const card = document.createElement('div');
       card.className = 'room-card';
+      card.dataset.room = roomLabel;
       card.innerHTML = `
         <div class="room-head">
           <div class="room-title">Habitación ${roomLabel}<span class="sep">—</span><span class="colegio">${colegiosDistintos.join(' / ')}</span></div>
@@ -794,6 +829,143 @@ async function liberarCama(camaId){
     showToast('No se pudo liberar.', 'warn');
   }
 }
+
+/* ============================================================
+   BUSCADOR DE ALUMNOS
+   ============================================================ */
+function roomOfPasajero(pasajeroId){
+  const bed = camas.find(c => c.pasajero_id === pasajeroId);
+  return bed ? bed.habitacion : null;
+}
+
+function renderSearchResults(query){
+  const box = document.getElementById('searchResults');
+  const q = normColegio(query);
+  if(!q || q.length < 2){ box.innerHTML = ''; return; }
+
+  const matches = pasajeros.filter(p => normColegio(`${p.apellido} ${p.nombre}`).includes(q));
+  if(!matches.length){
+    box.innerHTML = '<div class="search-result"><span class="sr-status">Sin resultados.</span></div>';
+    return;
+  }
+  box.innerHTML = matches.map(p => {
+    const room = roomOfPasajero(p.id);
+    const statusHtml = room
+      ? `<span class="sr-status">Habitación ${room}</span>`
+      : `<span class="sr-status unassigned">Sin asignar todavía</span>`;
+    const linkHtml = room ? `<a href="#" data-goto="${room}">Ver →</a>` : '';
+    return `<div class="search-result">
+      <div><div class="sr-name">${p.apellido}, ${p.nombre}</div>${statusHtml}</div>
+      ${linkHtml}
+    </div>`;
+  }).join('');
+
+  box.querySelectorAll('a[data-goto]').forEach(a => {
+    a.addEventListener('click', (e) => {
+      e.preventDefault();
+      const card = document.querySelector(`.room-card[data-room="${CSS.escape(a.dataset.goto)}"]`);
+      if(!card) return;
+      card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      card.classList.add('highlight');
+      setTimeout(() => card.classList.remove('highlight'), 2000);
+    });
+  });
+}
+document.getElementById('searchInput').addEventListener('input', (e) => renderSearchResults(e.target.value));
+
+/* ============================================================
+   EXPORTAR (PDF / EXCEL)
+   ============================================================ */
+document.getElementById('btnExportToggle').addEventListener('click', (e) => {
+  e.stopPropagation();
+  document.getElementById('exportMenu').classList.toggle('hide');
+});
+document.addEventListener('click', () => document.getElementById('exportMenu').classList.add('hide'));
+
+function buildExportRows(){
+  const roomsMap = new Map();
+  const roomOrder = [];
+  camas.forEach(c => {
+    if(!roomsMap.has(c.habitacion)){ roomsMap.set(c.habitacion, []); roomOrder.push(c.habitacion); }
+    roomsMap.get(c.habitacion).push(c);
+  });
+  const roomsSorted = roomOrder.slice().sort((a,b) => {
+    const sa = SEXO_ORDER[normSexo(roomsMap.get(a)[0].sexo)] ?? 9;
+    const sb = SEXO_ORDER[normSexo(roomsMap.get(b)[0].sexo)] ?? 9;
+    if(sa !== sb) return sa - sb;
+    return roomOrder.indexOf(a) - roomOrder.indexOf(b);
+  });
+
+  const rows = [];
+  roomsSorted.forEach(label => {
+    const beds = roomsMap.get(label).slice().sort((a,b) => (a.num_cama||0) - (b.num_cama||0));
+    beds.forEach(bed => {
+      let apellido = '', nombre = '', colegio = bed.colegio || '';
+      if(bed.coordi_nombre){
+        nombre = bed.coordi_nombre;
+        colegio = 'Coordi';
+      } else if(bed.pasajero_id != null){
+        const p = pasajeros.find(x => x.id === bed.pasajero_id);
+        if(p){ apellido = p.apellido; nombre = p.nombre; colegio = p.colegio; }
+      }
+      rows.push({
+        'Número de habitación': label,
+        'Personas en esa habitación': bed.capacidad,
+        'Apellido de pasajero': apellido,
+        'Nombre de pasajero': nombre,
+        'Colegio': colegio
+      });
+    });
+  });
+  return rows;
+}
+
+document.getElementById('btnExportExcel').addEventListener('click', () => {
+  document.getElementById('exportMenu').classList.add('hide');
+  try{
+    const rows = buildExportRows();
+    if(!rows.length){ showToast('No hay habitaciones cargadas para exportar.', 'warn'); return; }
+    const ws = XLSX.utils.json_to_sheet(rows);
+    ws['!cols'] = [{wch:20},{wch:22},{wch:22},{wch:22},{wch:22}];
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Habitaciones');
+    XLSX.writeFile(wb, 'habitaciones_wakeup.xlsx');
+  } catch(e){
+    console.error('exportExcel error:', e);
+    showToast('No se pudo exportar a Excel.', 'warn');
+  }
+});
+
+document.getElementById('btnExportPdf').addEventListener('click', () => {
+  document.getElementById('exportMenu').classList.add('hide');
+  try{
+    const rows = buildExportRows();
+    if(!rows.length){ showToast('No hay habitaciones cargadas para exportar.', 'warn'); return; }
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({ orientation: 'portrait', unit: 'pt' });
+    doc.setFontSize(14);
+    doc.text('Habitaciones · Wake Up', 40, 40);
+    doc.setFontSize(9);
+    doc.text(new Date().toLocaleDateString('es-AR'), 40, 56);
+    doc.autoTable({
+      startY: 70,
+      head: [['N° habitación', 'Personas', 'Apellido', 'Nombre', 'Colegio']],
+      body: rows.map(r => [
+        r['Número de habitación'],
+        r['Personas en esa habitación'],
+        r['Apellido de pasajero'],
+        r['Nombre de pasajero'],
+        r['Colegio']
+      ]),
+      styles: { fontSize: 8, cellPadding: 4 },
+      headStyles: { fillColor: [241, 29, 140] }
+    });
+    doc.save('habitaciones_wakeup.pdf');
+  } catch(e){
+    console.error('exportPdf error:', e);
+    showToast('No se pudo exportar a PDF.', 'warn');
+  }
+});
 
 /* ============================================================
    INIT
