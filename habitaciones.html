@@ -3,10 +3,13 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Elegí tu habitación · Wake Up</title>
+<title>Panel de habitaciones · Wake Up</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.2/dist/jspdf.plugin.autotable.min.js"></script>
 <style>
   :root{
     --cyan:#5DB4C9; --magenta:#F11D8C; --green:#199432; --ink:#080808;
@@ -18,75 +21,105 @@
   body{
     font-family:'Outfit',system-ui,sans-serif;color:var(--text);background:var(--ink);
     background-image:radial-gradient(80% 55% at 50% 0%, rgba(93,180,201,.10) 0%, rgba(8,8,8,0) 60%);
-    background-repeat:no-repeat;min-height:100dvh;display:flex;flex-direction:column;
+    background-repeat:no-repeat;min-height:100dvh;
   }
   .topbar{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;gap:10px;}
   .back{appearance:none;cursor:pointer;text-decoration:none;font-family:'Outfit',sans-serif;font-size:.85rem;font-weight:600;color:var(--muted);background:transparent;border:none;display:inline-flex;align-items:center;gap:6px;}
   .back:hover{color:var(--text);}
   .refresh-btn{appearance:none;cursor:pointer;font-family:'Outfit',sans-serif;font-size:.8rem;font-weight:600;color:var(--text);background:transparent;border:1.5px solid var(--line);border-radius:999px;padding:7px 13px;}
   .refresh-btn:hover{border-color:var(--cyan);color:var(--cyan);}
-  main{flex:1;padding:6px 16px 60px;display:flex;justify-content:center;}
-  .stage{width:100%;max-width:1040px;}
-  .intro-wrap{max-width:560px;margin:0 auto;}
-  h1{font-family:'Bricolage Grotesque',sans-serif;font-weight:800;font-size:1.7rem;text-align:center;margin:6px 0 14px;letter-spacing:-.01em;}
-  .instrucciones{list-style:none;counter-reset:step;color:var(--muted);font-size:.9rem;line-height:1.5;margin:0 0 24px;padding:0;}
-  .instrucciones li{counter-increment:step;display:flex;gap:10px;padding:9px 0;border-top:1px solid var(--line);}
-  .instrucciones li:first-child{border-top:none;}
-  .instrucciones li::before{
-    content:counter(step);flex:0 0 auto;width:22px;height:22px;border-radius:50%;
-    background:rgba(93,180,201,.14);color:var(--cyan);font-size:.74rem;font-weight:700;
-    display:flex;align-items:center;justify-content:center;
-  }
-  .panel{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:22px;}
+  main{padding:6px 16px 70px;display:flex;justify-content:center;}
+  .stage{width:100%;max-width:960px;}
+  .stage-narrow{max-width:680px;margin:0 auto;}
+  h1{font-family:'Bricolage Grotesque',sans-serif;font-weight:800;font-size:1.6rem;text-align:center;margin:6px 0 6px;}
+  h2{font-family:'Bricolage Grotesque',sans-serif;font-weight:700;font-size:1.05rem;margin:0 0 10px;}
+  .lead{text-align:center;color:var(--muted);font-size:.9rem;line-height:1.5;margin:0 auto 20px;max-width:48ch;}
+  .panel{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:20px;margin-bottom:16px;}
   .panel-narrow{max-width:360px;margin:40px auto;}
   label{display:block;font-size:.8rem;font-weight:600;margin:0 0 6px;}
-  input{width:100%;font-family:'Outfit',sans-serif;font-size:1rem;padding:13px 15px;border:1.5px solid var(--line);border-radius:12px;background:rgba(255,255,255,.04);color:var(--text);margin-bottom:14px;}
-  input:focus{outline:none;border-color:var(--cyan);}
-  .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:13px 16px;border-radius:12px;border:none;cursor:pointer;font-family:'Outfit',sans-serif;font-weight:600;font-size:.95rem;color:#fff;background:var(--magenta);}
+  input[type=password]{width:100%;font-family:'Outfit',sans-serif;font-size:1rem;padding:13px 15px;border:1.5px solid var(--line);border-radius:12px;background:rgba(255,255,255,.04);color:var(--text);margin-bottom:14px;}
+  input[type=password]:focus{outline:none;border-color:var(--cyan);}
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:11px 16px;border-radius:12px;border:none;cursor:pointer;font-family:'Outfit',sans-serif;font-weight:600;font-size:.88rem;color:#fff;background:var(--magenta);}
   .btn:hover{filter:brightness(1.08);}
+  .btn:disabled{opacity:.45;cursor:not-allowed;}
+  .btn-secondary{background:transparent;border:1.5px solid var(--line);color:var(--text);}
+  .btn-secondary:hover{border-color:var(--cyan);color:var(--cyan);}
+  .btn-full{width:100%;}
   .error{color:var(--magenta);font-size:.82rem;margin:-6px 0 12px;min-height:1em;}
+  .file-row{display:flex;flex-direction:column;gap:10px;}
+  input[type=file]{font-size:.82rem;color:var(--muted);}
+  .sheet-picker{display:flex;align-items:center;gap:8px;font-size:.8rem;color:var(--muted);margin-top:8px;}
+  select.mini{font-family:'Outfit',sans-serif;font-size:.82rem;padding:6px 9px;border-radius:8px;border:1.5px solid var(--line);background:rgba(255,255,255,.04);color:var(--text);}
+  table{width:100%;border-collapse:collapse;font-size:.8rem;margin-top:10px;}
+  th,td{text-align:left;padding:6px 8px;border-bottom:1px solid var(--line);}
+  th{color:var(--muted);font-weight:600;font-size:.72rem;text-transform:uppercase;letter-spacing:.06em;}
+  .badge{font-size:.68rem;font-weight:700;padding:2px 7px;border-radius:999px;}
+  .badge-nuevo{background:rgba(25,148,50,.18);color:var(--green);}
+  .badge-actualiza{background:rgba(93,180,201,.18);color:var(--cyan);}
+  .badge-warn{background:rgba(241,29,140,.18);color:var(--magenta);}
+  .preview-actions{display:flex;gap:10px;margin-top:14px;}
+  .stats-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;}
+  .stat{background:rgba(255,255,255,.03);border:1px solid var(--line);border-radius:12px;padding:12px;text-align:center;}
+  .stat b{display:block;font-family:'Bricolage Grotesque',sans-serif;font-size:1.4rem;}
+  .stat span{font-size:.72rem;color:var(--muted);}
 
-  .sexo-section{margin-bottom:26px;}
-  .sexo-heading{display:flex;align-items:center;gap:10px;margin:0 0 12px;}
-  .sexo-heading b{font-family:'Bricolage Grotesque',sans-serif;font-weight:800;font-size:1.05rem;}
-  .sexo-dot{width:9px;height:9px;border-radius:50%;}
+  .toolbar-row{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-start;justify-content:space-between;margin-bottom:14px;}
+  .search-box{position:relative;flex:1;min-width:220px;}
+  input[type=search]{width:100%;font-family:'Outfit',sans-serif;font-size:.88rem;padding:10px 13px;border:1.5px solid var(--line);border-radius:12px;background:rgba(255,255,255,.04);color:var(--text);}
+  input[type=search]:focus{outline:none;border-color:var(--cyan);}
+  .search-results{margin-top:8px;display:flex;flex-direction:column;gap:6px;}
+  .search-result{display:flex;align-items:center;justify-content:space-between;gap:8px;background:rgba(255,255,255,.03);border:1px solid var(--line);border-radius:10px;padding:8px 12px;font-size:.84rem;}
+  .search-result .sr-name{font-weight:600;}
+  .search-result .sr-status{font-size:.76rem;color:var(--muted);}
+  .search-result .sr-status.unassigned{color:var(--magenta);}
+  .search-result a{font-family:'Outfit',sans-serif;font-size:.76rem;font-weight:600;color:var(--cyan);text-decoration:none;white-space:nowrap;}
+  .search-result a:hover{text-decoration:underline;}
+
+  .export-wrap{position:relative;flex:0 0 auto;}
+  .export-menu{position:absolute;right:0;top:calc(100% + 6px);background:#141414;border:1px solid var(--line);border-radius:12px;padding:6px;display:flex;flex-direction:column;gap:2px;min-width:170px;z-index:30;box-shadow:0 12px 28px -10px rgba(0,0,0,.5);}
+  .export-menu button{appearance:none;cursor:pointer;text-align:left;font-family:'Outfit',sans-serif;font-size:.84rem;font-weight:500;color:var(--text);background:transparent;border:none;border-radius:8px;padding:9px 11px;}
+  .export-menu button:hover{background:rgba(255,255,255,.06);}
+
+  .room-card.highlight{border-color:var(--cyan);box-shadow:0 0 0 3px rgba(93,180,201,.25);}
+  .sexo-section{margin-bottom:22px;}
+  .sexo-heading{display:flex;align-items:center;gap:10px;margin:0 0 10px;}
+  .sexo-heading b{font-weight:700;font-size:.92rem;}
+  .sexo-dot{width:8px;height:8px;border-radius:50%;}
   .sexo-dot.mujer{background:var(--magenta);}
   .sexo-dot.varon{background:var(--cyan);}
   .sexo-dot.coordi{background:var(--green);}
-  .rooms-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px;}
-
-  .room-card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px 16px 8px;}
-  .room-head{margin-bottom:10px;}
-  .room-title{font-family:'Bricolage Grotesque',sans-serif;font-weight:800;font-size:1.02rem;}
+  .rooms-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px;}
+  .room-card{background:rgba(255,255,255,.03);border:1px solid var(--line);border-radius:14px;padding:14px 14px 6px;}
+  .room-head{margin-bottom:8px;}
+  .room-title{font-weight:700;font-size:.92rem;}
   .room-title .sep{color:var(--muted);font-weight:600;margin:0 4px;}
-  .room-title .colegio{color:var(--muted);font-weight:600;font-size:.92rem;}
-  .fill{font-size:.75rem;color:var(--muted);}
-  .bed-row{display:flex;align-items:center;gap:10px;padding:10px 0;border-top:1px solid var(--line);}
+  .room-title .colegio{color:var(--muted);font-weight:600;font-size:.84rem;}
+  .room-tag{font-size:.66rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;padding:3px 8px;border-radius:999px;border:1px solid var(--line);color:var(--muted);}
+  .room-tag.varon{color:var(--cyan);border-color:var(--cyan);}
+  .room-tag.mujer{color:var(--magenta);border-color:var(--magenta);}
+  .room-tag.coordi{color:var(--green);border-color:var(--green);}
+  .bed-row{display:flex;align-items:center;gap:8px;padding:8px 0;border-top:1px solid var(--line);}
   .bed-row:first-of-type{border-top:none;}
-  .bed-num{flex:0 0 auto;width:26px;height:26px;border-radius:8px;background:rgba(255,255,255,.06);display:flex;align-items:center;justify-content:center;font-size:.75rem;font-weight:700;color:var(--muted);}
+  .bed-num{flex:0 0 auto;width:24px;height:24px;border-radius:7px;background:rgba(255,255,255,.06);display:flex;align-items:center;justify-content:center;font-size:.7rem;font-weight:700;color:var(--muted);}
   .bed-mid{flex:1;min-width:0;}
-  .bed-colegio{font-size:.72rem;color:var(--muted);}
-  .bed-occupant{font-size:.92rem;font-weight:600;}
-  .bed-fixed{font-size:.92rem;font-weight:600;color:var(--green);}
-  .bed-nooptions{font-size:.78rem;color:var(--muted);font-style:italic;}
-  select{width:100%;font-family:'Outfit',sans-serif;font-size:.88rem;padding:9px 11px;border-radius:10px;border:1.5px solid var(--line);background:rgba(255,255,255,.04);color:var(--text);}
-  select:focus{outline:none;border-color:var(--cyan);}
-  .liberar{flex:0 0 auto;font-family:'Outfit',sans-serif;font-size:.72rem;font-weight:600;color:var(--muted);background:transparent;border:1px solid var(--line);border-radius:999px;padding:6px 10px;cursor:pointer;}
+  .bed-colegio{font-size:.7rem;color:var(--muted);}
+  .bed-occupant{font-size:.86rem;font-weight:600;}
+  .bed-fixed{font-size:.86rem;font-weight:600;color:var(--green);}
+  select.bedselect{width:100%;font-family:'Outfit',sans-serif;font-size:.84rem;padding:8px 10px;border-radius:9px;border:1.5px solid var(--line);background:rgba(255,255,255,.04);color:var(--text);}
+  .liberar{flex:0 0 auto;font-family:'Outfit',sans-serif;font-size:.68rem;font-weight:600;color:var(--muted);background:transparent;border:1px solid var(--line);border-radius:999px;padding:5px 9px;cursor:pointer;}
   .liberar:hover{border-color:var(--magenta);color:var(--magenta);}
-  .empty-note{text-align:center;color:var(--muted);font-size:.9rem;padding:40px 0;}
-  .lock-banner{max-width:560px;margin:0 auto 18px;background:rgba(241,29,140,.1);border:1px solid var(--magenta);color:var(--text);border-radius:14px;padding:12px 16px;font-size:.86rem;text-align:center;}
-  .bed-readonly{font-size:.82rem;color:var(--muted);}
   .toast{position:fixed;left:50%;bottom:26px;transform:translate(-50%,140%);background:#151515;border:1px solid var(--line);color:var(--text);padding:12px 18px;border-radius:12px;font-size:.86rem;font-weight:500;transition:transform .25s ease;z-index:50;max-width:88vw;text-align:center;}
   .toast.show{transform:translate(-50%,0);}
   .toast.warn{border-color:var(--magenta);background:rgba(241,29,140,.14);}
   .toast.warn::before{content:"⚠ ";}
   .hide{display:none !important;}
+  .muted-note{font-size:.76rem;color:var(--muted);margin-top:8px;}
 </style>
 </head>
 <body>
 
   <div class="topbar">
-    <a class="back" href="/index.html">← Volver</a>
+    <a class="back" href="/index.html#accesos">← Volver al panel</a>
     <button class="refresh-btn" id="btnRefresh" type="button">↻ Actualizar</button>
   </div>
 
@@ -95,29 +128,83 @@
 
       <!-- LOGIN -->
       <section id="viewLogin" class="panel panel-narrow">
-        <h1 style="margin-top:0;">Portal pasajeros</h1>
-        <p style="text-align:center;color:var(--muted);font-size:.92rem;margin:0 0 16px;">Ingresá con la clave de pasajeros para elegir tu habitación.</p>
+        <h1 style="margin-top:0;">Panel coordinador</h1>
+        <p class="lead">Ingresá con la clave de coordinador.</p>
         <label for="passInput">Clave</label>
-        <input type="password" id="passInput" placeholder="Clave de pasajeros" autocomplete="off">
+        <input type="password" id="passInput" placeholder="Clave de coordinador" autocomplete="off">
         <p class="error" id="loginError"></p>
-        <button class="btn" id="btnLogin" type="button">Ingresar</button>
+        <button class="btn btn-full" id="btnLogin" type="button">Ingresar</button>
       </section>
 
       <!-- CONTENIDO -->
       <section id="viewMain" class="hide">
-        <div class="intro-wrap">
-          <h1>Elegí tu habitación</h1>
-          <ol class="instrucciones">
-            <li>Recomendamos que lo charlen primero entre ustedes, sabiendo cuántas habitaciones hay por sexo y colegio, y luego que lo completen.</li>
-            <li>Buscá la habitación de tu colegio.</li>
-            <li>Una misma persona puede completar los miembros de toda la habitación.</li>
-            <li>No puede figurar la misma persona en más de una habitación.</li>
-          </ol>
-        </div>
-        <div id="lockBanner" class="hide"></div>
-        <div id="rooms"></div>
-      </section>
+        <div class="stage-narrow">
+        <h1>Elección de habitaciones</h1>
+        <p class="lead">Subí los Excel, revisá la grilla y editá manualmente si hace falta.</p>
 
+        <!-- RESUMEN -->
+        <div class="panel">
+          <h2>Resumen</h2>
+          <div class="stats-grid" id="stats"></div>
+        </div>
+
+        <!-- ACCESO DE PASAJEROS -->
+        <div class="panel">
+          <h2>Acceso de pasajeros</h2>
+          <p class="muted-note" style="margin-top:-4px;margin-bottom:10px;">Mientras está bloqueado, los pasajeros pueden ver la grilla pero no elegir ni liberar camas.</p>
+          <button class="btn btn-full" id="btnToggleLock" type="button">...</button>
+        </div>
+
+        <!-- SUBIR LISTADO DE PASAJEROS -->
+        <div class="panel">
+          <h2>Subir listado de pasajeros</h2>
+          <p class="muted-note" style="margin-top:-4px;margin-bottom:10px;">Excel con Sexo, Apellido, Nombre y Colegio. Actualiza a los pasajeros existentes (por nombre y apellido) y agrega los nuevos — no borra elecciones ya hechas.</p>
+          <div class="file-row">
+            <input type="file" id="filePasajeros" accept=".xlsx,.xls">
+            <div class="sheet-picker hide" id="sheetPickerPasajeros">
+              Hoja: <select class="mini" id="selectSheetPasajeros"></select>
+            </div>
+            <div id="previewPasajeros"></div>
+          </div>
+        </div>
+
+        <!-- SUBIR HABITACIONES -->
+        <div class="panel">
+          <h2>Subir Excel de habitaciones</h2>
+          <p class="muted-note" style="margin-top:-4px;margin-bottom:10px;">Excel con Habitación, Sexo, Cantidad, N° de cama y Colegio por cama. <b>Al confirmar se borran todas las camas actuales y sus asignaciones</b>, y se reconstruyen desde cero.</p>
+          <div class="file-row">
+            <input type="file" id="fileCamas" accept=".xlsx,.xls">
+            <div class="sheet-picker hide" id="sheetPickerCamas">
+              Hoja: <select class="mini" id="selectSheetCamas"></select>
+            </div>
+            <div id="previewCamas"></div>
+          </div>
+        </div>
+        </div>
+
+        <!-- GRILLA EDITABLE -->
+        <div class="panel">
+          <div class="toolbar-row">
+            <div class="search-box">
+              <input type="search" id="searchInput" placeholder="Buscar alumno por nombre o apellido...">
+              <div class="search-results" id="searchResults"></div>
+            </div>
+            <div class="export-wrap">
+              <button class="btn btn-secondary" id="btnExportToggle" type="button">Exportar ▾</button>
+              <div class="export-menu hide" id="exportMenu">
+                <button type="button" id="btnExportPdf">📄 PDF — lista</button>
+                <button type="button" id="btnExportPdfBloques">🧱 PDF — por habitaciones</button>
+                <button type="button" id="btnExportExcel">📊 Excel — lista</button>
+                <button type="button" id="btnExportExcelBloques">📊 Excel — por habitaciones</button>
+              </div>
+            </div>
+          </div>
+          <h2>Grilla de habitaciones</h2>
+          <p class="muted-note" style="margin-top:-4px;margin-bottom:10px;">Acá podés asignar o liberar cualquier cama, sin restricción de sexo/colegio (se marca con ⚠ si no coincide).</p>
+          <div id="rooms"></div>
+        </div>
+
+      </section>
     </div>
   </main>
 
@@ -131,13 +218,15 @@ const SUPA_URL = "https://mzousqdahqterfawhwsz.supabase.co";
 const SUPA_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im16b3VzcWRhaHF0ZXJmYXdod3N6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA1MTc4MzUsImV4cCI6MjA5NjA5MzgzNX0.EdSlcRdLD75OdYlwtZGLVgL_PGpJysWb_MKvuwGgj5Y";
 const supa = supabase.createClient(SUPA_URL, SUPA_KEY);
 
-const PASAJERO_KEY = "wakeup_pasajero_session";
-const PASS_PASAJERO = "wuegresados26!";
+const COORDI_KEY  = "wakeup_coordi_session";
+const COORDI_USER = "coordi";
+const COORDI_PASS = "Wakeupcoordi26!";
 
 /* ============================================================
    HELPERS
    ============================================================ */
 function stripAccents(s){ return s.normalize('NFD').replace(/[̀-ͯ]/g,''); }
+function normHeader(s){ return stripAccents((s||'').toString().trim().toLowerCase()); }
 function normSexo(s){
   if(!s) return "";
   const t = stripAccents(s.toString().trim().toLowerCase());
@@ -146,10 +235,9 @@ function normSexo(s){
   if(t.startsWith("coordi")) return "coordi";
   return t;
 }
-function normColegio(s){
-  if(!s) return "";
-  return stripAccents(s.toString().trim().toLowerCase().replace(/\s+/g," "));
-}
+function displaySexo(norm){ return norm === 'varon' ? 'Varon' : (norm === 'mujer' ? 'Mujer' : 'Coordi'); }
+function normColegio(s){ return stripAccents((s||'').toString().trim().toLowerCase().replace(/\s+/g,' ')); }
+function normNombreKey(apellido, nombre){ return normColegio(apellido) + '|' + normColegio(nombre); }
 const SEXO_ORDER = { mujer: 0, varon: 1, coordi: 2 };
 const SEXO_LABEL_SECTION = { mujer: "Habitaciones de mujeres", varon: "Habitaciones de varones", coordi: "Habitaciones de coordinadores" };
 
@@ -162,18 +250,17 @@ function showToast(msg, type){
   toastTimer = setTimeout(()=> t.classList.remove('show'), 3600);
 }
 
-/* ============================================================
-   LOGIN
-   ============================================================ */
 function lsGet(k){ try{ return localStorage.getItem(k); }catch(e){ return null; } }
 function lsSet(k,v){ try{ localStorage.setItem(k,v); }catch(e){} }
 
+/* ============================================================
+   LOGIN
+   ============================================================ */
 function checkLogin(){
-  if(lsGet(PASAJERO_KEY) === '1'){
+  if(lsGet(COORDI_KEY) === '1'){
     document.getElementById('viewLogin').classList.add('hide');
     document.getElementById('viewMain').classList.remove('hide');
     loadData();
-    startPolling();
   } else {
     document.getElementById('viewLogin').classList.remove('hide');
     document.getElementById('viewMain').classList.add('hide');
@@ -183,23 +270,398 @@ document.getElementById('btnLogin').addEventListener('click', doLogin);
 document.getElementById('passInput').addEventListener('keydown', e => { if(e.key === 'Enter') doLogin(); });
 function doLogin(){
   const v = document.getElementById('passInput').value;
-  if(v === PASS_PASAJERO){
-    lsSet(PASAJERO_KEY, '1');
+  if(v === COORDI_PASS){
+    lsSet(COORDI_KEY, '1');
     document.getElementById('loginError').textContent = '';
     checkLogin();
   } else {
     document.getElementById('loginError').textContent = 'Clave incorrecta.';
   }
 }
+document.getElementById('btnRefresh').addEventListener('click', () => {
+  if(lsGet(COORDI_KEY) === '1') loadData();
+});
 
 /* ============================================================
-   DATA
+   LECTURA DE EXCEL (con manejo de celdas combinadas)
+   ============================================================ */
+function sheetToGrid(ws){
+  const grid = XLSX.utils.sheet_to_json(ws, { header: 1, defval: null, raw: true });
+  const merges = ws['!merges'] || [];
+  merges.forEach(m => {
+    const val = (grid[m.s.r] || [])[m.s.c];
+    for(let r = m.s.r; r <= m.e.r; r++){
+      if(!grid[r]) grid[r] = [];
+      for(let c = m.s.c; c <= m.e.c; c++){
+        if(grid[r][c] == null) grid[r][c] = val;
+      }
+    }
+  });
+  return grid;
+}
+
+// busca la fila de encabezado que mejor matchea los patrones pedidos
+// patterns: { campo: regex }
+function detectHeader(grid, patterns){
+  let best = null;
+  const keys = Object.keys(patterns);
+  for(let r = 0; r < Math.min(grid.length, 10); r++){
+    const row = grid[r] || [];
+    const colMap = {};
+    let score = 0;
+    row.forEach((cell, c) => {
+      const h = normHeader(cell);
+      if(!h) return;
+      keys.forEach(k => {
+        if(!(k in colMap) && patterns[k].test(h)){ colMap[k] = c; score++; }
+      });
+    });
+    if(!best || score > best.score){ best = { rowIndex: r, colMap, score }; }
+  }
+  return best;
+}
+
+function pickBestSheet(workbook, patterns, minScore){
+  let best = null;
+  workbook.SheetNames.forEach(name => {
+    const grid = sheetToGrid(workbook.Sheets[name]);
+    const det = detectHeader(grid, patterns);
+    if(det && det.score >= minScore && (!best || det.score > best.score)){
+      best = { sheetName: name, grid, ...det };
+    }
+  });
+  return best;
+}
+
+/* ============================================================
+   SUBIR LISTADO DE PASAJEROS
+   ============================================================ */
+let workbookPasajeros = null;
+let parsedPasajeros = null;
+
+document.getElementById('filePasajeros').addEventListener('change', async (e) => {
+  const file = e.target.files[0];
+  if(!file) return;
+  const buf = await file.arrayBuffer();
+  workbookPasajeros = XLSX.read(buf, { type: 'array' });
+  const patterns = {
+    sexo: /sexo/,
+    apellido: /apellido/,
+    nombre: /nombre/,
+    colegio: /colegio/
+  };
+  const best = pickBestSheet(workbookPasajeros, patterns, 4);
+  const picker = document.getElementById('sheetPickerPasajeros');
+  const sel = document.getElementById('selectSheetPasajeros');
+  sel.innerHTML = workbookPasajeros.SheetNames.map(n => `<option value="${n}">${n}</option>`).join('');
+  picker.classList.remove('hide');
+  if(best){
+    sel.value = best.sheetName;
+    parsePasajerosSheet(best.sheetName);
+  } else {
+    document.getElementById('previewPasajeros').innerHTML = '<p class="error">No pude detectar las columnas automáticamente. Elegí la hoja correcta arriba.</p>';
+  }
+});
+document.getElementById('selectSheetPasajeros').addEventListener('change', (e) => parsePasajerosSheet(e.target.value));
+
+function parsePasajerosSheet(sheetName){
+  const patterns = { sexo: /sexo/, apellido: /apellido/, nombre: /nombre/, colegio: /colegio/ };
+  const grid = sheetToGrid(workbookPasajeros.Sheets[sheetName]);
+  const det = detectHeader(grid, patterns);
+  if(!det || det.score < 4){
+    document.getElementById('previewPasajeros').innerHTML = '<p class="error">Esa hoja no tiene las columnas Sexo/Apellido/Nombre/Colegio.</p>';
+    parsedPasajeros = null;
+    return;
+  }
+  const { colMap, rowIndex } = det;
+  const rows = [];
+  for(let r = rowIndex + 1; r < grid.length; r++){
+    const row = grid[r] || [];
+    const apellido = row[colMap.apellido];
+    const nombre = row[colMap.nombre];
+    const colegioRaw = row[colMap.colegio];
+    const sexoRaw = row[colMap.sexo];
+    if(!apellido && !nombre) continue;
+    const colegioNorm = normColegio(colegioRaw);
+    if(colegioNorm.includes('coordi') || colegioNorm === 'wake up') continue; // staff, no pasajero
+    const sexoNorm = normSexo(sexoRaw);
+    if(sexoNorm !== 'varon' && sexoNorm !== 'mujer') continue;
+    rows.push({
+      apellido: (apellido||'').toString().trim(),
+      nombre: (nombre||'').toString().trim(),
+      sexo: displaySexo(sexoNorm),
+      colegio: (colegioRaw||'').toString().trim()
+    });
+  }
+  parsedPasajeros = rows;
+  renderPreviewPasajeros(rows);
+}
+
+function renderPreviewPasajeros(rows){
+  const box = document.getElementById('previewPasajeros');
+  if(!rows.length){
+    box.innerHTML = '<p class="error">No se encontraron pasajeros en esa hoja.</p>';
+    return;
+  }
+  const existingByKey = new Map(pasajeros.map(p => [normNombreKey(p.apellido, p.nombre), p]));
+  let nuevos = 0, actualiza = 0;
+  const rowsHtml = rows.map(r => {
+    const key = normNombreKey(r.apellido, r.nombre);
+    const isNew = !existingByKey.has(key);
+    if(isNew) nuevos++; else actualiza++;
+    return `<tr>
+      <td>${r.apellido}, ${r.nombre}</td>
+      <td>${r.sexo}</td>
+      <td>${r.colegio}</td>
+      <td><span class="badge ${isNew ? 'badge-nuevo' : 'badge-actualiza'}">${isNew ? 'nuevo' : 'actualiza'}</span></td>
+    </tr>`;
+  }).join('');
+  box.innerHTML = `
+    <p class="muted-note">${rows.length} pasajeros detectados — ${nuevos} nuevos, ${actualiza} a actualizar.</p>
+    <div style="max-height:260px;overflow:auto;">
+      <table><thead><tr><th>Pasajero</th><th>Sexo</th><th>Colegio</th><th></th></tr></thead>
+      <tbody>${rowsHtml}</tbody></table>
+    </div>
+    <div class="preview-actions">
+      <button class="btn" id="btnConfirmPasajeros" type="button">Confirmar carga</button>
+      <button class="btn btn-secondary" id="btnCancelPasajeros" type="button">Cancelar</button>
+    </div>
+  `;
+  document.getElementById('btnConfirmPasajeros').addEventListener('click', confirmPasajeros);
+  document.getElementById('btnCancelPasajeros').addEventListener('click', () => {
+    parsedPasajeros = null;
+    document.getElementById('filePasajeros').value = '';
+    document.getElementById('sheetPickerPasajeros').classList.add('hide');
+    box.innerHTML = '';
+  });
+}
+
+async function confirmPasajeros(){
+  if(!parsedPasajeros || !parsedPasajeros.length) return;
+  const box = document.getElementById('previewPasajeros');
+  box.innerHTML = '<p class="muted-note">Guardando...</p>';
+  try{
+    const existingByKey = new Map(pasajeros.map(p => [normNombreKey(p.apellido, p.nombre), p]));
+    let nuevos = 0, actualizados = 0;
+    for(const r of parsedPasajeros){
+      const key = normNombreKey(r.apellido, r.nombre);
+      const existing = existingByKey.get(key);
+      if(existing){
+        const { error } = await supa.from('hab_pasajeros')
+          .update({ sexo: r.sexo, colegio: r.colegio, nombre: r.nombre, apellido: r.apellido })
+          .eq('id', existing.id);
+        if(error) throw error;
+        actualizados++;
+      } else {
+        const { error } = await supa.from('hab_pasajeros').insert({
+          nombre: r.nombre, apellido: r.apellido, sexo: r.sexo, colegio: r.colegio
+        });
+        if(error) throw error;
+        nuevos++;
+      }
+    }
+    showToast(`Listado actualizado: ${nuevos} nuevos, ${actualizados} actualizados ✓`);
+    parsedPasajeros = null;
+    document.getElementById('filePasajeros').value = '';
+    document.getElementById('sheetPickerPasajeros').classList.add('hide');
+    box.innerHTML = '';
+    await loadData();
+  } catch(e){
+    console.error('confirmPasajeros error:', e);
+    box.innerHTML = '<p class="error">Hubo un error al guardar. Probá de nuevo.</p>';
+  }
+}
+
+/* ============================================================
+   SUBIR EXCEL DE HABITACIONES
+   ============================================================ */
+let workbookCamas = null;
+let parsedCamas = null;
+
+document.getElementById('fileCamas').addEventListener('change', async (e) => {
+  const file = e.target.files[0];
+  if(!file) return;
+  const buf = await file.arrayBuffer();
+  workbookCamas = XLSX.read(buf, { type: 'array' });
+  const patterns = {
+    habit: /habit/,
+    sexo: /sexo/,
+    cant: /cant/,
+    colegio: /colegio/,
+    nombre: /nombre/,
+    apellido: /apellido/
+  };
+  const best = pickBestSheet(workbookCamas, patterns, 5);
+  const picker = document.getElementById('sheetPickerCamas');
+  const sel = document.getElementById('selectSheetCamas');
+  sel.innerHTML = workbookCamas.SheetNames.map(n => `<option value="${n}">${n}</option>`).join('');
+  picker.classList.remove('hide');
+  if(best){
+    sel.value = best.sheetName;
+    parseCamasSheet(best.sheetName);
+  } else {
+    document.getElementById('previewCamas').innerHTML = '<p class="error">No pude detectar las columnas automáticamente. Elegí la hoja correcta arriba.</p>';
+  }
+});
+document.getElementById('selectSheetCamas').addEventListener('change', (e) => parseCamasSheet(e.target.value));
+
+function parseCamasSheet(sheetName){
+  const patterns = { habit: /habit/, sexo: /sexo/, cant: /cant/, colegio: /colegio/, nombre: /nombre/, apellido: /apellido/, num: /^num/ };
+  const grid = sheetToGrid(workbookCamas.Sheets[sheetName]);
+  const det = detectHeader(grid, patterns);
+  if(!det || det.score < 5){
+    document.getElementById('previewCamas').innerHTML = '<p class="error">Esa hoja no tiene las columnas Habitación/Sexo/Cantidad/Colegio.</p>';
+    parsedCamas = null;
+    return;
+  }
+  const { colMap, rowIndex } = det;
+  const rows = [];
+  const roomCounters = {};
+  for(let r = rowIndex + 1; r < grid.length; r++){
+    const row = grid[r] || [];
+    const habitRaw = row[colMap.habit];
+    const sexoRaw = row[colMap.sexo];
+    if(habitRaw == null || sexoRaw == null) continue;
+    const habitacion = habitRaw.toString().trim();
+    const sexoNorm = normSexo(sexoRaw);
+    const cantRaw = colMap.cant != null ? row[colMap.cant] : null;
+    const colegioRaw = colMap.colegio != null ? row[colMap.colegio] : null;
+    const nombreRaw = colMap.nombre != null ? row[colMap.nombre] : null;
+    const numRaw = colMap.num != null ? row[colMap.num] : null;
+
+    roomCounters[habitacion] = (roomCounters[habitacion] || 0) + 1;
+    const numCama = numRaw != null && !isNaN(Number(numRaw)) ? Number(numRaw) : roomCounters[habitacion];
+    const capacidad = cantRaw != null && !isNaN(Number(cantRaw)) ? Number(cantRaw) : null;
+
+    let coordiNombre = null;
+    if(sexoNorm === 'coordi' && nombreRaw){ coordiNombre = nombreRaw.toString().trim(); }
+
+    rows.push({
+      habitacion,
+      sexo: displaySexo(sexoNorm),
+      capacidad: capacidad || roomCounters[habitacion],
+      num_cama: numCama,
+      colegio: (colegioRaw || '').toString().trim(),
+      coordi_nombre: coordiNombre
+    });
+  }
+  // corregir capacidad con el total real de camas por habitación
+  const totals = {};
+  rows.forEach(r => { totals[r.habitacion] = (totals[r.habitacion]||0) + 1; });
+  rows.forEach(r => { if(!r.capacidad) r.capacidad = totals[r.habitacion]; });
+
+  parsedCamas = rows;
+  renderPreviewCamas(rows);
+}
+
+function renderPreviewCamas(rows){
+  const box = document.getElementById('previewCamas');
+  if(!rows.length){
+    box.innerHTML = '<p class="error">No se encontraron camas en esa hoja.</p>';
+    return;
+  }
+  const roomCount = new Set(rows.map(r => r.habitacion)).size;
+  box.innerHTML = `
+    <p class="muted-note">${rows.length} camas detectadas en ${roomCount} habitaciones.</p>
+    <p class="error" style="margin-top:8px;">⚠ Al confirmar se borran todas las camas y asignaciones actuales.</p>
+    <div class="preview-actions">
+      <button class="btn" id="btnConfirmCamas" type="button">Confirmar carga</button>
+      <button class="btn btn-secondary" id="btnCancelCamas" type="button">Cancelar</button>
+    </div>
+  `;
+  document.getElementById('btnConfirmCamas').addEventListener('click', confirmCamas);
+  document.getElementById('btnCancelCamas').addEventListener('click', () => {
+    parsedCamas = null;
+    document.getElementById('fileCamas').value = '';
+    document.getElementById('sheetPickerCamas').classList.add('hide');
+    box.innerHTML = '';
+  });
+}
+
+async function confirmCamas(){
+  if(!parsedCamas || !parsedCamas.length) return;
+  const box = document.getElementById('previewCamas');
+  box.innerHTML = '<p class="muted-note">Guardando...</p>';
+  try{
+    const { error: delError } = await supa.from('hab_camas').delete().gte('id', 0);
+    if(delError) throw delError;
+    const { error: insError } = await supa.from('hab_camas').insert(parsedCamas);
+    if(insError) throw insError;
+    showToast(`Habitaciones cargadas: ${parsedCamas.length} camas ✓`);
+    parsedCamas = null;
+    document.getElementById('fileCamas').value = '';
+    document.getElementById('sheetPickerCamas').classList.add('hide');
+    box.innerHTML = '';
+    await loadData();
+  } catch(e){
+    console.error('confirmCamas error:', e);
+    box.innerHTML = '<p class="error">Hubo un error al guardar. Probá de nuevo.</p>';
+  }
+}
+
+/* ============================================================
+   DATA + GRILLA
    ============================================================ */
 let camas = [];
 let pasajeros = [];
-let loading = false;
-let locked = false;
+let loadingData = false;
+
+/* ============================================================
+   BLOQUEO DE EDICIÓN PARA PASAJEROS
+   (reutiliza la tabla config_app, mismo patrón que index.html)
+   ============================================================ */
 const CONFIG_KEY_LOCK = 'habitaciones_bloqueado';
+let habBloqueado = false;
+
+async function saveConfigValue(clave, valor){
+  const { data: upData, error: upErr } = await supa
+    .from('config_app').update({ valor }).eq('clave', clave).select();
+  if(upErr) throw upErr;
+  if(!upData || upData.length === 0){
+    const { error: inErr } = await supa.from('config_app').insert({ clave, valor });
+    if(inErr) throw inErr;
+  }
+}
+
+async function loadLockState(){
+  try{
+    const { data, error } = await supa.from('config_app').select('valor').eq('clave', CONFIG_KEY_LOCK).maybeSingle();
+    if(error) throw error;
+    habBloqueado = !!(data && data.valor == 1);
+  } catch(e){
+    console.error('loadLockState error:', e);
+    habBloqueado = false;
+  }
+  renderLockButton();
+}
+
+function renderLockButton(){
+  const btn = document.getElementById('btnToggleLock');
+  if(habBloqueado){
+    btn.textContent = '🔒 Elección bloqueada — tocá para reabrir';
+    btn.style.background = 'var(--muted)';
+  } else {
+    btn.textContent = '🔓 Elección abierta — tocá para bloquear';
+    btn.style.background = 'var(--magenta)';
+  }
+}
+
+document.getElementById('btnToggleLock').addEventListener('click', async () => {
+  const nuevo = !habBloqueado;
+  const btn = document.getElementById('btnToggleLock');
+  btn.disabled = true;
+  try{
+    await saveConfigValue(CONFIG_KEY_LOCK, nuevo ? 1 : 0);
+    habBloqueado = nuevo;
+    renderLockButton();
+    showToast(nuevo ? 'Elección de habitaciones bloqueada para pasajeros' : 'Elección de habitaciones reabierta');
+  } catch(e){
+    console.error('toggleLock error:', e);
+    showToast('No se pudo guardar el cambio.', 'warn');
+  } finally {
+    btn.disabled = false;
+  }
+});
 
 function candidatosPara(bed, assignedIds){
   const sexoNorm = normSexo(bed.sexo);
@@ -210,7 +672,6 @@ function candidatosPara(bed, assignedIds){
   );
 }
 
-// Guarda en Supabase sin toast/reload (usado por el auto-completado)
 async function silentAssign(camaId, pasajeroId){
   const { data, error } = await supa
     .from('hab_camas')
@@ -224,7 +685,6 @@ async function silentAssign(camaId, pasajeroId){
 
 // Si una cama tiene un único pasajero posible, se completa sola
 async function autoFillSingleCandidates(){
-  if(locked) return;
   let changed = true;
   let iterations = 0;
   while(changed && iterations < 25){
@@ -236,29 +696,15 @@ async function autoFillSingleCandidates(){
       const candidatos = candidatosPara(bed, assignedIds);
       if(candidatos.length === 1){
         const ok = await silentAssign(bed.id, candidatos[0].id);
-        if(ok){
-          bed.pasajero_id = candidatos[0].id;
-          changed = true;
-        }
+        if(ok){ bed.pasajero_id = candidatos[0].id; changed = true; }
       }
     }
   }
 }
 
-async function loadLockState(){
-  try{
-    const { data, error } = await supa.from('config_app').select('valor').eq('clave', CONFIG_KEY_LOCK).maybeSingle();
-    if(error) throw error;
-    locked = !!(data && data.valor == 1);
-  } catch(e){
-    console.error('loadLockState error:', e);
-    locked = false;
-  }
-}
-
 async function loadData(){
-  if(loading) return;
-  loading = true;
+  if(loadingData) return;
+  loadingData = true;
   try{
     await loadLockState();
     const [camasRes, pasRes] = await Promise.all([
@@ -270,45 +716,39 @@ async function loadData(){
     camas = camasRes.data || [];
     pasajeros = pasRes.data || [];
     await autoFillSingleCandidates();
-    render();
+    renderStats();
+    renderRooms();
   } catch(e){
     console.error('loadData error:', e);
-    document.getElementById('rooms').innerHTML = '<p class="empty-note">No se pudo cargar la información. Probá actualizar de nuevo.</p>';
+    document.getElementById('rooms').innerHTML = '<p class="error">No se pudo cargar la información.</p>';
   } finally {
-    loading = false;
+    loadingData = false;
   }
 }
 
-let pollInterval;
-function startPolling(){
-  clearInterval(pollInterval);
-  pollInterval = setInterval(loadData, 20000);
+function renderStats(){
+  const totalCamas = camas.length;
+  const ocupadas = camas.filter(c => c.pasajero_id != null || c.coordi_nombre).length;
+  const libres = totalCamas - ocupadas;
+  const totalPas = pasajeros.length;
+  const asignados = new Set(camas.filter(c => c.pasajero_id != null).map(c => c.pasajero_id)).size;
+  const sinAsignar = totalPas - asignados;
+  document.getElementById('stats').innerHTML = `
+    <div class="stat"><b>${totalCamas}</b><span>Camas totales</span></div>
+    <div class="stat"><b>${libres}</b><span>Camas libres</span></div>
+    <div class="stat"><b>${totalPas}</b><span>Pasajeros cargados</span></div>
+    <div class="stat"><b>${sinAsignar}</b><span>Sin cama todavía</span></div>
+  `;
 }
-document.getElementById('btnRefresh').addEventListener('click', () => {
-  if(lsGet(PASAJERO_KEY) === '1') loadData();
-});
 
-/* ============================================================
-   RENDER
-   ============================================================ */
-function render(){
-  const banner = document.getElementById('lockBanner');
-  if(locked){
-    banner.innerHTML = '🔒 La elección de habitaciones está cerrada por ahora. Podés ver cómo quedaron armadas, pero no elegir ni liberar camas.';
-    banner.className = 'lock-banner';
-  } else {
-    banner.className = 'hide';
-  }
-
+function renderRooms(){
   const container = document.getElementById('rooms');
   if(!camas.length){
-    container.innerHTML = '<p class="empty-note">Todavía no hay habitaciones cargadas.</p>';
+    container.innerHTML = '<p class="muted-note">Todavía no hay habitaciones cargadas.</p>';
     return;
   }
-
   const assignedIds = new Set(camas.filter(c => c.pasajero_id != null).map(c => c.pasajero_id));
 
-  // agrupar por habitación, preservando el orden de aparición
   const roomsMap = new Map();
   const roomOrder = [];
   camas.forEach(c => {
@@ -316,7 +756,6 @@ function render(){
     roomsMap.get(c.habitacion).push(c);
   });
 
-  // ordenar: mujeres, luego varones, luego coordis (orden original dentro de cada grupo)
   const roomsSorted = roomOrder.slice().sort((a,b) => {
     const sa = SEXO_ORDER[normSexo(roomsMap.get(a)[0].sexo)] ?? 9;
     const sb = SEXO_ORDER[normSexo(roomsMap.get(b)[0].sexo)] ?? 9;
@@ -324,11 +763,9 @@ function render(){
     return roomOrder.indexOf(a) - roomOrder.indexOf(b);
   });
 
-  // agrupar por sección de sexo
   const sections = { mujer: [], varon: [], coordi: [] };
   roomsSorted.forEach(label => {
-    const beds = roomsMap.get(label);
-    const sexoNorm = normSexo(beds[0].sexo);
+    const sexoNorm = normSexo(roomsMap.get(label)[0].sexo);
     if(sections[sexoNorm]) sections[sexoNorm].push(label);
   });
 
@@ -355,10 +792,11 @@ function render(){
 
       const card = document.createElement('div');
       card.className = 'room-card';
+      card.dataset.room = roomLabel;
       card.innerHTML = `
         <div class="room-head">
           <div class="room-title">Habitación ${roomLabel}<span class="sep">—</span><span class="colegio">${colegiosDistintos.join(' / ')}</span></div>
-          <div class="fill">${ocupadas}/${beds.length} camas ocupadas</div>
+          <div class="muted-note" style="margin:2px 0 0;">${ocupadas}/${beds.length} camas ocupadas</div>
         </div>
       `;
 
@@ -377,50 +815,38 @@ function render(){
         } else if(bed.pasajero_id != null){
           const p = pasajeros.find(x => x.id === bed.pasajero_id);
           const nombreCompleto = p ? `${p.apellido}, ${p.nombre}` : '(pasajero no encontrado)';
+          const mismatch = p && (normSexo(p.sexo) !== normSexo(bed.sexo) || normColegio(p.colegio) !== normColegio(bed.colegio));
           row.innerHTML = `
             <div class="bed-num">${bed.num_cama}</div>
             <div class="bed-mid">
-              <div class="bed-occupant">${nombreCompleto}</div>
+              <div class="bed-occupant">${mismatch ? '⚠ ' : ''}${nombreCompleto}</div>
               <div class="bed-colegio">${bed.colegio}</div>
             </div>
-            ${locked ? '' : '<button class="liberar" type="button">Liberar</button>'}
+            <button class="liberar" type="button">Liberar</button>
           `;
-          if(!locked) row.querySelector('.liberar').addEventListener('click', () => liberarCama(bed.id));
-        } else if(locked){
-          row.innerHTML = `
-            <div class="bed-num">${bed.num_cama}</div>
-            <div class="bed-mid">
-              <div class="bed-readonly">Cama libre · ${bed.colegio}</div>
-            </div>
-          `;
+          row.querySelector('.liberar').addEventListener('click', () => liberarCama(bed.id));
         } else {
-          const options = candidatosPara(bed, assignedIds);
-          if(!options.length){
-            row.innerHTML = `
-              <div class="bed-num">${bed.num_cama}</div>
-              <div class="bed-mid">
-                <div class="bed-colegio" style="margin-bottom:2px;">Cama libre · ${bed.colegio}</div>
-                <div class="bed-nooptions">No quedan pasajeros disponibles de ese colegio.</div>
-              </div>
-            `;
-          } else {
-            const sel = document.createElement('select');
-            sel.innerHTML = `<option value="">Elegir...</option>` +
-              options.map(p => `<option value="${p.id}">${p.apellido}, ${p.nombre}</option>`).join('');
-            sel.addEventListener('change', () => {
-              if(sel.value) asignarCama(bed.id, Number(sel.value));
-            });
+          const options = pasajeros
+            .filter(p => !assignedIds.has(p.id))
+            .map(p => ({ p, match: normSexo(p.sexo) === normSexo(bed.sexo) && normColegio(p.colegio) === normColegio(bed.colegio) }))
+            .sort((a,b) => (b.match - a.match) || a.p.apellido.localeCompare(b.p.apellido));
 
-            const mid = document.createElement('div');
-            mid.className = 'bed-mid';
-            mid.innerHTML = `<div class="bed-colegio" style="margin-bottom:5px;">Cama libre · ${bed.colegio}</div>`;
-            mid.appendChild(sel);
+          const sel = document.createElement('select');
+          sel.className = 'bedselect';
+          sel.innerHTML = `<option value="">Elegir...</option>` +
+            options.map(o => `<option value="${o.p.id}">${o.match ? '' : '⚠ '}${o.p.apellido}, ${o.p.nombre}</option>`).join('');
+          sel.addEventListener('change', () => {
+            if(sel.value) asignarCama(bed.id, Number(sel.value));
+          });
 
-            row.innerHTML = `<div class="bed-num">${bed.num_cama}</div>`;
-            row.appendChild(mid);
-          }
+          const mid = document.createElement('div');
+          mid.className = 'bed-mid';
+          mid.innerHTML = `<div class="bed-colegio" style="margin-bottom:5px;">Cama libre · ${bed.colegio}</div>`;
+          mid.appendChild(sel);
+
+          row.innerHTML = `<div class="bed-num">${bed.num_cama}</div>`;
+          row.appendChild(mid);
         }
-
         card.appendChild(row);
       });
 
@@ -432,11 +858,7 @@ function render(){
   });
 }
 
-/* ============================================================
-   ACCIONES
-   ============================================================ */
 async function asignarCama(camaId, pasajeroId){
-  if(locked){ showToast('La elección de habitaciones está cerrada.', 'warn'); return; }
   try{
     const { data, error } = await supa
       .from('hab_camas')
@@ -445,43 +867,390 @@ async function asignarCama(camaId, pasajeroId){
       .is('pasajero_id', null)
       .select();
     if(error){
-      if(error.code === '23505'){
-        showToast('Esa persona ya fue elegida en otra cama.', 'warn');
-      } else {
-        console.error(error);
-        showToast('No se pudo guardar. Probá de nuevo.', 'warn');
-      }
+      showToast(error.code === '23505' ? 'Esa persona ya está en otra cama.' : 'No se pudo guardar.', 'warn');
       await loadData();
       return;
     }
     if(!data || data.length === 0){
-      showToast('Alguien ya ocupó esa cama justo ahora.', 'warn');
+      showToast('Esa cama ya fue ocupada.', 'warn');
       await loadData();
       return;
     }
-    showToast('Listo, quedó guardado ✓');
+    showToast('Guardado ✓');
     await loadData();
   } catch(e){
     console.error('asignarCama error:', e);
-    showToast('No se pudo guardar. Probá de nuevo.', 'warn');
+    showToast('No se pudo guardar.', 'warn');
     await loadData();
   }
 }
 
 async function liberarCama(camaId){
-  if(locked){ showToast('La elección de habitaciones está cerrada.', 'warn'); return; }
   try{
-    const { error } = await supa
-      .from('hab_camas')
-      .update({ pasajero_id: null })
-      .eq('id', camaId);
+    const { error } = await supa.from('hab_camas').update({ pasajero_id: null }).eq('id', camaId);
     if(error) throw error;
     showToast('Cama liberada');
     await loadData();
   } catch(e){
     console.error('liberarCama error:', e);
-    showToast('No se pudo liberar. Probá de nuevo.', 'warn');
+    showToast('No se pudo liberar.', 'warn');
   }
+}
+
+/* ============================================================
+   BUSCADOR DE ALUMNOS
+   ============================================================ */
+function roomOfPasajero(pasajeroId){
+  const bed = camas.find(c => c.pasajero_id === pasajeroId);
+  return bed ? bed.habitacion : null;
+}
+
+function renderSearchResults(query){
+  const box = document.getElementById('searchResults');
+  const q = normColegio(query);
+  if(!q || q.length < 2){ box.innerHTML = ''; return; }
+
+  const matches = pasajeros.filter(p => normColegio(`${p.apellido} ${p.nombre}`).includes(q));
+  if(!matches.length){
+    box.innerHTML = '<div class="search-result"><span class="sr-status">Sin resultados.</span></div>';
+    return;
+  }
+  box.innerHTML = matches.map(p => {
+    const room = roomOfPasajero(p.id);
+    const statusHtml = room
+      ? `<span class="sr-status">Habitación ${room}</span>`
+      : `<span class="sr-status unassigned">Sin asignar todavía</span>`;
+    const linkHtml = room ? `<a href="#" data-goto="${room}">Ver →</a>` : '';
+    return `<div class="search-result">
+      <div><div class="sr-name">${p.apellido}, ${p.nombre}</div>${statusHtml}</div>
+      ${linkHtml}
+    </div>`;
+  }).join('');
+
+  box.querySelectorAll('a[data-goto]').forEach(a => {
+    a.addEventListener('click', (e) => {
+      e.preventDefault();
+      const card = document.querySelector(`.room-card[data-room="${CSS.escape(a.dataset.goto)}"]`);
+      if(!card) return;
+      card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      card.classList.add('highlight');
+      setTimeout(() => card.classList.remove('highlight'), 2000);
+    });
+  });
+}
+document.getElementById('searchInput').addEventListener('input', (e) => renderSearchResults(e.target.value));
+
+/* ============================================================
+   EXPORTAR (PDF / EXCEL)
+   ============================================================ */
+document.getElementById('btnExportToggle').addEventListener('click', (e) => {
+  e.stopPropagation();
+  document.getElementById('exportMenu').classList.toggle('hide');
+});
+document.addEventListener('click', () => document.getElementById('exportMenu').classList.add('hide'));
+
+function buildExportRows(){
+  const roomsMap = new Map();
+  const roomOrder = [];
+  camas.forEach(c => {
+    if(!roomsMap.has(c.habitacion)){ roomsMap.set(c.habitacion, []); roomOrder.push(c.habitacion); }
+    roomsMap.get(c.habitacion).push(c);
+  });
+  const roomsSorted = roomOrder.slice().sort((a,b) => {
+    const sa = SEXO_ORDER[normSexo(roomsMap.get(a)[0].sexo)] ?? 9;
+    const sb = SEXO_ORDER[normSexo(roomsMap.get(b)[0].sexo)] ?? 9;
+    if(sa !== sb) return sa - sb;
+    return roomOrder.indexOf(a) - roomOrder.indexOf(b);
+  });
+
+  const rows = [];
+  roomsSorted.forEach(label => {
+    const beds = roomsMap.get(label).slice().sort((a,b) => (a.num_cama||0) - (b.num_cama||0));
+    beds.forEach(bed => {
+      let apellido = '', nombre = '', colegio = bed.colegio || '';
+      if(bed.coordi_nombre){
+        nombre = bed.coordi_nombre;
+        colegio = 'Coordi';
+      } else if(bed.pasajero_id != null){
+        const p = pasajeros.find(x => x.id === bed.pasajero_id);
+        if(p){ apellido = p.apellido; nombre = p.nombre; colegio = p.colegio; }
+      }
+      rows.push({
+        'Número de habitación': label,
+        'Sexo': displaySexo(normSexo(bed.sexo)),
+        'Personas en esa habitación': bed.capacidad,
+        'Apellido de pasajero': apellido,
+        'Nombre de pasajero': nombre,
+        'Colegio': colegio
+      });
+    });
+  });
+  return rows;
+}
+
+document.getElementById('btnExportExcel').addEventListener('click', () => {
+  document.getElementById('exportMenu').classList.add('hide');
+  try{
+    const rows = buildExportRows();
+    if(!rows.length){ showToast('No hay habitaciones cargadas para exportar.', 'warn'); return; }
+    const ws = XLSX.utils.json_to_sheet(rows);
+    ws['!cols'] = [{wch:20},{wch:12},{wch:22},{wch:22},{wch:22},{wch:22}];
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Habitaciones');
+    XLSX.writeFile(wb, 'habitaciones_wakeup.xlsx');
+  } catch(e){
+    console.error('exportExcel error:', e);
+    showToast('No se pudo exportar a Excel.', 'warn');
+  }
+});
+
+// agrupación compartida por PDF-bloques y Excel-bloques
+function agruparParaBloques(){
+  const roomsMap = new Map(); const roomOrder = [];
+  camas.forEach(c => {
+    if(!roomsMap.has(c.habitacion)){ roomsMap.set(c.habitacion, []); roomOrder.push(c.habitacion); }
+    roomsMap.get(c.habitacion).push(c);
+  });
+  const roomsSorted = roomOrder.slice().sort((a,b) => {
+    const sa = SEXO_ORDER[normSexo(roomsMap.get(a)[0].sexo)] ?? 9;
+    const sb = SEXO_ORDER[normSexo(roomsMap.get(b)[0].sexo)] ?? 9;
+    if(sa !== sb) return sa - sb;
+    return roomOrder.indexOf(a) - roomOrder.indexOf(b);
+  });
+  const sections = { mujer: [], varon: [], coordi: [] };
+  roomsSorted.forEach(label => {
+    const sexoNorm = normSexo(roomsMap.get(label)[0].sexo);
+    if(sections[sexoNorm]) sections[sexoNorm].push(label);
+  });
+  return { roomsMap, sections };
+}
+
+document.getElementById('btnExportExcelBloques').addEventListener('click', () => {
+  document.getElementById('exportMenu').classList.add('hide');
+  try{
+    if(!camas.length){ showToast('No hay habitaciones cargadas para exportar.', 'warn'); return; }
+    const { roomsMap, sections } = agruparParaBloques();
+
+    const aoa = [];
+    const merges = [];
+    const NCOLS = 4; // Cama | Apellido | Nombre | Colegio
+
+    function pushMergedRow(text){
+      aoa.push([text, '', '', '']);
+      merges.push({ s: { r: aoa.length - 1, c: 0 }, e: { r: aoa.length - 1, c: NCOLS - 1 } });
+    }
+
+    pushMergedRow('HABITACIONES · WAKE UP');
+    aoa.push(['', '', '', '']);
+
+    ['mujer','varon','coordi'].forEach(sexoNorm => {
+      const labels = sections[sexoNorm];
+      if(!labels.length) return;
+
+      pushMergedRow(SEXO_LABEL_SECTION[sexoNorm].toUpperCase());
+      aoa.push(['', '', '', '']);
+
+      labels.forEach(roomLabel => {
+        const beds = roomsMap.get(roomLabel).slice().sort((a,b) => (a.num_cama||0) - (b.num_cama||0));
+        const colegiosDistintos = [...new Set(beds.map(b => (b.colegio||'').trim()).filter(Boolean))];
+        pushMergedRow(`Habitación ${roomLabel} — ${colegiosDistintos.join(' / ')}`);
+        aoa.push(['Cama', 'Apellido', 'Nombre', 'Colegio']);
+        beds.forEach(bed => {
+          if(bed.coordi_nombre){
+            aoa.push([bed.num_cama, '', bed.coordi_nombre, 'Coordi']);
+          } else if(bed.pasajero_id != null){
+            const p = pasajeros.find(x => x.id === bed.pasajero_id);
+            aoa.push([bed.num_cama, p ? p.apellido : '', p ? p.nombre : '(no encontrado)', p ? p.colegio : bed.colegio]);
+          } else {
+            aoa.push([bed.num_cama, '— Libre —', '', bed.colegio]);
+          }
+        });
+        aoa.push(['', '', '', '']);
+      });
+    });
+
+    const ws = XLSX.utils.aoa_to_sheet(aoa);
+    ws['!merges'] = merges;
+    ws['!cols'] = [{wch:8},{wch:22},{wch:22},{wch:22}];
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Habitaciones');
+    XLSX.writeFile(wb, 'habitaciones_wakeup_bloques.xlsx');
+  } catch(e){
+    console.error('exportExcelBloques error:', e);
+    showToast('No se pudo exportar a Excel.', 'warn');
+  }
+});
+
+document.getElementById('btnExportPdf').addEventListener('click', () => {
+  document.getElementById('exportMenu').classList.add('hide');
+  try{
+    const rows = buildExportRows();
+    if(!rows.length){ showToast('No hay habitaciones cargadas para exportar.', 'warn'); return; }
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({ orientation: 'portrait', unit: 'pt' });
+    doc.setFontSize(14);
+    doc.text('Habitaciones · Wake Up', 40, 40);
+    doc.setFontSize(9);
+    doc.text(new Date().toLocaleDateString('es-AR'), 40, 56);
+    doc.autoTable({
+      startY: 70,
+      head: [['N° habitación', 'Sexo', 'Personas', 'Apellido', 'Nombre', 'Colegio']],
+      body: rows.map(r => [
+        r['Número de habitación'],
+        r['Sexo'],
+        r['Personas en esa habitación'],
+        r['Apellido de pasajero'],
+        r['Nombre de pasajero'],
+        r['Colegio']
+      ]),
+      styles: { fontSize: 8, cellPadding: 4 },
+      headStyles: { fillColor: [241, 29, 140] }
+    });
+    doc.save('habitaciones_wakeup.pdf');
+  } catch(e){
+    console.error('exportPdf error:', e);
+    showToast('No se pudo exportar a PDF.', 'warn');
+  }
+});
+
+document.getElementById('btnExportPdfBloques').addEventListener('click', () => {
+  document.getElementById('exportMenu').classList.add('hide');
+  try{
+    exportPdfBloques();
+  } catch(e){
+    console.error('exportPdfBloques error:', e);
+    showToast('No se pudo exportar a PDF.', 'warn');
+  }
+});
+
+// PDF "tal cual están" — bloques por habitación, agrupados mujeres/varones/coordi,
+// acomodados de a 2 por fila (como se ve en pantalla) y paginado automáticamente.
+function exportPdfBloques(){
+  if(!camas.length){ showToast('No hay habitaciones cargadas para exportar.', 'warn'); return; }
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'a4' });
+
+  const PAGE_W = doc.internal.pageSize.getWidth();
+  const PAGE_H = doc.internal.pageSize.getHeight();
+  const MARGIN = 40;
+  const GAP = 14;
+  const COL_W = (PAGE_W - 2*MARGIN - GAP) / 2;
+  const COL_X = [MARGIN, MARGIN + COL_W + GAP];
+  const TITLE_SIZE = 9;
+  const BED_SIZE = 8;
+  const LINE_H = 11;
+  const BOX_PAD = 8;
+
+  // agrupar y ordenar igual que en pantalla
+  const roomsMap = new Map(); const roomOrder = [];
+  camas.forEach(c => {
+    if(!roomsMap.has(c.habitacion)){ roomsMap.set(c.habitacion, []); roomOrder.push(c.habitacion); }
+    roomsMap.get(c.habitacion).push(c);
+  });
+  const roomsSorted = roomOrder.slice().sort((a,b) => {
+    const sa = SEXO_ORDER[normSexo(roomsMap.get(a)[0].sexo)] ?? 9;
+    const sb = SEXO_ORDER[normSexo(roomsMap.get(b)[0].sexo)] ?? 9;
+    if(sa !== sb) return sa - sb;
+    return roomOrder.indexOf(a) - roomOrder.indexOf(b);
+  });
+  const sections = { mujer: [], varon: [], coordi: [] };
+  roomsSorted.forEach(label => {
+    const sexoNorm = normSexo(roomsMap.get(label)[0].sexo);
+    if(sections[sexoNorm]) sections[sexoNorm].push(label);
+  });
+
+  doc.setFont(undefined, 'bold');
+  doc.setFontSize(14);
+  doc.text('Habitaciones · Wake Up', MARGIN, MARGIN - 10);
+  doc.setFont(undefined, 'normal');
+  doc.setFontSize(9);
+  doc.text(new Date().toLocaleDateString('es-AR'), MARGIN, MARGIN + 6);
+
+  let y = MARGIN + 26;
+
+  function bedLineText(bed){
+    if(bed.coordi_nombre) return `${bed.num_cama}. ${bed.coordi_nombre} · Coordinador/a`;
+    if(bed.pasajero_id != null){
+      const p = pasajeros.find(x => x.id === bed.pasajero_id);
+      return `${bed.num_cama}. ${p ? (p.apellido + ', ' + p.nombre) : '(no encontrado)'}`;
+    }
+    return `${bed.num_cama}. Libre — ${bed.colegio}`;
+  }
+
+  function measureBox(roomLabel, beds){
+    const colegios = [...new Set(beds.map(b => (b.colegio||'').trim()).filter(Boolean))];
+    const titleText = `Habitación ${roomLabel} — ${colegios.join(' / ')}`;
+    doc.setFontSize(TITLE_SIZE);
+    const titleLines = doc.splitTextToSize(titleText, COL_W - BOX_PAD*2);
+    const height = BOX_PAD*2 + titleLines.length*LINE_H + 4 + beds.length*LINE_H;
+    return { titleLines, height };
+  }
+
+  function drawBox(x, yTop, roomLabel, beds, meta){
+    doc.setDrawColor(220,220,220);
+    doc.roundedRect(x, yTop, COL_W, meta.height, 3, 3);
+    let cy = yTop + BOX_PAD + LINE_H - 3;
+    doc.setFont(undefined, 'bold');
+    doc.setFontSize(TITLE_SIZE);
+    meta.titleLines.forEach(line => { doc.text(line, x + BOX_PAD, cy); cy += LINE_H; });
+    cy += 2;
+    doc.setFont(undefined, 'normal');
+    doc.setFontSize(BED_SIZE);
+    beds.forEach(bed => {
+      const oneLine = shortenToOneLine(bedLineText(bed), COL_W - BOX_PAD*2);
+      doc.text(oneLine, x + BOX_PAD, cy);
+      cy += LINE_H;
+    });
+  }
+
+  function shortenToOneLine(text, maxW){
+    const lines = doc.splitTextToSize(text, maxW);
+    return lines[0]; // una sola línea por cama, se corta si es muy largo
+  }
+
+  function ensureRowSpace(rowHeight){
+    if(y + rowHeight > PAGE_H - MARGIN){
+      doc.addPage();
+      y = MARGIN;
+    }
+  }
+
+  ['mujer','varon','coordi'].forEach(sexoNorm => {
+    const labels = sections[sexoNorm];
+    if(!labels.length) return;
+
+    ensureRowSpace(20);
+    doc.setFont(undefined, 'bold');
+    doc.setFontSize(11);
+    doc.setTextColor(sexoNorm === 'mujer' ? 241 : (sexoNorm === 'varon' ? 93 : 25),
+                      sexoNorm === 'mujer' ? 29  : (sexoNorm === 'varon' ? 180 : 148),
+                      sexoNorm === 'mujer' ? 140 : (sexoNorm === 'varon' ? 201 : 50));
+    doc.text(SEXO_LABEL_SECTION[sexoNorm], MARGIN, y);
+    doc.setTextColor(0,0,0);
+    y += 16;
+
+    for(let i = 0; i < labels.length; i += 2){
+      const leftLabel = labels[i];
+      const rightLabel = labels[i+1];
+      const leftBeds = roomsMap.get(leftLabel).slice().sort((a,b)=>(a.num_cama||0)-(b.num_cama||0));
+      const leftMeta = measureBox(leftLabel, leftBeds);
+      let rightBeds = null, rightMeta = null;
+      if(rightLabel){
+        rightBeds = roomsMap.get(rightLabel).slice().sort((a,b)=>(a.num_cama||0)-(b.num_cama||0));
+        rightMeta = measureBox(rightLabel, rightBeds);
+      }
+      const rowHeight = Math.max(leftMeta.height, rightMeta ? rightMeta.height : 0);
+      ensureRowSpace(rowHeight);
+
+      drawBox(COL_X[0], y, leftLabel, leftBeds, leftMeta);
+      if(rightLabel) drawBox(COL_X[1], y, rightLabel, rightBeds, rightMeta);
+
+      y += rowHeight + GAP;
+    }
+    y += 10;
+  });
+
+  doc.save('habitaciones_wakeup_bloques.pdf');
 }
 
 /* ============================================================
