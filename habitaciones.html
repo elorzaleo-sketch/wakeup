@@ -1,0 +1,348 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Elegí tu habitación · Wake Up</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root{
+    --cyan:#5DB4C9; --magenta:#F11D8C; --green:#199432; --ink:#080808;
+    --text:#ffffff; --muted:#98a6aa; --line:rgba(255,255,255,.14);
+    --card:rgba(255,255,255,.04); --card-hover:rgba(255,255,255,.07);
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html,body{min-height:100dvh;}
+  body{
+    font-family:'Outfit',system-ui,sans-serif;color:var(--text);background:var(--ink);
+    background-image:radial-gradient(80% 55% at 50% 0%, rgba(93,180,201,.10) 0%, rgba(8,8,8,0) 60%);
+    background-repeat:no-repeat;min-height:100dvh;display:flex;flex-direction:column;
+  }
+  .topbar{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;gap:10px;}
+  .back{appearance:none;cursor:pointer;text-decoration:none;font-family:'Outfit',sans-serif;font-size:.85rem;font-weight:600;color:var(--muted);background:transparent;border:none;display:inline-flex;align-items:center;gap:6px;}
+  .back:hover{color:var(--text);}
+  .refresh-btn{appearance:none;cursor:pointer;font-family:'Outfit',sans-serif;font-size:.8rem;font-weight:600;color:var(--text);background:transparent;border:1.5px solid var(--line);border-radius:999px;padding:7px 13px;}
+  .refresh-btn:hover{border-color:var(--cyan);color:var(--cyan);}
+  main{flex:1;padding:6px 16px 60px;display:flex;justify-content:center;}
+  .stage{width:100%;max-width:560px;}
+  h1{font-family:'Bricolage Grotesque',sans-serif;font-weight:800;font-size:1.7rem;text-align:center;margin:6px 0 8px;letter-spacing:-.01em;}
+  .lead{text-align:center;color:var(--muted);font-size:.92rem;line-height:1.55;margin:0 auto 22px;max-width:42ch;}
+  .panel{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:22px;}
+  .panel-narrow{max-width:360px;margin:40px auto;}
+  label{display:block;font-size:.8rem;font-weight:600;margin:0 0 6px;}
+  input{width:100%;font-family:'Outfit',sans-serif;font-size:1rem;padding:13px 15px;border:1.5px solid var(--line);border-radius:12px;background:rgba(255,255,255,.04);color:var(--text);margin-bottom:14px;}
+  input:focus{outline:none;border-color:var(--cyan);}
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:13px 16px;border-radius:12px;border:none;cursor:pointer;font-family:'Outfit',sans-serif;font-weight:600;font-size:.95rem;color:#fff;background:var(--magenta);}
+  .btn:hover{filter:brightness(1.08);}
+  .error{color:var(--magenta);font-size:.82rem;margin:-6px 0 12px;min-height:1em;}
+  .room-card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px 16px 8px;margin-bottom:14px;}
+  .room-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;gap:8px;flex-wrap:wrap;}
+  .room-title{font-family:'Bricolage Grotesque',sans-serif;font-weight:800;font-size:1.05rem;}
+  .room-tag{font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;padding:4px 9px;border-radius:999px;border:1px solid var(--line);color:var(--muted);}
+  .room-tag.varon{color:var(--cyan);border-color:var(--cyan);}
+  .room-tag.mujer{color:var(--magenta);border-color:var(--magenta);}
+  .room-tag.coordi{color:var(--green);border-color:var(--green);}
+  .fill{font-size:.75rem;color:var(--muted);}
+  .bed-row{display:flex;align-items:center;gap:10px;padding:10px 0;border-top:1px solid var(--line);}
+  .bed-row:first-of-type{border-top:none;}
+  .bed-num{flex:0 0 auto;width:26px;height:26px;border-radius:8px;background:rgba(255,255,255,.06);display:flex;align-items:center;justify-content:center;font-size:.75rem;font-weight:700;color:var(--muted);}
+  .bed-mid{flex:1;min-width:0;}
+  .bed-colegio{font-size:.72rem;color:var(--muted);}
+  .bed-occupant{font-size:.92rem;font-weight:600;}
+  .bed-fixed{font-size:.92rem;font-weight:600;color:var(--green);}
+  select{width:100%;font-family:'Outfit',sans-serif;font-size:.88rem;padding:9px 11px;border-radius:10px;border:1.5px solid var(--line);background:rgba(255,255,255,.04);color:var(--text);}
+  select:focus{outline:none;border-color:var(--cyan);}
+  .liberar{flex:0 0 auto;font-family:'Outfit',sans-serif;font-size:.72rem;font-weight:600;color:var(--muted);background:transparent;border:1px solid var(--line);border-radius:999px;padding:6px 10px;cursor:pointer;}
+  .liberar:hover{border-color:var(--magenta);color:var(--magenta);}
+  .empty-note{text-align:center;color:var(--muted);font-size:.9rem;padding:40px 0;}
+  .toast{position:fixed;left:50%;bottom:26px;transform:translate(-50%,140%);background:#151515;border:1px solid var(--line);color:var(--text);padding:12px 18px;border-radius:12px;font-size:.86rem;font-weight:500;transition:transform .25s ease;z-index:50;max-width:88vw;text-align:center;}
+  .toast.show{transform:translate(-50%,0);}
+  .hide{display:none !important;}
+</style>
+</head>
+<body>
+
+  <div class="topbar">
+    <a class="back" href="/index.html">← Volver</a>
+    <button class="refresh-btn" id="btnRefresh" type="button">↻ Actualizar</button>
+  </div>
+
+  <main>
+    <div class="stage">
+
+      <!-- LOGIN -->
+      <section id="viewLogin" class="panel panel-narrow">
+        <h1 style="margin-top:0;">Portal pasajeros</h1>
+        <p class="lead">Ingresá con la clave de pasajeros para elegir tu habitación.</p>
+        <label for="passInput">Clave</label>
+        <input type="password" id="passInput" placeholder="Clave de pasajeros" autocomplete="off">
+        <p class="error" id="loginError"></p>
+        <button class="btn" id="btnLogin" type="button">Ingresar</button>
+      </section>
+
+      <!-- CONTENIDO -->
+      <section id="viewMain" class="hide">
+        <h1>Elegí tu habitación</h1>
+        <p class="lead">Elegí con quién vas a dormir. Cada cama solo se le puede asignar a alguien de su mismo sexo y colegio. Cualquiera puede elegir por cualquiera, así que si te equivocás podés liberar la cama y volver a elegir.</p>
+        <div id="rooms"></div>
+      </section>
+
+    </div>
+  </main>
+
+  <div class="toast" id="toast"></div>
+
+<script>
+/* ============================================================
+   CONFIG
+   ============================================================ */
+const SUPA_URL = "https://mzousqdahqterfawhwsz.supabase.co";
+const SUPA_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im16b3VzcWRhaHF0ZXJmYXdod3N6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA1MTc4MzUsImV4cCI6MjA5NjA5MzgzNX0.EdSlcRdLD75OdYlwtZGLVgL_PGpJysWb_MKvuwGgj5Y";
+const supa = supabase.createClient(SUPA_URL, SUPA_KEY);
+
+const PASAJERO_KEY = "wakeup_pasajero_session";
+const PASS_PASAJERO = "wuegresados26!";
+
+/* ============================================================
+   HELPERS
+   ============================================================ */
+function stripAccents(s){ return s.normalize('NFD').replace(/[̀-ͯ]/g,''); }
+function normSexo(s){
+  if(!s) return "";
+  const t = stripAccents(s.toString().trim().toLowerCase());
+  if(t.startsWith("var")) return "varon";
+  if(t.startsWith("muj")) return "mujer";
+  if(t.startsWith("coordi")) return "coordi";
+  return t;
+}
+function normColegio(s){
+  if(!s) return "";
+  return stripAccents(s.toString().trim().toLowerCase().replace(/\s+/g," "));
+}
+let toastTimer;
+function showToast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=> t.classList.remove('show'), 3200);
+}
+
+/* ============================================================
+   LOGIN
+   ============================================================ */
+function lsGet(k){ try{ return localStorage.getItem(k); }catch(e){ return null; } }
+function lsSet(k,v){ try{ localStorage.setItem(k,v); }catch(e){} }
+
+function checkLogin(){
+  if(lsGet(PASAJERO_KEY) === '1'){
+    document.getElementById('viewLogin').classList.add('hide');
+    document.getElementById('viewMain').classList.remove('hide');
+    loadData();
+    startPolling();
+  } else {
+    document.getElementById('viewLogin').classList.remove('hide');
+    document.getElementById('viewMain').classList.add('hide');
+  }
+}
+document.getElementById('btnLogin').addEventListener('click', doLogin);
+document.getElementById('passInput').addEventListener('keydown', e => { if(e.key === 'Enter') doLogin(); });
+function doLogin(){
+  const v = document.getElementById('passInput').value;
+  if(v === PASS_PASAJERO){
+    lsSet(PASAJERO_KEY, '1');
+    document.getElementById('loginError').textContent = '';
+    checkLogin();
+  } else {
+    document.getElementById('loginError').textContent = 'Clave incorrecta.';
+  }
+}
+
+/* ============================================================
+   DATA
+   ============================================================ */
+let camas = [];
+let pasajeros = [];
+let loading = false;
+
+async function loadData(){
+  if(loading) return;
+  loading = true;
+  try{
+    const [camasRes, pasRes] = await Promise.all([
+      supa.from('hab_camas').select('*').order('id', { ascending: true }),
+      supa.from('hab_pasajeros').select('*').order('apellido', { ascending: true })
+    ]);
+    if(camasRes.error) throw camasRes.error;
+    if(pasRes.error) throw pasRes.error;
+    camas = camasRes.data || [];
+    pasajeros = pasRes.data || [];
+    render();
+  } catch(e){
+    console.error('loadData error:', e);
+    document.getElementById('rooms').innerHTML = '<p class="empty-note">No se pudo cargar la información. Probá actualizar de nuevo.</p>';
+  } finally {
+    loading = false;
+  }
+}
+
+let pollInterval;
+function startPolling(){
+  clearInterval(pollInterval);
+  pollInterval = setInterval(loadData, 20000);
+}
+document.getElementById('btnRefresh').addEventListener('click', () => {
+  if(lsGet(PASAJERO_KEY) === '1') loadData();
+});
+
+/* ============================================================
+   RENDER
+   ============================================================ */
+function render(){
+  const container = document.getElementById('rooms');
+  if(!camas.length){
+    container.innerHTML = '<p class="empty-note">Todavía no hay habitaciones cargadas.</p>';
+    return;
+  }
+
+  const assignedIds = new Set(camas.filter(c => c.pasajero_id != null).map(c => c.pasajero_id));
+
+  // agrupar preservando orden de aparición
+  const roomsMap = new Map();
+  camas.forEach(c => {
+    if(!roomsMap.has(c.habitacion)) roomsMap.set(c.habitacion, []);
+    roomsMap.get(c.habitacion).push(c);
+  });
+
+  container.innerHTML = '';
+  roomsMap.forEach((beds, roomLabel) => {
+    beds.sort((a,b) => (a.num_cama||0) - (b.num_cama||0));
+    const sexoNorm = normSexo(beds[0].sexo);
+    const ocupadas = beds.filter(b => b.pasajero_id != null || b.coordi_nombre).length;
+
+    const card = document.createElement('div');
+    card.className = 'room-card';
+
+    const tagClass = sexoNorm === 'varon' ? 'varon' : (sexoNorm === 'mujer' ? 'mujer' : 'coordi');
+    const tagLabel = sexoNorm === 'varon' ? 'Varones' : (sexoNorm === 'mujer' ? 'Mujeres' : 'Coordi');
+
+    card.innerHTML = `
+      <div class="room-head">
+        <span class="room-title">Habitación ${roomLabel}</span>
+        <span class="room-tag ${tagClass}">${tagLabel}</span>
+      </div>
+      <div class="fill" style="margin-bottom:6px;">${ocupadas}/${beds.length} camas ocupadas</div>
+    `;
+
+    beds.forEach(bed => {
+      const row = document.createElement('div');
+      row.className = 'bed-row';
+
+      if(bed.coordi_nombre){
+        row.innerHTML = `
+          <div class="bed-num">${bed.num_cama}</div>
+          <div class="bed-mid">
+            <div class="bed-fixed">${bed.coordi_nombre} · Coordinador/a</div>
+            <div class="bed-colegio">Cama fija</div>
+          </div>
+        `;
+      } else if(bed.pasajero_id != null){
+        const p = pasajeros.find(x => x.id === bed.pasajero_id);
+        const nombreCompleto = p ? `${p.apellido}, ${p.nombre}` : '(pasajero no encontrado)';
+        row.innerHTML = `
+          <div class="bed-num">${bed.num_cama}</div>
+          <div class="bed-mid">
+            <div class="bed-occupant">${nombreCompleto}</div>
+            <div class="bed-colegio">${bed.colegio}</div>
+          </div>
+          <button class="liberar" type="button">Liberar</button>
+        `;
+        row.querySelector('.liberar').addEventListener('click', () => liberarCama(bed.id));
+      } else {
+        const options = pasajeros.filter(p =>
+          normSexo(p.sexo) === sexoNorm &&
+          normColegio(p.colegio) === normColegio(bed.colegio) &&
+          !assignedIds.has(p.id)
+        );
+        const sel = document.createElement('select');
+        sel.innerHTML = `<option value="">Elegir...</option>` +
+          options.map(p => `<option value="${p.id}">${p.apellido}, ${p.nombre}</option>`).join('');
+        sel.addEventListener('change', () => {
+          if(sel.value) asignarCama(bed.id, Number(sel.value));
+        });
+
+        const mid = document.createElement('div');
+        mid.className = 'bed-mid';
+        mid.innerHTML = `<div class="bed-colegio" style="margin-bottom:5px;">Cama libre · ${bed.colegio}</div>`;
+        mid.appendChild(sel);
+
+        row.innerHTML = `<div class="bed-num">${bed.num_cama}</div>`;
+        row.appendChild(mid);
+      }
+
+      card.appendChild(row);
+    });
+
+    container.appendChild(card);
+  });
+}
+
+/* ============================================================
+   ACCIONES
+   ============================================================ */
+async function asignarCama(camaId, pasajeroId){
+  try{
+    const { data, error } = await supa
+      .from('hab_camas')
+      .update({ pasajero_id: pasajeroId })
+      .eq('id', camaId)
+      .is('pasajero_id', null)
+      .select();
+    if(error){
+      if(error.code === '23505'){
+        showToast('Esa persona ya fue elegida en otra cama.');
+      } else {
+        console.error(error);
+        showToast('No se pudo guardar. Probá de nuevo.');
+      }
+      await loadData();
+      return;
+    }
+    if(!data || data.length === 0){
+      showToast('Alguien ya ocupó esa cama justo ahora.');
+      await loadData();
+      return;
+    }
+    showToast('Listo, quedó guardado ✓');
+    await loadData();
+  } catch(e){
+    console.error('asignarCama error:', e);
+    showToast('No se pudo guardar. Probá de nuevo.');
+    await loadData();
+  }
+}
+
+async function liberarCama(camaId){
+  try{
+    const { error } = await supa
+      .from('hab_camas')
+      .update({ pasajero_id: null })
+      .eq('id', camaId);
+    if(error) throw error;
+    showToast('Cama liberada');
+    await loadData();
+  } catch(e){
+    console.error('liberarCama error:', e);
+    showToast('No se pudo liberar. Probá de nuevo.');
+  }
+}
+
+/* ============================================================
+   INIT
+   ============================================================ */
+checkLogin();
+</script>
+</body>
+</html>

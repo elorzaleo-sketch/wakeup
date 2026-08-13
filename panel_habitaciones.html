@@ -1,0 +1,717 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Panel de habitaciones · Wake Up</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+  :root{
+    --cyan:#5DB4C9; --magenta:#F11D8C; --green:#199432; --ink:#080808;
+    --text:#ffffff; --muted:#98a6aa; --line:rgba(255,255,255,.14);
+    --card:rgba(255,255,255,.04); --card-hover:rgba(255,255,255,.07);
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html,body{min-height:100dvh;}
+  body{
+    font-family:'Outfit',system-ui,sans-serif;color:var(--text);background:var(--ink);
+    background-image:radial-gradient(80% 55% at 50% 0%, rgba(93,180,201,.10) 0%, rgba(8,8,8,0) 60%);
+    background-repeat:no-repeat;min-height:100dvh;
+  }
+  .topbar{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;gap:10px;}
+  .back{appearance:none;cursor:pointer;text-decoration:none;font-family:'Outfit',sans-serif;font-size:.85rem;font-weight:600;color:var(--muted);background:transparent;border:none;display:inline-flex;align-items:center;gap:6px;}
+  .back:hover{color:var(--text);}
+  .refresh-btn{appearance:none;cursor:pointer;font-family:'Outfit',sans-serif;font-size:.8rem;font-weight:600;color:var(--text);background:transparent;border:1.5px solid var(--line);border-radius:999px;padding:7px 13px;}
+  .refresh-btn:hover{border-color:var(--cyan);color:var(--cyan);}
+  main{padding:6px 16px 70px;display:flex;justify-content:center;}
+  .stage{width:100%;max-width:680px;}
+  h1{font-family:'Bricolage Grotesque',sans-serif;font-weight:800;font-size:1.6rem;text-align:center;margin:6px 0 6px;}
+  h2{font-family:'Bricolage Grotesque',sans-serif;font-weight:700;font-size:1.05rem;margin:0 0 10px;}
+  .lead{text-align:center;color:var(--muted);font-size:.9rem;line-height:1.5;margin:0 auto 20px;max-width:48ch;}
+  .panel{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:20px;margin-bottom:16px;}
+  .panel-narrow{max-width:360px;margin:40px auto;}
+  label{display:block;font-size:.8rem;font-weight:600;margin:0 0 6px;}
+  input[type=password]{width:100%;font-family:'Outfit',sans-serif;font-size:1rem;padding:13px 15px;border:1.5px solid var(--line);border-radius:12px;background:rgba(255,255,255,.04);color:var(--text);margin-bottom:14px;}
+  input[type=password]:focus{outline:none;border-color:var(--cyan);}
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:11px 16px;border-radius:12px;border:none;cursor:pointer;font-family:'Outfit',sans-serif;font-weight:600;font-size:.88rem;color:#fff;background:var(--magenta);}
+  .btn:hover{filter:brightness(1.08);}
+  .btn:disabled{opacity:.45;cursor:not-allowed;}
+  .btn-secondary{background:transparent;border:1.5px solid var(--line);color:var(--text);}
+  .btn-secondary:hover{border-color:var(--cyan);color:var(--cyan);}
+  .btn-full{width:100%;}
+  .error{color:var(--magenta);font-size:.82rem;margin:-6px 0 12px;min-height:1em;}
+  .file-row{display:flex;flex-direction:column;gap:10px;}
+  input[type=file]{font-size:.82rem;color:var(--muted);}
+  .sheet-picker{display:flex;align-items:center;gap:8px;font-size:.8rem;color:var(--muted);margin-top:8px;}
+  select.mini{font-family:'Outfit',sans-serif;font-size:.82rem;padding:6px 9px;border-radius:8px;border:1.5px solid var(--line);background:rgba(255,255,255,.04);color:var(--text);}
+  table{width:100%;border-collapse:collapse;font-size:.8rem;margin-top:10px;}
+  th,td{text-align:left;padding:6px 8px;border-bottom:1px solid var(--line);}
+  th{color:var(--muted);font-weight:600;font-size:.72rem;text-transform:uppercase;letter-spacing:.06em;}
+  .badge{font-size:.68rem;font-weight:700;padding:2px 7px;border-radius:999px;}
+  .badge-nuevo{background:rgba(25,148,50,.18);color:var(--green);}
+  .badge-actualiza{background:rgba(93,180,201,.18);color:var(--cyan);}
+  .badge-warn{background:rgba(241,29,140,.18);color:var(--magenta);}
+  .preview-actions{display:flex;gap:10px;margin-top:14px;}
+  .stats-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;}
+  .stat{background:rgba(255,255,255,.03);border:1px solid var(--line);border-radius:12px;padding:12px;text-align:center;}
+  .stat b{display:block;font-family:'Bricolage Grotesque',sans-serif;font-size:1.4rem;}
+  .stat span{font-size:.72rem;color:var(--muted);}
+  .room-card{background:rgba(255,255,255,.03);border:1px solid var(--line);border-radius:14px;padding:14px 14px 6px;margin-bottom:10px;}
+  .room-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;gap:8px;flex-wrap:wrap;}
+  .room-title{font-weight:700;font-size:.95rem;}
+  .room-tag{font-size:.66rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;padding:3px 8px;border-radius:999px;border:1px solid var(--line);color:var(--muted);}
+  .room-tag.varon{color:var(--cyan);border-color:var(--cyan);}
+  .room-tag.mujer{color:var(--magenta);border-color:var(--magenta);}
+  .room-tag.coordi{color:var(--green);border-color:var(--green);}
+  .bed-row{display:flex;align-items:center;gap:8px;padding:8px 0;border-top:1px solid var(--line);}
+  .bed-row:first-of-type{border-top:none;}
+  .bed-num{flex:0 0 auto;width:24px;height:24px;border-radius:7px;background:rgba(255,255,255,.06);display:flex;align-items:center;justify-content:center;font-size:.7rem;font-weight:700;color:var(--muted);}
+  .bed-mid{flex:1;min-width:0;}
+  .bed-colegio{font-size:.7rem;color:var(--muted);}
+  .bed-occupant{font-size:.86rem;font-weight:600;}
+  .bed-fixed{font-size:.86rem;font-weight:600;color:var(--green);}
+  select.bedselect{width:100%;font-family:'Outfit',sans-serif;font-size:.84rem;padding:8px 10px;border-radius:9px;border:1.5px solid var(--line);background:rgba(255,255,255,.04);color:var(--text);}
+  .liberar{flex:0 0 auto;font-family:'Outfit',sans-serif;font-size:.68rem;font-weight:600;color:var(--muted);background:transparent;border:1px solid var(--line);border-radius:999px;padding:5px 9px;cursor:pointer;}
+  .liberar:hover{border-color:var(--magenta);color:var(--magenta);}
+  .toast{position:fixed;left:50%;bottom:26px;transform:translate(-50%,140%);background:#151515;border:1px solid var(--line);color:var(--text);padding:12px 18px;border-radius:12px;font-size:.86rem;font-weight:500;transition:transform .25s ease;z-index:50;max-width:88vw;text-align:center;}
+  .toast.show{transform:translate(-50%,0);}
+  .hide{display:none !important;}
+  .muted-note{font-size:.76rem;color:var(--muted);margin-top:8px;}
+</style>
+</head>
+<body>
+
+  <div class="topbar">
+    <a class="back" href="/index.html#accesos">← Volver al panel</a>
+    <button class="refresh-btn" id="btnRefresh" type="button">↻ Actualizar</button>
+  </div>
+
+  <main>
+    <div class="stage">
+
+      <!-- LOGIN -->
+      <section id="viewLogin" class="panel panel-narrow">
+        <h1 style="margin-top:0;">Panel coordinador</h1>
+        <p class="lead">Ingresá con la clave de coordinador.</p>
+        <label for="passInput">Clave</label>
+        <input type="password" id="passInput" placeholder="Clave de coordinador" autocomplete="off">
+        <p class="error" id="loginError"></p>
+        <button class="btn btn-full" id="btnLogin" type="button">Ingresar</button>
+      </section>
+
+      <!-- CONTENIDO -->
+      <section id="viewMain" class="hide">
+        <h1>Elección de habitaciones</h1>
+        <p class="lead">Subí los Excel, revisá la grilla y editá manualmente si hace falta.</p>
+
+        <!-- RESUMEN -->
+        <div class="panel">
+          <h2>Resumen</h2>
+          <div class="stats-grid" id="stats"></div>
+        </div>
+
+        <!-- SUBIR LISTADO DE PASAJEROS -->
+        <div class="panel">
+          <h2>Subir listado de pasajeros</h2>
+          <p class="muted-note" style="margin-top:-4px;margin-bottom:10px;">Excel con Sexo, Apellido, Nombre y Colegio. Actualiza a los pasajeros existentes (por nombre y apellido) y agrega los nuevos — no borra elecciones ya hechas.</p>
+          <div class="file-row">
+            <input type="file" id="filePasajeros" accept=".xlsx,.xls">
+            <div class="sheet-picker hide" id="sheetPickerPasajeros">
+              Hoja: <select class="mini" id="selectSheetPasajeros"></select>
+            </div>
+            <div id="previewPasajeros"></div>
+          </div>
+        </div>
+
+        <!-- SUBIR HABITACIONES -->
+        <div class="panel">
+          <h2>Subir Excel de habitaciones</h2>
+          <p class="muted-note" style="margin-top:-4px;margin-bottom:10px;">Excel con Habitación, Sexo, Cantidad, N° de cama y Colegio por cama. <b>Al confirmar se borran todas las camas actuales y sus asignaciones</b>, y se reconstruyen desde cero.</p>
+          <div class="file-row">
+            <input type="file" id="fileCamas" accept=".xlsx,.xls">
+            <div class="sheet-picker hide" id="sheetPickerCamas">
+              Hoja: <select class="mini" id="selectSheetCamas"></select>
+            </div>
+            <div id="previewCamas"></div>
+          </div>
+        </div>
+
+        <!-- GRILLA EDITABLE -->
+        <div class="panel">
+          <h2>Grilla de habitaciones</h2>
+          <p class="muted-note" style="margin-top:-4px;margin-bottom:10px;">Acá podés asignar o liberar cualquier cama, sin restricción de sexo/colegio (se marca con ⚠ si no coincide).</p>
+          <div id="rooms"></div>
+        </div>
+
+      </section>
+    </div>
+  </main>
+
+  <div class="toast" id="toast"></div>
+
+<script>
+/* ============================================================
+   CONFIG
+   ============================================================ */
+const SUPA_URL = "https://mzousqdahqterfawhwsz.supabase.co";
+const SUPA_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im16b3VzcWRhaHF0ZXJmYXdod3N6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA1MTc4MzUsImV4cCI6MjA5NjA5MzgzNX0.EdSlcRdLD75OdYlwtZGLVgL_PGpJysWb_MKvuwGgj5Y";
+const supa = supabase.createClient(SUPA_URL, SUPA_KEY);
+
+const COORDI_KEY  = "wakeup_coordi_session";
+const COORDI_USER = "coordi";
+const COORDI_PASS = "Wakeupcoordi26!";
+
+/* ============================================================
+   HELPERS
+   ============================================================ */
+function stripAccents(s){ return s.normalize('NFD').replace(/[̀-ͯ]/g,''); }
+function normHeader(s){ return stripAccents((s||'').toString().trim().toLowerCase()); }
+function normSexo(s){
+  if(!s) return "";
+  const t = stripAccents(s.toString().trim().toLowerCase());
+  if(t.startsWith("var")) return "varon";
+  if(t.startsWith("muj")) return "mujer";
+  if(t.startsWith("coordi")) return "coordi";
+  return t;
+}
+function displaySexo(norm){ return norm === 'varon' ? 'Varon' : (norm === 'mujer' ? 'Mujer' : 'Coordi'); }
+function normColegio(s){ return stripAccents((s||'').toString().trim().toLowerCase().replace(/\s+/g,' ')); }
+function normNombreKey(apellido, nombre){ return normColegio(apellido) + '|' + normColegio(nombre); }
+
+let toastTimer;
+function showToast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=> t.classList.remove('show'), 3400);
+}
+
+function lsGet(k){ try{ return localStorage.getItem(k); }catch(e){ return null; } }
+function lsSet(k,v){ try{ localStorage.setItem(k,v); }catch(e){} }
+
+/* ============================================================
+   LOGIN
+   ============================================================ */
+function checkLogin(){
+  if(lsGet(COORDI_KEY) === '1'){
+    document.getElementById('viewLogin').classList.add('hide');
+    document.getElementById('viewMain').classList.remove('hide');
+    loadData();
+  } else {
+    document.getElementById('viewLogin').classList.remove('hide');
+    document.getElementById('viewMain').classList.add('hide');
+  }
+}
+document.getElementById('btnLogin').addEventListener('click', doLogin);
+document.getElementById('passInput').addEventListener('keydown', e => { if(e.key === 'Enter') doLogin(); });
+function doLogin(){
+  const v = document.getElementById('passInput').value;
+  if(v === COORDI_PASS){
+    lsSet(COORDI_KEY, '1');
+    document.getElementById('loginError').textContent = '';
+    checkLogin();
+  } else {
+    document.getElementById('loginError').textContent = 'Clave incorrecta.';
+  }
+}
+document.getElementById('btnRefresh').addEventListener('click', () => {
+  if(lsGet(COORDI_KEY) === '1') loadData();
+});
+
+/* ============================================================
+   LECTURA DE EXCEL (con manejo de celdas combinadas)
+   ============================================================ */
+function sheetToGrid(ws){
+  const grid = XLSX.utils.sheet_to_json(ws, { header: 1, defval: null, raw: true });
+  const merges = ws['!merges'] || [];
+  merges.forEach(m => {
+    const val = (grid[m.s.r] || [])[m.s.c];
+    for(let r = m.s.r; r <= m.e.r; r++){
+      if(!grid[r]) grid[r] = [];
+      for(let c = m.s.c; c <= m.e.c; c++){
+        if(grid[r][c] == null) grid[r][c] = val;
+      }
+    }
+  });
+  return grid;
+}
+
+// busca la fila de encabezado que mejor matchea los patrones pedidos
+// patterns: { campo: regex }
+function detectHeader(grid, patterns){
+  let best = null;
+  const keys = Object.keys(patterns);
+  for(let r = 0; r < Math.min(grid.length, 10); r++){
+    const row = grid[r] || [];
+    const colMap = {};
+    let score = 0;
+    row.forEach((cell, c) => {
+      const h = normHeader(cell);
+      if(!h) return;
+      keys.forEach(k => {
+        if(!(k in colMap) && patterns[k].test(h)){ colMap[k] = c; score++; }
+      });
+    });
+    if(!best || score > best.score){ best = { rowIndex: r, colMap, score }; }
+  }
+  return best;
+}
+
+function pickBestSheet(workbook, patterns, minScore){
+  let best = null;
+  workbook.SheetNames.forEach(name => {
+    const grid = sheetToGrid(workbook.Sheets[name]);
+    const det = detectHeader(grid, patterns);
+    if(det && det.score >= minScore && (!best || det.score > best.score)){
+      best = { sheetName: name, grid, ...det };
+    }
+  });
+  return best;
+}
+
+/* ============================================================
+   SUBIR LISTADO DE PASAJEROS
+   ============================================================ */
+let workbookPasajeros = null;
+let parsedPasajeros = null;
+
+document.getElementById('filePasajeros').addEventListener('change', async (e) => {
+  const file = e.target.files[0];
+  if(!file) return;
+  const buf = await file.arrayBuffer();
+  workbookPasajeros = XLSX.read(buf, { type: 'array' });
+  const patterns = {
+    sexo: /sexo/,
+    apellido: /apellido/,
+    nombre: /nombre/,
+    colegio: /colegio/
+  };
+  const best = pickBestSheet(workbookPasajeros, patterns, 4);
+  const picker = document.getElementById('sheetPickerPasajeros');
+  const sel = document.getElementById('selectSheetPasajeros');
+  sel.innerHTML = workbookPasajeros.SheetNames.map(n => `<option value="${n}">${n}</option>`).join('');
+  picker.classList.remove('hide');
+  if(best){
+    sel.value = best.sheetName;
+    parsePasajerosSheet(best.sheetName);
+  } else {
+    document.getElementById('previewPasajeros').innerHTML = '<p class="error">No pude detectar las columnas automáticamente. Elegí la hoja correcta arriba.</p>';
+  }
+});
+document.getElementById('selectSheetPasajeros').addEventListener('change', (e) => parsePasajerosSheet(e.target.value));
+
+function parsePasajerosSheet(sheetName){
+  const patterns = { sexo: /sexo/, apellido: /apellido/, nombre: /nombre/, colegio: /colegio/ };
+  const grid = sheetToGrid(workbookPasajeros.Sheets[sheetName]);
+  const det = detectHeader(grid, patterns);
+  if(!det || det.score < 4){
+    document.getElementById('previewPasajeros').innerHTML = '<p class="error">Esa hoja no tiene las columnas Sexo/Apellido/Nombre/Colegio.</p>';
+    parsedPasajeros = null;
+    return;
+  }
+  const { colMap, rowIndex } = det;
+  const rows = [];
+  for(let r = rowIndex + 1; r < grid.length; r++){
+    const row = grid[r] || [];
+    const apellido = row[colMap.apellido];
+    const nombre = row[colMap.nombre];
+    const colegioRaw = row[colMap.colegio];
+    const sexoRaw = row[colMap.sexo];
+    if(!apellido && !nombre) continue;
+    const colegioNorm = normColegio(colegioRaw);
+    if(colegioNorm.includes('coordi') || colegioNorm === 'wake up') continue; // staff, no pasajero
+    const sexoNorm = normSexo(sexoRaw);
+    if(sexoNorm !== 'varon' && sexoNorm !== 'mujer') continue;
+    rows.push({
+      apellido: (apellido||'').toString().trim(),
+      nombre: (nombre||'').toString().trim(),
+      sexo: displaySexo(sexoNorm),
+      colegio: (colegioRaw||'').toString().trim()
+    });
+  }
+  parsedPasajeros = rows;
+  renderPreviewPasajeros(rows);
+}
+
+function renderPreviewPasajeros(rows){
+  const box = document.getElementById('previewPasajeros');
+  if(!rows.length){
+    box.innerHTML = '<p class="error">No se encontraron pasajeros en esa hoja.</p>';
+    return;
+  }
+  const existingByKey = new Map(pasajeros.map(p => [normNombreKey(p.apellido, p.nombre), p]));
+  let nuevos = 0, actualiza = 0;
+  const rowsHtml = rows.map(r => {
+    const key = normNombreKey(r.apellido, r.nombre);
+    const isNew = !existingByKey.has(key);
+    if(isNew) nuevos++; else actualiza++;
+    return `<tr>
+      <td>${r.apellido}, ${r.nombre}</td>
+      <td>${r.sexo}</td>
+      <td>${r.colegio}</td>
+      <td><span class="badge ${isNew ? 'badge-nuevo' : 'badge-actualiza'}">${isNew ? 'nuevo' : 'actualiza'}</span></td>
+    </tr>`;
+  }).join('');
+  box.innerHTML = `
+    <p class="muted-note">${rows.length} pasajeros detectados — ${nuevos} nuevos, ${actualiza} a actualizar.</p>
+    <div style="max-height:260px;overflow:auto;">
+      <table><thead><tr><th>Pasajero</th><th>Sexo</th><th>Colegio</th><th></th></tr></thead>
+      <tbody>${rowsHtml}</tbody></table>
+    </div>
+    <div class="preview-actions">
+      <button class="btn" id="btnConfirmPasajeros" type="button">Confirmar carga</button>
+      <button class="btn btn-secondary" id="btnCancelPasajeros" type="button">Cancelar</button>
+    </div>
+  `;
+  document.getElementById('btnConfirmPasajeros').addEventListener('click', confirmPasajeros);
+  document.getElementById('btnCancelPasajeros').addEventListener('click', () => {
+    parsedPasajeros = null;
+    document.getElementById('filePasajeros').value = '';
+    document.getElementById('sheetPickerPasajeros').classList.add('hide');
+    box.innerHTML = '';
+  });
+}
+
+async function confirmPasajeros(){
+  if(!parsedPasajeros || !parsedPasajeros.length) return;
+  const box = document.getElementById('previewPasajeros');
+  box.innerHTML = '<p class="muted-note">Guardando...</p>';
+  try{
+    const existingByKey = new Map(pasajeros.map(p => [normNombreKey(p.apellido, p.nombre), p]));
+    let nuevos = 0, actualizados = 0;
+    for(const r of parsedPasajeros){
+      const key = normNombreKey(r.apellido, r.nombre);
+      const existing = existingByKey.get(key);
+      if(existing){
+        const { error } = await supa.from('hab_pasajeros')
+          .update({ sexo: r.sexo, colegio: r.colegio, nombre: r.nombre, apellido: r.apellido })
+          .eq('id', existing.id);
+        if(error) throw error;
+        actualizados++;
+      } else {
+        const { error } = await supa.from('hab_pasajeros').insert({
+          nombre: r.nombre, apellido: r.apellido, sexo: r.sexo, colegio: r.colegio
+        });
+        if(error) throw error;
+        nuevos++;
+      }
+    }
+    showToast(`Listado actualizado: ${nuevos} nuevos, ${actualizados} actualizados ✓`);
+    parsedPasajeros = null;
+    document.getElementById('filePasajeros').value = '';
+    document.getElementById('sheetPickerPasajeros').classList.add('hide');
+    box.innerHTML = '';
+    await loadData();
+  } catch(e){
+    console.error('confirmPasajeros error:', e);
+    box.innerHTML = '<p class="error">Hubo un error al guardar. Probá de nuevo.</p>';
+  }
+}
+
+/* ============================================================
+   SUBIR EXCEL DE HABITACIONES
+   ============================================================ */
+let workbookCamas = null;
+let parsedCamas = null;
+
+document.getElementById('fileCamas').addEventListener('change', async (e) => {
+  const file = e.target.files[0];
+  if(!file) return;
+  const buf = await file.arrayBuffer();
+  workbookCamas = XLSX.read(buf, { type: 'array' });
+  const patterns = {
+    habit: /habit/,
+    sexo: /sexo/,
+    cant: /cant/,
+    colegio: /colegio/,
+    nombre: /nombre/,
+    apellido: /apellido/
+  };
+  const best = pickBestSheet(workbookCamas, patterns, 5);
+  const picker = document.getElementById('sheetPickerCamas');
+  const sel = document.getElementById('selectSheetCamas');
+  sel.innerHTML = workbookCamas.SheetNames.map(n => `<option value="${n}">${n}</option>`).join('');
+  picker.classList.remove('hide');
+  if(best){
+    sel.value = best.sheetName;
+    parseCamasSheet(best.sheetName);
+  } else {
+    document.getElementById('previewCamas').innerHTML = '<p class="error">No pude detectar las columnas automáticamente. Elegí la hoja correcta arriba.</p>';
+  }
+});
+document.getElementById('selectSheetCamas').addEventListener('change', (e) => parseCamasSheet(e.target.value));
+
+function parseCamasSheet(sheetName){
+  const patterns = { habit: /habit/, sexo: /sexo/, cant: /cant/, colegio: /colegio/, nombre: /nombre/, apellido: /apellido/, num: /^num/ };
+  const grid = sheetToGrid(workbookCamas.Sheets[sheetName]);
+  const det = detectHeader(grid, patterns);
+  if(!det || det.score < 5){
+    document.getElementById('previewCamas').innerHTML = '<p class="error">Esa hoja no tiene las columnas Habitación/Sexo/Cantidad/Colegio.</p>';
+    parsedCamas = null;
+    return;
+  }
+  const { colMap, rowIndex } = det;
+  const rows = [];
+  const roomCounters = {};
+  for(let r = rowIndex + 1; r < grid.length; r++){
+    const row = grid[r] || [];
+    const habitRaw = row[colMap.habit];
+    const sexoRaw = row[colMap.sexo];
+    if(habitRaw == null || sexoRaw == null) continue;
+    const habitacion = habitRaw.toString().trim();
+    const sexoNorm = normSexo(sexoRaw);
+    const cantRaw = colMap.cant != null ? row[colMap.cant] : null;
+    const colegioRaw = colMap.colegio != null ? row[colMap.colegio] : null;
+    const nombreRaw = colMap.nombre != null ? row[colMap.nombre] : null;
+    const numRaw = colMap.num != null ? row[colMap.num] : null;
+
+    roomCounters[habitacion] = (roomCounters[habitacion] || 0) + 1;
+    const numCama = numRaw != null && !isNaN(Number(numRaw)) ? Number(numRaw) : roomCounters[habitacion];
+    const capacidad = cantRaw != null && !isNaN(Number(cantRaw)) ? Number(cantRaw) : null;
+
+    let coordiNombre = null;
+    if(sexoNorm === 'coordi' && nombreRaw){ coordiNombre = nombreRaw.toString().trim(); }
+
+    rows.push({
+      habitacion,
+      sexo: displaySexo(sexoNorm),
+      capacidad: capacidad || roomCounters[habitacion],
+      num_cama: numCama,
+      colegio: (colegioRaw || '').toString().trim(),
+      coordi_nombre: coordiNombre
+    });
+  }
+  // corregir capacidad con el total real de camas por habitación
+  const totals = {};
+  rows.forEach(r => { totals[r.habitacion] = (totals[r.habitacion]||0) + 1; });
+  rows.forEach(r => { if(!r.capacidad) r.capacidad = totals[r.habitacion]; });
+
+  parsedCamas = rows;
+  renderPreviewCamas(rows);
+}
+
+function renderPreviewCamas(rows){
+  const box = document.getElementById('previewCamas');
+  if(!rows.length){
+    box.innerHTML = '<p class="error">No se encontraron camas en esa hoja.</p>';
+    return;
+  }
+  const roomCount = new Set(rows.map(r => r.habitacion)).size;
+  box.innerHTML = `
+    <p class="muted-note">${rows.length} camas detectadas en ${roomCount} habitaciones.</p>
+    <p class="error" style="margin-top:8px;">⚠ Al confirmar se borran todas las camas y asignaciones actuales.</p>
+    <div class="preview-actions">
+      <button class="btn" id="btnConfirmCamas" type="button">Confirmar carga</button>
+      <button class="btn btn-secondary" id="btnCancelCamas" type="button">Cancelar</button>
+    </div>
+  `;
+  document.getElementById('btnConfirmCamas').addEventListener('click', confirmCamas);
+  document.getElementById('btnCancelCamas').addEventListener('click', () => {
+    parsedCamas = null;
+    document.getElementById('fileCamas').value = '';
+    document.getElementById('sheetPickerCamas').classList.add('hide');
+    box.innerHTML = '';
+  });
+}
+
+async function confirmCamas(){
+  if(!parsedCamas || !parsedCamas.length) return;
+  const box = document.getElementById('previewCamas');
+  box.innerHTML = '<p class="muted-note">Guardando...</p>';
+  try{
+    const { error: delError } = await supa.from('hab_camas').delete().gte('id', 0);
+    if(delError) throw delError;
+    const { error: insError } = await supa.from('hab_camas').insert(parsedCamas);
+    if(insError) throw insError;
+    showToast(`Habitaciones cargadas: ${parsedCamas.length} camas ✓`);
+    parsedCamas = null;
+    document.getElementById('fileCamas').value = '';
+    document.getElementById('sheetPickerCamas').classList.add('hide');
+    box.innerHTML = '';
+    await loadData();
+  } catch(e){
+    console.error('confirmCamas error:', e);
+    box.innerHTML = '<p class="error">Hubo un error al guardar. Probá de nuevo.</p>';
+  }
+}
+
+/* ============================================================
+   DATA + GRILLA
+   ============================================================ */
+let camas = [];
+let pasajeros = [];
+let loadingData = false;
+
+async function loadData(){
+  if(loadingData) return;
+  loadingData = true;
+  try{
+    const [camasRes, pasRes] = await Promise.all([
+      supa.from('hab_camas').select('*').order('id', { ascending: true }),
+      supa.from('hab_pasajeros').select('*').order('apellido', { ascending: true })
+    ]);
+    if(camasRes.error) throw camasRes.error;
+    if(pasRes.error) throw pasRes.error;
+    camas = camasRes.data || [];
+    pasajeros = pasRes.data || [];
+    renderStats();
+    renderRooms();
+  } catch(e){
+    console.error('loadData error:', e);
+    document.getElementById('rooms').innerHTML = '<p class="error">No se pudo cargar la información.</p>';
+  } finally {
+    loadingData = false;
+  }
+}
+
+function renderStats(){
+  const totalCamas = camas.length;
+  const ocupadas = camas.filter(c => c.pasajero_id != null || c.coordi_nombre).length;
+  const libres = totalCamas - ocupadas;
+  const totalPas = pasajeros.length;
+  const asignados = new Set(camas.filter(c => c.pasajero_id != null).map(c => c.pasajero_id)).size;
+  const sinAsignar = totalPas - asignados;
+  document.getElementById('stats').innerHTML = `
+    <div class="stat"><b>${totalCamas}</b><span>Camas totales</span></div>
+    <div class="stat"><b>${libres}</b><span>Camas libres</span></div>
+    <div class="stat"><b>${totalPas}</b><span>Pasajeros cargados</span></div>
+    <div class="stat"><b>${sinAsignar}</b><span>Sin cama todavía</span></div>
+  `;
+}
+
+function renderRooms(){
+  const container = document.getElementById('rooms');
+  if(!camas.length){
+    container.innerHTML = '<p class="muted-note">Todavía no hay habitaciones cargadas.</p>';
+    return;
+  }
+  const assignedIds = new Set(camas.filter(c => c.pasajero_id != null).map(c => c.pasajero_id));
+  const roomsMap = new Map();
+  camas.forEach(c => {
+    if(!roomsMap.has(c.habitacion)) roomsMap.set(c.habitacion, []);
+    roomsMap.get(c.habitacion).push(c);
+  });
+
+  container.innerHTML = '';
+  roomsMap.forEach((beds, roomLabel) => {
+    beds.sort((a,b) => (a.num_cama||0) - (b.num_cama||0));
+    const sexoNorm = normSexo(beds[0].sexo);
+    const ocupadas = beds.filter(b => b.pasajero_id != null || b.coordi_nombre).length;
+
+    const card = document.createElement('div');
+    card.className = 'room-card';
+    const tagClass = sexoNorm === 'varon' ? 'varon' : (sexoNorm === 'mujer' ? 'mujer' : 'coordi');
+    const tagLabel = displaySexo(sexoNorm);
+
+    card.innerHTML = `
+      <div class="room-head">
+        <span class="room-title">Habitación ${roomLabel}</span>
+        <span class="room-tag ${tagClass}">${tagLabel}</span>
+      </div>
+      <div class="muted-note" style="margin:0 0 6px;">${ocupadas}/${beds.length} camas ocupadas</div>
+    `;
+
+    beds.forEach(bed => {
+      const row = document.createElement('div');
+      row.className = 'bed-row';
+
+      if(bed.coordi_nombre){
+        row.innerHTML = `
+          <div class="bed-num">${bed.num_cama}</div>
+          <div class="bed-mid">
+            <div class="bed-fixed">${bed.coordi_nombre} · Coordinador/a</div>
+            <div class="bed-colegio">Cama fija</div>
+          </div>
+        `;
+      } else if(bed.pasajero_id != null){
+        const p = pasajeros.find(x => x.id === bed.pasajero_id);
+        const nombreCompleto = p ? `${p.apellido}, ${p.nombre}` : '(pasajero no encontrado)';
+        const mismatch = p && (normSexo(p.sexo) !== sexoNorm || normColegio(p.colegio) !== normColegio(bed.colegio));
+        row.innerHTML = `
+          <div class="bed-num">${bed.num_cama}</div>
+          <div class="bed-mid">
+            <div class="bed-occupant">${mismatch ? '⚠ ' : ''}${nombreCompleto}</div>
+            <div class="bed-colegio">${bed.colegio}</div>
+          </div>
+          <button class="liberar" type="button">Liberar</button>
+        `;
+        row.querySelector('.liberar').addEventListener('click', () => liberarCama(bed.id));
+      } else {
+        const options = pasajeros
+          .filter(p => !assignedIds.has(p.id))
+          .map(p => ({ p, match: normSexo(p.sexo) === sexoNorm && normColegio(p.colegio) === normColegio(bed.colegio) }))
+          .sort((a,b) => (b.match - a.match) || a.p.apellido.localeCompare(b.p.apellido));
+
+        const sel = document.createElement('select');
+        sel.className = 'bedselect';
+        sel.innerHTML = `<option value="">Elegir...</option>` +
+          options.map(o => `<option value="${o.p.id}">${o.match ? '' : '⚠ '}${o.p.apellido}, ${o.p.nombre}</option>`).join('');
+        sel.addEventListener('change', () => {
+          if(sel.value) asignarCama(bed.id, Number(sel.value));
+        });
+
+        const mid = document.createElement('div');
+        mid.className = 'bed-mid';
+        mid.innerHTML = `<div class="bed-colegio" style="margin-bottom:5px;">Cama libre · ${bed.colegio}</div>`;
+        mid.appendChild(sel);
+
+        row.innerHTML = `<div class="bed-num">${bed.num_cama}</div>`;
+        row.appendChild(mid);
+      }
+      card.appendChild(row);
+    });
+
+    container.appendChild(card);
+  });
+}
+
+async function asignarCama(camaId, pasajeroId){
+  try{
+    const { data, error } = await supa
+      .from('hab_camas')
+      .update({ pasajero_id: pasajeroId })
+      .eq('id', camaId)
+      .is('pasajero_id', null)
+      .select();
+    if(error){
+      showToast(error.code === '23505' ? 'Esa persona ya está en otra cama.' : 'No se pudo guardar.');
+      await loadData();
+      return;
+    }
+    if(!data || data.length === 0){
+      showToast('Esa cama ya fue ocupada.');
+      await loadData();
+      return;
+    }
+    showToast('Guardado ✓');
+    await loadData();
+  } catch(e){
+    console.error('asignarCama error:', e);
+    showToast('No se pudo guardar.');
+    await loadData();
+  }
+}
+
+async function liberarCama(camaId){
+  try{
+    const { error } = await supa.from('hab_camas').update({ pasajero_id: null }).eq('id', camaId);
+    if(error) throw error;
+    showToast('Cama liberada');
+    await loadData();
+  } catch(e){
+    console.error('liberarCama error:', e);
+    showToast('No se pudo liberar.');
+  }
+}
+
+/* ============================================================
+   INIT
+   ============================================================ */
+checkLogin();
+</script>
+</body>
+</html>
