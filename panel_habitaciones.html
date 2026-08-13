@@ -148,6 +148,13 @@
           <div class="stats-grid" id="stats"></div>
         </div>
 
+        <!-- ACCESO DE PASAJEROS -->
+        <div class="panel">
+          <h2>Acceso de pasajeros</h2>
+          <p class="muted-note" style="margin-top:-4px;margin-bottom:10px;">Mientras está bloqueado, los pasajeros pueden ver la grilla pero no elegir ni liberar camas.</p>
+          <button class="btn btn-full" id="btnToggleLock" type="button">...</button>
+        </div>
+
         <!-- SUBIR LISTADO DE PASAJEROS -->
         <div class="panel">
           <h2>Subir listado de pasajeros</h2>
@@ -598,6 +605,63 @@ let camas = [];
 let pasajeros = [];
 let loadingData = false;
 
+/* ============================================================
+   BLOQUEO DE EDICIÓN PARA PASAJEROS
+   (reutiliza la tabla config_app, mismo patrón que index.html)
+   ============================================================ */
+const CONFIG_KEY_LOCK = 'habitaciones_bloqueado';
+let habBloqueado = false;
+
+async function saveConfigValue(clave, valor){
+  const { data: upData, error: upErr } = await supa
+    .from('config_app').update({ valor }).eq('clave', clave).select();
+  if(upErr) throw upErr;
+  if(!upData || upData.length === 0){
+    const { error: inErr } = await supa.from('config_app').insert({ clave, valor });
+    if(inErr) throw inErr;
+  }
+}
+
+async function loadLockState(){
+  try{
+    const { data, error } = await supa.from('config_app').select('valor').eq('clave', CONFIG_KEY_LOCK).maybeSingle();
+    if(error) throw error;
+    habBloqueado = !!(data && data.valor == 1);
+  } catch(e){
+    console.error('loadLockState error:', e);
+    habBloqueado = false;
+  }
+  renderLockButton();
+}
+
+function renderLockButton(){
+  const btn = document.getElementById('btnToggleLock');
+  if(habBloqueado){
+    btn.textContent = '🔒 Elección bloqueada — tocá para reabrir';
+    btn.style.background = 'var(--muted)';
+  } else {
+    btn.textContent = '🔓 Elección abierta — tocá para bloquear';
+    btn.style.background = 'var(--magenta)';
+  }
+}
+
+document.getElementById('btnToggleLock').addEventListener('click', async () => {
+  const nuevo = !habBloqueado;
+  const btn = document.getElementById('btnToggleLock');
+  btn.disabled = true;
+  try{
+    await saveConfigValue(CONFIG_KEY_LOCK, nuevo ? 1 : 0);
+    habBloqueado = nuevo;
+    renderLockButton();
+    showToast(nuevo ? 'Elección de habitaciones bloqueada para pasajeros' : 'Elección de habitaciones reabierta');
+  } catch(e){
+    console.error('toggleLock error:', e);
+    showToast('No se pudo guardar el cambio.', 'warn');
+  } finally {
+    btn.disabled = false;
+  }
+});
+
 function candidatosPara(bed, assignedIds){
   const sexoNorm = normSexo(bed.sexo);
   return pasajeros.filter(p =>
@@ -641,6 +705,7 @@ async function loadData(){
   if(loadingData) return;
   loadingData = true;
   try{
+    await loadLockState();
     const [camasRes, pasRes] = await Promise.all([
       supa.from('hab_camas').select('*').order('id', { ascending: true }),
       supa.from('hab_pasajeros').select('*').order('apellido', { ascending: true })
