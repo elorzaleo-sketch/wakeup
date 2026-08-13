@@ -185,8 +185,9 @@
             <div class="export-wrap">
               <button class="btn btn-secondary" id="btnExportToggle" type="button">Exportar ▾</button>
               <div class="export-menu hide" id="exportMenu">
-                <button type="button" id="btnExportPdf">📄 Exportar a PDF</button>
-                <button type="button" id="btnExportExcel">📊 Exportar a Excel</button>
+                <button type="button" id="btnExportPdf">📄 PDF — lista</button>
+                <button type="button" id="btnExportPdfBloques">🧱 PDF — por habitaciones</button>
+                <button type="button" id="btnExportExcel">📊 Excel</button>
               </div>
             </div>
           </div>
@@ -910,6 +911,7 @@ function buildExportRows(){
       }
       rows.push({
         'Número de habitación': label,
+        'Sexo': displaySexo(normSexo(bed.sexo)),
         'Personas en esa habitación': bed.capacidad,
         'Apellido de pasajero': apellido,
         'Nombre de pasajero': nombre,
@@ -926,7 +928,7 @@ document.getElementById('btnExportExcel').addEventListener('click', () => {
     const rows = buildExportRows();
     if(!rows.length){ showToast('No hay habitaciones cargadas para exportar.', 'warn'); return; }
     const ws = XLSX.utils.json_to_sheet(rows);
-    ws['!cols'] = [{wch:20},{wch:22},{wch:22},{wch:22},{wch:22}];
+    ws['!cols'] = [{wch:20},{wch:12},{wch:22},{wch:22},{wch:22},{wch:22}];
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'Habitaciones');
     XLSX.writeFile(wb, 'habitaciones_wakeup.xlsx');
@@ -949,9 +951,10 @@ document.getElementById('btnExportPdf').addEventListener('click', () => {
     doc.text(new Date().toLocaleDateString('es-AR'), 40, 56);
     doc.autoTable({
       startY: 70,
-      head: [['N° habitación', 'Personas', 'Apellido', 'Nombre', 'Colegio']],
+      head: [['N° habitación', 'Sexo', 'Personas', 'Apellido', 'Nombre', 'Colegio']],
       body: rows.map(r => [
         r['Número de habitación'],
+        r['Sexo'],
         r['Personas en esa habitación'],
         r['Apellido de pasajero'],
         r['Nombre de pasajero'],
@@ -966,6 +969,146 @@ document.getElementById('btnExportPdf').addEventListener('click', () => {
     showToast('No se pudo exportar a PDF.', 'warn');
   }
 });
+
+document.getElementById('btnExportPdfBloques').addEventListener('click', () => {
+  document.getElementById('exportMenu').classList.add('hide');
+  try{
+    exportPdfBloques();
+  } catch(e){
+    console.error('exportPdfBloques error:', e);
+    showToast('No se pudo exportar a PDF.', 'warn');
+  }
+});
+
+// PDF "tal cual están" — bloques por habitación, agrupados mujeres/varones/coordi,
+// acomodados de a 2 por fila (como se ve en pantalla) y paginado automáticamente.
+function exportPdfBloques(){
+  if(!camas.length){ showToast('No hay habitaciones cargadas para exportar.', 'warn'); return; }
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'a4' });
+
+  const PAGE_W = doc.internal.pageSize.getWidth();
+  const PAGE_H = doc.internal.pageSize.getHeight();
+  const MARGIN = 40;
+  const GAP = 14;
+  const COL_W = (PAGE_W - 2*MARGIN - GAP) / 2;
+  const COL_X = [MARGIN, MARGIN + COL_W + GAP];
+  const TITLE_SIZE = 9;
+  const BED_SIZE = 8;
+  const LINE_H = 11;
+  const BOX_PAD = 8;
+
+  // agrupar y ordenar igual que en pantalla
+  const roomsMap = new Map(); const roomOrder = [];
+  camas.forEach(c => {
+    if(!roomsMap.has(c.habitacion)){ roomsMap.set(c.habitacion, []); roomOrder.push(c.habitacion); }
+    roomsMap.get(c.habitacion).push(c);
+  });
+  const roomsSorted = roomOrder.slice().sort((a,b) => {
+    const sa = SEXO_ORDER[normSexo(roomsMap.get(a)[0].sexo)] ?? 9;
+    const sb = SEXO_ORDER[normSexo(roomsMap.get(b)[0].sexo)] ?? 9;
+    if(sa !== sb) return sa - sb;
+    return roomOrder.indexOf(a) - roomOrder.indexOf(b);
+  });
+  const sections = { mujer: [], varon: [], coordi: [] };
+  roomsSorted.forEach(label => {
+    const sexoNorm = normSexo(roomsMap.get(label)[0].sexo);
+    if(sections[sexoNorm]) sections[sexoNorm].push(label);
+  });
+
+  doc.setFont(undefined, 'bold');
+  doc.setFontSize(14);
+  doc.text('Habitaciones · Wake Up', MARGIN, MARGIN - 10);
+  doc.setFont(undefined, 'normal');
+  doc.setFontSize(9);
+  doc.text(new Date().toLocaleDateString('es-AR'), MARGIN, MARGIN + 6);
+
+  let y = MARGIN + 26;
+
+  function bedLineText(bed){
+    if(bed.coordi_nombre) return `${bed.num_cama}. ${bed.coordi_nombre} · Coordinador/a`;
+    if(bed.pasajero_id != null){
+      const p = pasajeros.find(x => x.id === bed.pasajero_id);
+      return `${bed.num_cama}. ${p ? (p.apellido + ', ' + p.nombre) : '(no encontrado)'}`;
+    }
+    return `${bed.num_cama}. Libre — ${bed.colegio}`;
+  }
+
+  function measureBox(roomLabel, beds){
+    const colegios = [...new Set(beds.map(b => (b.colegio||'').trim()).filter(Boolean))];
+    const titleText = `Habitación ${roomLabel} — ${colegios.join(' / ')}`;
+    doc.setFontSize(TITLE_SIZE);
+    const titleLines = doc.splitTextToSize(titleText, COL_W - BOX_PAD*2);
+    const height = BOX_PAD*2 + titleLines.length*LINE_H + 4 + beds.length*LINE_H;
+    return { titleLines, height };
+  }
+
+  function drawBox(x, yTop, roomLabel, beds, meta){
+    doc.setDrawColor(220,220,220);
+    doc.roundedRect(x, yTop, COL_W, meta.height, 3, 3);
+    let cy = yTop + BOX_PAD + LINE_H - 3;
+    doc.setFont(undefined, 'bold');
+    doc.setFontSize(TITLE_SIZE);
+    meta.titleLines.forEach(line => { doc.text(line, x + BOX_PAD, cy); cy += LINE_H; });
+    cy += 2;
+    doc.setFont(undefined, 'normal');
+    doc.setFontSize(BED_SIZE);
+    beds.forEach(bed => {
+      const oneLine = shortenToOneLine(bedLineText(bed), COL_W - BOX_PAD*2);
+      doc.text(oneLine, x + BOX_PAD, cy);
+      cy += LINE_H;
+    });
+  }
+
+  function shortenToOneLine(text, maxW){
+    const lines = doc.splitTextToSize(text, maxW);
+    return lines[0]; // una sola línea por cama, se corta si es muy largo
+  }
+
+  function ensureRowSpace(rowHeight){
+    if(y + rowHeight > PAGE_H - MARGIN){
+      doc.addPage();
+      y = MARGIN;
+    }
+  }
+
+  ['mujer','varon','coordi'].forEach(sexoNorm => {
+    const labels = sections[sexoNorm];
+    if(!labels.length) return;
+
+    ensureRowSpace(20);
+    doc.setFont(undefined, 'bold');
+    doc.setFontSize(11);
+    doc.setTextColor(sexoNorm === 'mujer' ? 241 : (sexoNorm === 'varon' ? 93 : 25),
+                      sexoNorm === 'mujer' ? 29  : (sexoNorm === 'varon' ? 180 : 148),
+                      sexoNorm === 'mujer' ? 140 : (sexoNorm === 'varon' ? 201 : 50));
+    doc.text(SEXO_LABEL_SECTION[sexoNorm], MARGIN, y);
+    doc.setTextColor(0,0,0);
+    y += 16;
+
+    for(let i = 0; i < labels.length; i += 2){
+      const leftLabel = labels[i];
+      const rightLabel = labels[i+1];
+      const leftBeds = roomsMap.get(leftLabel).slice().sort((a,b)=>(a.num_cama||0)-(b.num_cama||0));
+      const leftMeta = measureBox(leftLabel, leftBeds);
+      let rightBeds = null, rightMeta = null;
+      if(rightLabel){
+        rightBeds = roomsMap.get(rightLabel).slice().sort((a,b)=>(a.num_cama||0)-(b.num_cama||0));
+        rightMeta = measureBox(rightLabel, rightBeds);
+      }
+      const rowHeight = Math.max(leftMeta.height, rightMeta ? rightMeta.height : 0);
+      ensureRowSpace(rowHeight);
+
+      drawBox(COL_X[0], y, leftLabel, leftBeds, leftMeta);
+      if(rightLabel) drawBox(COL_X[1], y, rightLabel, rightBeds, rightMeta);
+
+      y += rowHeight + GAP;
+    }
+    y += 10;
+  });
+
+  doc.save('habitaciones_wakeup_bloques.pdf');
+}
 
 /* ============================================================
    INIT
