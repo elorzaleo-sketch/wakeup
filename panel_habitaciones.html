@@ -27,7 +27,8 @@
   .refresh-btn{appearance:none;cursor:pointer;font-family:'Outfit',sans-serif;font-size:.8rem;font-weight:600;color:var(--text);background:transparent;border:1.5px solid var(--line);border-radius:999px;padding:7px 13px;}
   .refresh-btn:hover{border-color:var(--cyan);color:var(--cyan);}
   main{padding:6px 16px 70px;display:flex;justify-content:center;}
-  .stage{width:100%;max-width:680px;}
+  .stage{width:100%;max-width:960px;}
+  .stage-narrow{max-width:680px;margin:0 auto;}
   h1{font-family:'Bricolage Grotesque',sans-serif;font-weight:800;font-size:1.6rem;text-align:center;margin:6px 0 6px;}
   h2{font-family:'Bricolage Grotesque',sans-serif;font-weight:700;font-size:1.05rem;margin:0 0 10px;}
   .lead{text-align:center;color:var(--muted);font-size:.9rem;line-height:1.5;margin:0 auto 20px;max-width:48ch;}
@@ -59,9 +60,19 @@
   .stat{background:rgba(255,255,255,.03);border:1px solid var(--line);border-radius:12px;padding:12px;text-align:center;}
   .stat b{display:block;font-family:'Bricolage Grotesque',sans-serif;font-size:1.4rem;}
   .stat span{font-size:.72rem;color:var(--muted);}
-  .room-card{background:rgba(255,255,255,.03);border:1px solid var(--line);border-radius:14px;padding:14px 14px 6px;margin-bottom:10px;}
-  .room-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;gap:8px;flex-wrap:wrap;}
-  .room-title{font-weight:700;font-size:.95rem;}
+  .sexo-section{margin-bottom:22px;}
+  .sexo-heading{display:flex;align-items:center;gap:10px;margin:0 0 10px;}
+  .sexo-heading b{font-weight:700;font-size:.92rem;}
+  .sexo-dot{width:8px;height:8px;border-radius:50%;}
+  .sexo-dot.mujer{background:var(--magenta);}
+  .sexo-dot.varon{background:var(--cyan);}
+  .sexo-dot.coordi{background:var(--green);}
+  .rooms-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px;}
+  .room-card{background:rgba(255,255,255,.03);border:1px solid var(--line);border-radius:14px;padding:14px 14px 6px;}
+  .room-head{margin-bottom:8px;}
+  .room-title{font-weight:700;font-size:.92rem;}
+  .room-title .sep{color:var(--muted);font-weight:600;margin:0 4px;}
+  .room-title .colegio{color:var(--muted);font-weight:600;font-size:.84rem;}
   .room-tag{font-size:.66rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;padding:3px 8px;border-radius:999px;border:1px solid var(--line);color:var(--muted);}
   .room-tag.varon{color:var(--cyan);border-color:var(--cyan);}
   .room-tag.mujer{color:var(--magenta);border-color:var(--magenta);}
@@ -78,6 +89,8 @@
   .liberar:hover{border-color:var(--magenta);color:var(--magenta);}
   .toast{position:fixed;left:50%;bottom:26px;transform:translate(-50%,140%);background:#151515;border:1px solid var(--line);color:var(--text);padding:12px 18px;border-radius:12px;font-size:.86rem;font-weight:500;transition:transform .25s ease;z-index:50;max-width:88vw;text-align:center;}
   .toast.show{transform:translate(-50%,0);}
+  .toast.warn{border-color:var(--magenta);background:rgba(241,29,140,.14);}
+  .toast.warn::before{content:"⚠ ";}
   .hide{display:none !important;}
   .muted-note{font-size:.76rem;color:var(--muted);margin-top:8px;}
 </style>
@@ -104,6 +117,7 @@
 
       <!-- CONTENIDO -->
       <section id="viewMain" class="hide">
+        <div class="stage-narrow">
         <h1>Elección de habitaciones</h1>
         <p class="lead">Subí los Excel, revisá la grilla y editá manualmente si hace falta.</p>
 
@@ -137,6 +151,7 @@
             </div>
             <div id="previewCamas"></div>
           </div>
+        </div>
         </div>
 
         <!-- GRILLA EDITABLE -->
@@ -180,14 +195,16 @@ function normSexo(s){
 function displaySexo(norm){ return norm === 'varon' ? 'Varon' : (norm === 'mujer' ? 'Mujer' : 'Coordi'); }
 function normColegio(s){ return stripAccents((s||'').toString().trim().toLowerCase().replace(/\s+/g,' ')); }
 function normNombreKey(apellido, nombre){ return normColegio(apellido) + '|' + normColegio(nombre); }
+const SEXO_ORDER = { mujer: 0, varon: 1, coordi: 2 };
+const SEXO_LABEL_SECTION = { mujer: "Habitaciones de mujeres", varon: "Habitaciones de varones", coordi: "Habitaciones de coordinadores" };
 
 let toastTimer;
-function showToast(msg){
+function showToast(msg, type){
   const t = document.getElementById('toast');
   t.textContent = msg;
-  t.classList.add('show');
+  t.className = 'toast show' + (type === 'warn' ? ' warn' : '');
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(()=> t.classList.remove('show'), 3400);
+  toastTimer = setTimeout(()=> t.classList.remove('show'), 3600);
 }
 
 function lsGet(k){ try{ return localStorage.getItem(k); }catch(e){ return null; } }
@@ -546,6 +563,45 @@ let camas = [];
 let pasajeros = [];
 let loadingData = false;
 
+function candidatosPara(bed, assignedIds){
+  const sexoNorm = normSexo(bed.sexo);
+  return pasajeros.filter(p =>
+    normSexo(p.sexo) === sexoNorm &&
+    normColegio(p.colegio) === normColegio(bed.colegio) &&
+    !assignedIds.has(p.id)
+  );
+}
+
+async function silentAssign(camaId, pasajeroId){
+  const { data, error } = await supa
+    .from('hab_camas')
+    .update({ pasajero_id: pasajeroId })
+    .eq('id', camaId)
+    .is('pasajero_id', null)
+    .select();
+  if(error || !data || data.length === 0) return false;
+  return true;
+}
+
+// Si una cama tiene un único pasajero posible, se completa sola
+async function autoFillSingleCandidates(){
+  let changed = true;
+  let iterations = 0;
+  while(changed && iterations < 25){
+    changed = false;
+    iterations++;
+    const assignedIds = new Set(camas.filter(c => c.pasajero_id != null).map(c => c.pasajero_id));
+    for(const bed of camas){
+      if(bed.coordi_nombre || bed.pasajero_id != null) continue;
+      const candidatos = candidatosPara(bed, assignedIds);
+      if(candidatos.length === 1){
+        const ok = await silentAssign(bed.id, candidatos[0].id);
+        if(ok){ bed.pasajero_id = candidatos[0].id; changed = true; }
+      }
+    }
+  }
+}
+
 async function loadData(){
   if(loadingData) return;
   loadingData = true;
@@ -558,6 +614,7 @@ async function loadData(){
     if(pasRes.error) throw pasRes.error;
     camas = camasRes.data || [];
     pasajeros = pasRes.data || [];
+    await autoFillSingleCandidates();
     renderStats();
     renderRooms();
   } catch(e){
@@ -590,82 +647,112 @@ function renderRooms(){
     return;
   }
   const assignedIds = new Set(camas.filter(c => c.pasajero_id != null).map(c => c.pasajero_id));
+
   const roomsMap = new Map();
+  const roomOrder = [];
   camas.forEach(c => {
-    if(!roomsMap.has(c.habitacion)) roomsMap.set(c.habitacion, []);
+    if(!roomsMap.has(c.habitacion)){ roomsMap.set(c.habitacion, []); roomOrder.push(c.habitacion); }
     roomsMap.get(c.habitacion).push(c);
   });
 
+  const roomsSorted = roomOrder.slice().sort((a,b) => {
+    const sa = SEXO_ORDER[normSexo(roomsMap.get(a)[0].sexo)] ?? 9;
+    const sb = SEXO_ORDER[normSexo(roomsMap.get(b)[0].sexo)] ?? 9;
+    if(sa !== sb) return sa - sb;
+    return roomOrder.indexOf(a) - roomOrder.indexOf(b);
+  });
+
+  const sections = { mujer: [], varon: [], coordi: [] };
+  roomsSorted.forEach(label => {
+    const sexoNorm = normSexo(roomsMap.get(label)[0].sexo);
+    if(sections[sexoNorm]) sections[sexoNorm].push(label);
+  });
+
   container.innerHTML = '';
-  roomsMap.forEach((beds, roomLabel) => {
-    beds.sort((a,b) => (a.num_cama||0) - (b.num_cama||0));
-    const sexoNorm = normSexo(beds[0].sexo);
-    const ocupadas = beds.filter(b => b.pasajero_id != null || b.coordi_nombre).length;
+  ['mujer','varon','coordi'].forEach(sexoNorm => {
+    const labels = sections[sexoNorm];
+    if(!labels.length) return;
 
-    const card = document.createElement('div');
-    card.className = 'room-card';
-    const tagClass = sexoNorm === 'varon' ? 'varon' : (sexoNorm === 'mujer' ? 'mujer' : 'coordi');
-    const tagLabel = displaySexo(sexoNorm);
-
-    card.innerHTML = `
-      <div class="room-head">
-        <span class="room-title">Habitación ${roomLabel}</span>
-        <span class="room-tag ${tagClass}">${tagLabel}</span>
+    const sectionEl = document.createElement('div');
+    sectionEl.className = 'sexo-section';
+    sectionEl.innerHTML = `
+      <div class="sexo-heading">
+        <span class="sexo-dot ${sexoNorm}"></span>
+        <b>${SEXO_LABEL_SECTION[sexoNorm]}</b>
       </div>
-      <div class="muted-note" style="margin:0 0 6px;">${ocupadas}/${beds.length} camas ocupadas</div>
     `;
+    const grid = document.createElement('div');
+    grid.className = 'rooms-grid';
 
-    beds.forEach(bed => {
-      const row = document.createElement('div');
-      row.className = 'bed-row';
+    labels.forEach(roomLabel => {
+      const beds = roomsMap.get(roomLabel).slice().sort((a,b) => (a.num_cama||0) - (b.num_cama||0));
+      const ocupadas = beds.filter(b => b.pasajero_id != null || b.coordi_nombre).length;
+      const colegiosDistintos = [...new Set(beds.map(b => (b.colegio||'').trim()).filter(Boolean))];
 
-      if(bed.coordi_nombre){
-        row.innerHTML = `
-          <div class="bed-num">${bed.num_cama}</div>
-          <div class="bed-mid">
-            <div class="bed-fixed">${bed.coordi_nombre} · Coordinador/a</div>
-            <div class="bed-colegio">Cama fija</div>
-          </div>
-        `;
-      } else if(bed.pasajero_id != null){
-        const p = pasajeros.find(x => x.id === bed.pasajero_id);
-        const nombreCompleto = p ? `${p.apellido}, ${p.nombre}` : '(pasajero no encontrado)';
-        const mismatch = p && (normSexo(p.sexo) !== sexoNorm || normColegio(p.colegio) !== normColegio(bed.colegio));
-        row.innerHTML = `
-          <div class="bed-num">${bed.num_cama}</div>
-          <div class="bed-mid">
-            <div class="bed-occupant">${mismatch ? '⚠ ' : ''}${nombreCompleto}</div>
-            <div class="bed-colegio">${bed.colegio}</div>
-          </div>
-          <button class="liberar" type="button">Liberar</button>
-        `;
-        row.querySelector('.liberar').addEventListener('click', () => liberarCama(bed.id));
-      } else {
-        const options = pasajeros
-          .filter(p => !assignedIds.has(p.id))
-          .map(p => ({ p, match: normSexo(p.sexo) === sexoNorm && normColegio(p.colegio) === normColegio(bed.colegio) }))
-          .sort((a,b) => (b.match - a.match) || a.p.apellido.localeCompare(b.p.apellido));
+      const card = document.createElement('div');
+      card.className = 'room-card';
+      card.innerHTML = `
+        <div class="room-head">
+          <div class="room-title">Habitación ${roomLabel}<span class="sep">—</span><span class="colegio">${colegiosDistintos.join(' / ')}</span></div>
+          <div class="muted-note" style="margin:2px 0 0;">${ocupadas}/${beds.length} camas ocupadas</div>
+        </div>
+      `;
 
-        const sel = document.createElement('select');
-        sel.className = 'bedselect';
-        sel.innerHTML = `<option value="">Elegir...</option>` +
-          options.map(o => `<option value="${o.p.id}">${o.match ? '' : '⚠ '}${o.p.apellido}, ${o.p.nombre}</option>`).join('');
-        sel.addEventListener('change', () => {
-          if(sel.value) asignarCama(bed.id, Number(sel.value));
-        });
+      beds.forEach(bed => {
+        const row = document.createElement('div');
+        row.className = 'bed-row';
 
-        const mid = document.createElement('div');
-        mid.className = 'bed-mid';
-        mid.innerHTML = `<div class="bed-colegio" style="margin-bottom:5px;">Cama libre · ${bed.colegio}</div>`;
-        mid.appendChild(sel);
+        if(bed.coordi_nombre){
+          row.innerHTML = `
+            <div class="bed-num">${bed.num_cama}</div>
+            <div class="bed-mid">
+              <div class="bed-fixed">${bed.coordi_nombre} · Coordinador/a</div>
+              <div class="bed-colegio">Cama fija</div>
+            </div>
+          `;
+        } else if(bed.pasajero_id != null){
+          const p = pasajeros.find(x => x.id === bed.pasajero_id);
+          const nombreCompleto = p ? `${p.apellido}, ${p.nombre}` : '(pasajero no encontrado)';
+          const mismatch = p && (normSexo(p.sexo) !== normSexo(bed.sexo) || normColegio(p.colegio) !== normColegio(bed.colegio));
+          row.innerHTML = `
+            <div class="bed-num">${bed.num_cama}</div>
+            <div class="bed-mid">
+              <div class="bed-occupant">${mismatch ? '⚠ ' : ''}${nombreCompleto}</div>
+              <div class="bed-colegio">${bed.colegio}</div>
+            </div>
+            <button class="liberar" type="button">Liberar</button>
+          `;
+          row.querySelector('.liberar').addEventListener('click', () => liberarCama(bed.id));
+        } else {
+          const options = pasajeros
+            .filter(p => !assignedIds.has(p.id))
+            .map(p => ({ p, match: normSexo(p.sexo) === normSexo(bed.sexo) && normColegio(p.colegio) === normColegio(bed.colegio) }))
+            .sort((a,b) => (b.match - a.match) || a.p.apellido.localeCompare(b.p.apellido));
 
-        row.innerHTML = `<div class="bed-num">${bed.num_cama}</div>`;
-        row.appendChild(mid);
-      }
-      card.appendChild(row);
+          const sel = document.createElement('select');
+          sel.className = 'bedselect';
+          sel.innerHTML = `<option value="">Elegir...</option>` +
+            options.map(o => `<option value="${o.p.id}">${o.match ? '' : '⚠ '}${o.p.apellido}, ${o.p.nombre}</option>`).join('');
+          sel.addEventListener('change', () => {
+            if(sel.value) asignarCama(bed.id, Number(sel.value));
+          });
+
+          const mid = document.createElement('div');
+          mid.className = 'bed-mid';
+          mid.innerHTML = `<div class="bed-colegio" style="margin-bottom:5px;">Cama libre · ${bed.colegio}</div>`;
+          mid.appendChild(sel);
+
+          row.innerHTML = `<div class="bed-num">${bed.num_cama}</div>`;
+          row.appendChild(mid);
+        }
+        card.appendChild(row);
+      });
+
+      grid.appendChild(card);
     });
 
-    container.appendChild(card);
+    sectionEl.appendChild(grid);
+    container.appendChild(sectionEl);
   });
 }
 
@@ -678,12 +765,12 @@ async function asignarCama(camaId, pasajeroId){
       .is('pasajero_id', null)
       .select();
     if(error){
-      showToast(error.code === '23505' ? 'Esa persona ya está en otra cama.' : 'No se pudo guardar.');
+      showToast(error.code === '23505' ? 'Esa persona ya está en otra cama.' : 'No se pudo guardar.', 'warn');
       await loadData();
       return;
     }
     if(!data || data.length === 0){
-      showToast('Esa cama ya fue ocupada.');
+      showToast('Esa cama ya fue ocupada.', 'warn');
       await loadData();
       return;
     }
@@ -691,7 +778,7 @@ async function asignarCama(camaId, pasajeroId){
     await loadData();
   } catch(e){
     console.error('asignarCama error:', e);
-    showToast('No se pudo guardar.');
+    showToast('No se pudo guardar.', 'warn');
     await loadData();
   }
 }
@@ -704,7 +791,7 @@ async function liberarCama(camaId){
     await loadData();
   } catch(e){
     console.error('liberarCama error:', e);
-    showToast('No se pudo liberar.');
+    showToast('No se pudo liberar.', 'warn');
   }
 }
 
