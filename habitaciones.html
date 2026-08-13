@@ -74,6 +74,8 @@
   .liberar{flex:0 0 auto;font-family:'Outfit',sans-serif;font-size:.72rem;font-weight:600;color:var(--muted);background:transparent;border:1px solid var(--line);border-radius:999px;padding:6px 10px;cursor:pointer;}
   .liberar:hover{border-color:var(--magenta);color:var(--magenta);}
   .empty-note{text-align:center;color:var(--muted);font-size:.9rem;padding:40px 0;}
+  .lock-banner{max-width:560px;margin:0 auto 18px;background:rgba(241,29,140,.1);border:1px solid var(--magenta);color:var(--text);border-radius:14px;padding:12px 16px;font-size:.86rem;text-align:center;}
+  .bed-readonly{font-size:.82rem;color:var(--muted);}
   .toast{position:fixed;left:50%;bottom:26px;transform:translate(-50%,140%);background:#151515;border:1px solid var(--line);color:var(--text);padding:12px 18px;border-radius:12px;font-size:.86rem;font-weight:500;transition:transform .25s ease;z-index:50;max-width:88vw;text-align:center;}
   .toast.show{transform:translate(-50%,0);}
   .toast.warn{border-color:var(--magenta);background:rgba(241,29,140,.14);}
@@ -112,6 +114,7 @@
             <li>No puede figurar la misma persona en más de una habitación.</li>
           </ol>
         </div>
+        <div id="lockBanner" class="hide"></div>
         <div id="rooms"></div>
       </section>
 
@@ -195,6 +198,8 @@ function doLogin(){
 let camas = [];
 let pasajeros = [];
 let loading = false;
+let locked = false;
+const CONFIG_KEY_LOCK = 'habitaciones_bloqueado';
 
 function candidatosPara(bed, assignedIds){
   const sexoNorm = normSexo(bed.sexo);
@@ -219,6 +224,7 @@ async function silentAssign(camaId, pasajeroId){
 
 // Si una cama tiene un único pasajero posible, se completa sola
 async function autoFillSingleCandidates(){
+  if(locked) return;
   let changed = true;
   let iterations = 0;
   while(changed && iterations < 25){
@@ -239,10 +245,22 @@ async function autoFillSingleCandidates(){
   }
 }
 
+async function loadLockState(){
+  try{
+    const { data, error } = await supa.from('config_app').select('valor').eq('clave', CONFIG_KEY_LOCK).maybeSingle();
+    if(error) throw error;
+    locked = !!(data && data.valor == 1);
+  } catch(e){
+    console.error('loadLockState error:', e);
+    locked = false;
+  }
+}
+
 async function loadData(){
   if(loading) return;
   loading = true;
   try{
+    await loadLockState();
     const [camasRes, pasRes] = await Promise.all([
       supa.from('hab_camas').select('*').order('id', { ascending: true }),
       supa.from('hab_pasajeros').select('*').order('apellido', { ascending: true })
@@ -274,6 +292,14 @@ document.getElementById('btnRefresh').addEventListener('click', () => {
    RENDER
    ============================================================ */
 function render(){
+  const banner = document.getElementById('lockBanner');
+  if(locked){
+    banner.innerHTML = '🔒 La elección de habitaciones está cerrada por ahora. Podés ver cómo quedaron armadas, pero no elegir ni liberar camas.';
+    banner.className = 'lock-banner';
+  } else {
+    banner.className = 'hide';
+  }
+
   const container = document.getElementById('rooms');
   if(!camas.length){
     container.innerHTML = '<p class="empty-note">Todavía no hay habitaciones cargadas.</p>';
@@ -357,9 +383,16 @@ function render(){
               <div class="bed-occupant">${nombreCompleto}</div>
               <div class="bed-colegio">${bed.colegio}</div>
             </div>
-            <button class="liberar" type="button">Liberar</button>
+            ${locked ? '' : '<button class="liberar" type="button">Liberar</button>'}
           `;
-          row.querySelector('.liberar').addEventListener('click', () => liberarCama(bed.id));
+          if(!locked) row.querySelector('.liberar').addEventListener('click', () => liberarCama(bed.id));
+        } else if(locked){
+          row.innerHTML = `
+            <div class="bed-num">${bed.num_cama}</div>
+            <div class="bed-mid">
+              <div class="bed-readonly">Cama libre · ${bed.colegio}</div>
+            </div>
+          `;
         } else {
           const options = candidatosPara(bed, assignedIds);
           if(!options.length){
@@ -403,6 +436,7 @@ function render(){
    ACCIONES
    ============================================================ */
 async function asignarCama(camaId, pasajeroId){
+  if(locked){ showToast('La elección de habitaciones está cerrada.', 'warn'); return; }
   try{
     const { data, error } = await supa
       .from('hab_camas')
@@ -435,6 +469,7 @@ async function asignarCama(camaId, pasajeroId){
 }
 
 async function liberarCama(camaId){
+  if(locked){ showToast('La elección de habitaciones está cerrada.', 'warn'); return; }
   try{
     const { error } = await supa
       .from('hab_camas')
