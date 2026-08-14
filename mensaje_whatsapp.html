@@ -55,6 +55,7 @@
     .dateout{ font-size:23px; }
     .loadbar{ flex-wrap:wrap; }
     input[type=time]{ min-height:44px; }
+    .time24 select{ min-height:44px; }
   }
 
   .card{ background:var(--card); border:1px solid var(--line); border-radius:16px; padding:18px 18px 20px; margin-bottom:16px; box-shadow:0 1px 2px rgba(8,8,8,.03); }
@@ -70,6 +71,13 @@
   }
   input:focus,select:focus,textarea:focus{ border-color:var(--cyan); }
   textarea{ resize:vertical; min-height:42px; }
+  /* Selector de hora en formato 24hs (reemplaza input[type=time] para que nunca muestre AM/PM) */
+  .time24{ display:flex; align-items:center; gap:2px; width:100%; font-family:inherit; font-size:14px;
+    padding:2px 6px; border:1px solid var(--line); border-radius:10px; background:#fbfdfd; transition:border-color .15s; }
+  .time24:focus-within{ border-color:var(--cyan); }
+  .time24 select{ border:none; background:transparent; outline:none; font-family:inherit; font-size:14px;
+    color:var(--black); padding:7px 2px; text-align:center; flex:1; min-width:0; -webkit-appearance:none; appearance:none; }
+  .time24 .sep{ color:var(--muted); font-weight:700; }
   .row{ display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end; }
   .field{ flex:1; min-width:120px; }
 
@@ -270,7 +278,7 @@
 
     <div class="card" data-meal="merienda">
       <div class="title"><span class="emoji">🥪</span> Merienda <span class="pill">comida</span></div>
-      <div class="row"><div class="field" style="max-width:160px"><label>Horario</label><input type="time" data-merhorario></div></div>
+      <div class="row"><div class="field" style="max-width:160px"><label>Horario</label><div class="time24" data-merhorario></div></div></div>
       <div style="margin-top:14px"><label>Observaciones</label><textarea data-obs="merienda" placeholder="(opcional)"></textarea></div>
     </div>
 
@@ -452,7 +460,7 @@ function resetDraft(){
   ['actManana','actTarde','actNoche'].forEach(k=> state[k]={actividad:'',grupos:[{colegios:[],h:''}],detalles:'',obs:''});
   fechaInput.value = state.fecha;
   document.querySelectorAll('[data-obs]').forEach(t=> t.value='');
-  const mh=$('[data-merhorario]'); if(mh) mh.value='';
+  const mh=$('[data-merhorario]'); if(mh) setTime24(mh,'');
   refreshDate();
   ['desayuno','almuerzo','cena'].forEach(renderTurnos);
   ['actManana','actTarde','actNoche'].forEach(renderActivity);
@@ -463,6 +471,36 @@ function resetDraft(){
 const NUM = ['','1️⃣','2️⃣','3️⃣','4️⃣','5️⃣','6️⃣','7️⃣','8️⃣','9️⃣','🔟'];
 const numEmoji = n => NUM[n] || (n+'.');
 const $ = s => document.querySelector(s);
+
+/* ===== Selector de hora en formato 24hs (reemplaza input[type=time] para que nunca muestre AM/PM,
+   ya que en iPhone/Safari el picker nativo sigue la Región del dispositivo y no se puede forzar) ===== */
+function time24Options(n){
+  let s='<option value="">--</option>';
+  for(let i=0;i<n;i++){ const v=String(i).padStart(2,'0'); s+=`<option value="${v}">${v}</option>`; }
+  return s;
+}
+function getTime24(container){
+  const hh=container.querySelector('.hh'), mm=container.querySelector('.mm');
+  return (hh && mm && hh.value && mm.value) ? `${hh.value}:${mm.value}` : '';
+}
+function setTime24(container, value){
+  const [h,m]=(value||'').split(':');
+  const hh=container.querySelector('.hh'), mm=container.querySelector('.mm');
+  if(hh) hh.value=h||''; if(mm) mm.value=m||'';
+}
+function buildTime24In(container, value, onChange){
+  container.classList.add('time24');
+  container.innerHTML = `<select class="hh">${time24Options(24)}</select><span class="sep">:</span><select class="mm">${time24Options(60)}</select>`;
+  setTime24(container, value);
+  const emit=()=>onChange(getTime24(container));
+  container.querySelector('.hh').addEventListener('change', emit);
+  container.querySelector('.mm').addEventListener('change', emit);
+}
+function mkTime24(value, onChange){
+  const wrap=document.createElement('div');
+  buildTime24In(wrap, value, onChange);
+  return wrap;
+}
 
 /* ===== Selector de colegios (compartido por turnos y grupos) ===== */
 function colOptions(){ return '<option value="Todos">Todos</option>' + COLEGIOS.map(c=>`<option value="${c}">${c}</option>`).join(''); }
@@ -516,10 +554,10 @@ function renderTurnos(meal){
     div.innerHTML = `<div class="item-head"><span class="name">Turno ${i+1}<span class="cap-slot">${capBadge(used, config.comedor)}</span></span>
         ${items.length>1?'<button class="del" title="Quitar turno">✕</button>':''}</div>
       <div class="turno-grid">
-        <div class="hor"><label>Horario</label><input type="time" value="${t.h}"></div>
+        <div class="hor"><label>Horario</label><div class="time24"></div></div>
         <div class="cols">${colPickerMarkup(t.colegios, dup)}</div>
       </div>${capWarnHTML(used, config.comedor, 'turno')}${suggestHTML(used, config.comedor, poolForMeal(meal, t))}`;
-    div.querySelector('input[type=time]').addEventListener('input', e=>{ t.h=e.target.value; updatePreview(); });
+    const _horTurno=div.querySelector('.hor .time24'); _horTurno.replaceWith(mkTime24(t.h, v=>{ t.h=v; updatePreview(); }));
     wireColPicker(div.querySelector('.cols'), t, ()=>renderTurnos(meal));
     const sg=div.querySelector('.suggest-add');
     if(sg) sg.addEventListener('click', ()=>{
@@ -577,13 +615,13 @@ function renderGrupos(key){
       <div class="warn-slot">${capWarnHTML(used, g.cap, 'grupo')}</div>
       <div class="suggest-slot">${suggestHTML(used, g.cap, poolForGrupo(key, g))}</div>
       <div class="row" style="margin-top:8px">
-        <div class="field" style="max-width:160px"><label>⏰ Horario</label><input type="time" class="ghor" value="${g.h}"></div>
+        <div class="field" style="max-width:160px"><label>⏰ Horario</label><div class="time24 ghor"></div></div>
         <div class="field" style="max-width:240px"><label>Lugares en el transporte</label>
           <div class="cap-input"><input type="number" min="0" inputmode="numeric" class="gcap" value="${g.cap||''}" placeholder="0">${presets}</div>
         </div>
       </div>`;
     wireColPicker(div.querySelector('.cols'), g, ()=>renderGrupos(key));
-    div.querySelector('.ghor').addEventListener('input', e=>{ g.h=e.target.value; updatePreview(); });
+    div.querySelector('.ghor').replaceWith(mkTime24(g.h, v=>{ g.h=v; updatePreview(); }));
     const gcap=div.querySelector('.gcap');
     const refreshGcapVisual=()=>{
       const u=colegiosCount(g.colegios);
@@ -610,7 +648,7 @@ document.querySelectorAll('[data-add-turno]').forEach(b=>
   b.addEventListener('click', ()=>{ const m=b.dataset.addTurno; state[m].turnos.push({h:'',colegios:[]}); renderTurnos(m); updatePreview(); }));
 document.querySelectorAll('[data-obs]').forEach(t=>
   t.addEventListener('input', e=>{ state[e.target.dataset.obs].obs=e.target.value; updatePreview(); }));
-$('[data-merhorario]').addEventListener('input', e=>{ state.merienda.h=e.target.value; updatePreview(); });
+buildTime24In($('[data-merhorario]'), state.merienda.h, v=>{ state.merienda.h=v; updatePreview(); });
 
 /* ===== Persistencia de actividades (Supabase) ===== */
 const SUPABASE_URL = 'https://mzousqdahqterfawhwsz.supabase.co';
@@ -817,7 +855,7 @@ $('#capComedor').value = config.comedor || '';
 $('#capMicro').value = config.micro || '';
 $('#capCombi').value = config.combi || '';
 document.querySelectorAll('[data-obs]').forEach(t=> t.value = (state[t.dataset.obs] && state[t.dataset.obs].obs) || '');
-const _mh=$('[data-merhorario]'); if(_mh) _mh.value = state.merienda.h || '';
+const _mh=$('[data-merhorario]'); if(_mh) setTime24(_mh, state.merienda.h || '');
 renderCfgCounts(); refreshCfgTotal();
 ['desayuno','almuerzo','cena'].forEach(renderTurnos);
 ['actManana','actTarde','actNoche'].forEach(renderActivity);
