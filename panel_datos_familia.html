@@ -43,6 +43,12 @@ body{font-family:'Outfit',sans-serif;color:var(--text);background:var(--ink);min
 .stat.mini{padding:12px 8px;}
 .stat.mini .val{font-size:1.4rem;}
 .stat.mini .lbl{font-size:.68rem;}
+.stat.mini.clickable{cursor:pointer;transition:.15s;}
+.stat.mini.clickable:hover{border-color:var(--cyan);background:var(--card2);}
+.stat.mini.clickable.active{border-color:var(--cyan);background:rgba(93,180,201,.15);box-shadow:0 0 0 2px var(--cyan) inset;}
+.filtro-activo-bar{display:flex;align-items:center;gap:8px;margin:-8px 0 14px;font-size:.83rem;color:var(--muted);}
+.filtro-activo-bar .quitar-filtro{cursor:pointer;color:var(--cyan);border:1px solid var(--line);border-radius:99px;padding:3px 10px;background:transparent;font-family:'Outfit',sans-serif;font-size:.78rem;}
+.filtro-activo-bar .quitar-filtro:hover{border-color:var(--cyan);}
 @media(max-width:420px){.stats-sub{gap:6px;}.stat.mini{padding:10px 4px;}.stat.mini .val{font-size:1.15rem;}.stat.mini .lbl{font-size:.6rem;}}
 .ef-card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px 20px;margin-bottom:12px;}
 .card-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px;}
@@ -108,7 +114,7 @@ body{font-family:'Outfit',sans-serif;color:var(--text);background:var(--ink);min
 @media print{
   @page{ size:A4; margin:14mm 12mm; }
   html,body{ background:#fff !important; background-image:none !important; color:#111 !important; }
-  .topbar, .search-row, .stats, .toast, .pw-overlay{ display:none !important; }
+  .topbar, .search-row, .stats, .toast, .pw-overlay, .filtro-activo-bar{ display:none !important; }
   .container{ max-width:100%; margin:0; padding:0; }
   .print-title{
     display:block !important; font-family:'Bricolage Grotesque',sans-serif;
@@ -169,10 +175,14 @@ body{font-family:'Outfit',sans-serif;color:var(--text);background:var(--ink);min
   <div class="stats">
     <div class="stat"><div class="val" id="statTotal">—</div><div class="lbl">Pasajeros con datos cargados</div></div>
     <div class="stats-sub">
-      <div class="stat mini"><div class="val" id="statMedicas">—</div><div class="lbl">Con obs. médicas</div></div>
-      <div class="stat mini"><div class="val" id="statDieta">—</div><div class="lbl">Con dieta</div></div>
-      <div class="stat mini"><div class="val" id="statObs">—</div><div class="lbl">Con observaciones</div></div>
+      <div class="stat mini clickable" id="cardMedicas" onclick="toggleFiltroCampo('medicas')"><div class="val" id="statMedicas">—</div><div class="lbl">Con obs. médicas</div></div>
+      <div class="stat mini clickable" id="cardDieta" onclick="toggleFiltroCampo('dieta')"><div class="val" id="statDieta">—</div><div class="lbl">Con dieta</div></div>
+      <div class="stat mini clickable" id="cardObs" onclick="toggleFiltroCampo('observaciones')"><div class="val" id="statObs">—</div><div class="lbl">Con observaciones</div></div>
     </div>
+  </div>
+  <div class="filtro-activo-bar" id="filtroActivoBar" style="display:none;">
+    <span id="filtroActivoTexto"></span>
+    <button type="button" class="quitar-filtro" onclick="toggleFiltroCampo(null)">✕ Quitar filtro</button>
   </div>
   <div class="search-row" style="display:flex;gap:8px;align-items:center;">
     <div class="search-bar" style="flex:1;">
@@ -442,6 +452,38 @@ function actualizarStats(){
   document.getElementById('statObs').textContent = registros.filter(r => (r.observaciones||'').trim()).length;
 }
 
+// ── Filtro por campo completado (clic en las tarjetitas de arriba) ──
+let filtroCampo = null; // null | 'medicas' | 'dieta' | 'observaciones'
+
+const FILTRO_CAMPO_INFO = {
+  medicas: { key:'observaciones_medicas', cardId:'cardMedicas', texto:'con obs. médicas cargadas' },
+  dieta: { key:'dieta_alimenticia', cardId:'cardDieta', texto:'con dieta cargada' },
+  observaciones: { key:'observaciones', cardId:'cardObs', texto:'con observaciones cargadas' },
+};
+
+function registroCumpleFiltroCampo(r){
+  if(!filtroCampo) return true;
+  const info = FILTRO_CAMPO_INFO[filtroCampo];
+  return !!(r[info.key]||'').trim();
+}
+
+function toggleFiltroCampo(campo){
+  filtroCampo = (filtroCampo === campo) ? null : campo;
+  Object.values(FILTRO_CAMPO_INFO).forEach(info => {
+    document.getElementById(info.cardId).classList.remove('active');
+  });
+  const bar = document.getElementById('filtroActivoBar');
+  if(filtroCampo){
+    const info = FILTRO_CAMPO_INFO[filtroCampo];
+    document.getElementById(info.cardId).classList.add('active');
+    document.getElementById('filtroActivoTexto').textContent = `Mostrando solo pasajeros ${info.texto}.`;
+    bar.style.display = 'flex';
+  } else {
+    bar.style.display = 'none';
+  }
+  filtrar();
+}
+
 async function guardarCampo(el){
   const id = el.dataset.id;
   const campoKey = el.dataset.campo;
@@ -511,6 +553,7 @@ function ordenarAlfabeticamente(lista){
 function filtrar(){
   const q = document.getElementById('buscador').value.toLowerCase().trim();
   let filtrados = registros.filter(r => (r.nombre_pasajero||'').toLowerCase().includes(q) || (r.colegio||'').toLowerCase().includes(q));
+  filtrados = filtrados.filter(registroCumpleFiltroCampo);
   if(sortAlfabetico){
     filtrados = [...filtrados].sort((a,b)=>{
       const cmp = getApellidoKey(a).localeCompare(getApellidoKey(b),'es');
@@ -882,7 +925,8 @@ async function imgToArrayBuffer(url){
 
 function registrosFiltradosActuales(){
   const q = document.getElementById('buscador').value.toLowerCase().trim();
-  const filtrados = registros.filter(r => (r.nombre_pasajero||'').toLowerCase().includes(q) || (r.colegio||'').toLowerCase().includes(q));
+  let filtrados = registros.filter(r => (r.nombre_pasajero||'').toLowerCase().includes(q) || (r.colegio||'').toLowerCase().includes(q));
+  filtrados = filtrados.filter(registroCumpleFiltroCampo);
   return ordenarAlfabeticamente(filtrados);
 }
 
