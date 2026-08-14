@@ -113,6 +113,14 @@
   input[type=time]{width:100%;min-width:0;font-family:inherit;font-size:13px;font-weight:600;color:var(--ink);
     border:1.5px solid var(--line);border-radius:9px;padding:7px 8px;background:#fff;outline:none;}
   input[type=time]:focus{border-color:var(--cyan);box-shadow:0 0 0 3px rgba(93,180,201,.2);}
+  /* Selector de hora en formato 24hs (reemplaza input[type=time] para que nunca muestre AM/PM,
+     ya que en iPhone/Safari el picker nativo sigue la Región del dispositivo y no se puede forzar) */
+  .time24{display:flex;align-items:center;gap:2px;width:100%;min-width:0;font-family:inherit;
+    border:1.5px solid var(--line);border-radius:9px;padding:2px 4px;background:#fff;}
+  .time24:focus-within{border-color:var(--cyan);box-shadow:0 0 0 3px rgba(93,180,201,.2);}
+  .time24 select{border:none;background:transparent;outline:none;font-family:inherit;font-size:13px;font-weight:600;
+    color:var(--ink);padding:5px 2px;text-align:center;flex:1;min-width:0;-webkit-appearance:none;appearance:none;}
+  .time24 .sep{color:var(--muted);font-weight:700;}
   .timeshow{display:flex;gap:14px;font-size:13px;font-weight:600;color:var(--ink);}
   .timeshow span{color:var(--muted);font-weight:700;}
 
@@ -467,6 +475,23 @@ function renderTableView(status){
    días es largo. */
 function printCronograma(){ window.print(); }
 
+/* ===== Selector de hora en formato 24hs (reemplaza input[type=time]) ===== */
+function time24Options(n){
+  let s='<option value="">--</option>';
+  for(let i=0;i<n;i++){ const v=String(i).padStart(2,'0'); s+=`<option value="${v}">${v}</option>`; }
+  return s;
+}
+function mkTime24(value, onChange){
+  const [h,m]=(value||'').split(':');
+  const wrap=document.createElement('div'); wrap.className='time24';
+  wrap.innerHTML=`<select class="hh">${time24Options(24)}</select><span class="sep">:</span><select class="mm">${time24Options(60)}</select>`;
+  const hh=wrap.querySelector('.hh'), mm=wrap.querySelector('.mm');
+  hh.value=h||''; mm.value=m||'';
+  const emit=()=>onChange((hh.value&&mm.value)?`${hh.value}:${mm.value}`:'');
+  hh.addEventListener('change',emit); mm.addEventListener('change',emit);
+  return wrap;
+}
+
 function statusClass(st){ return st==="warn"?" warn":st==="fullday"?" fullday":""; }
 function flagEl(st){
   if(st==="warn"){const f=document.createElement('div');f.className='flag warn';f.innerHTML='⚠️ Repetida en otro día';return f;}
@@ -496,8 +521,8 @@ function slotEdit(d,turno,idx,slot,status){
   if(slot.act){
     const times=document.createElement('div'); times.className='times';
     times.innerHTML=`<div class="t"><label>➡️ Salida</label></div><div class="t"><label>⬅️ Regreso</label></div>`;
-    const inS=document.createElement('input'); inS.type='time'; inS.value=slot.salida||""; inS.onchange=e=>{slot.salida=e.target.value;queueSave();};
-    const inL=document.createElement('input'); inL.type='time'; inL.value=slot.llegada||""; inL.onchange=e=>{slot.llegada=e.target.value;queueSave();};
+    const inS=mkTime24(slot.salida||"", v=>{slot.salida=v;queueSave();});
+    const inL=mkTime24(slot.llegada||"", v=>{slot.llegada=v;queueSave();});
     times.children[0].appendChild(inS); times.children[1].appendChild(inL); wrap.appendChild(times);
   }
   return wrap;
