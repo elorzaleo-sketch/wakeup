@@ -23,9 +23,6 @@ body{font-family:'Outfit',sans-serif;color:var(--text);background:var(--ink);min
 .topbar{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--line);}
 .topbar a{color:var(--muted);font-size:.83rem;text-decoration:none;}
 .container{max-width:520px;margin:0 auto;padding:16px 20px 60px;}
-.toggle-bar{display:flex;gap:6px;background:rgba(255,255,255,.05);border-radius:12px;padding:4px;margin-bottom:20px;}
-.toggle-btn{flex:1;padding:8px;border:none;border-radius:9px;background:transparent;color:var(--muted);font-family:'Outfit',sans-serif;font-size:.85rem;font-weight:600;cursor:pointer;transition:.15s;}
-.toggle-btn.active{background:var(--card);color:var(--text);box-shadow:0 1px 4px rgba(0,0,0,.3);}
 .day-card{background:var(--card);border:1px solid var(--line);border-radius:16px;margin-bottom:10px;overflow:hidden;}
 .day-card.hoy{border-color:var(--cyan);box-shadow:0 0 0 1px rgba(93,180,201,.25);}
 .day-head{padding:14px 16px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none;}
@@ -67,10 +64,6 @@ body{font-family:'Outfit',sans-serif;color:var(--text);background:var(--ink);min
   <a href="javascript:history.back()">← Volver</a>
 </div>
 <div class="container">
-  <div class="toggle-bar">
-    <button class="toggle-btn active" id="btnHoy" type="button" onclick="setVista('hoy')">📍 Hoy</button>
-    <button class="toggle-btn" id="btnTodo" type="button" onclick="setVista('todo')">📅 Todo el viaje</button>
-  </div>
   <div id="cronoContent"><div class="loading">Cargando cronograma…</div></div>
 </div>
 
@@ -133,18 +126,21 @@ const DIAS = [
 const TURNOS = [{key:'manana',label:'Mañana'},{key:'tarde',label:'Tarde'},{key:'noche',label:'Noche'}];
 
 let cronoData = {};
-let vista = 'hoy';
 
-function diaHoy(){
-  const today = new Date().toISOString().slice(0,10);
-  return DIAS.find(d => d.fecha === today) || null;
+/* Fecha de HOY según el reloj/huso horario del dispositivo del pasajero
+   (no UTC). Usar toISOString() acá está mal: convierte a UTC, y como
+   Argentina está 3hs detrás, desde ~21:00 hora local ya "cruza" al día
+   siguiente en UTC — por eso la app mostraba el día equivocado un rato
+   antes de la medianoche real. */
+function localDateStr(d){
+  const y = d.getFullYear();
+  const m = String(d.getMonth()+1).padStart(2,'0');
+  const day = String(d.getDate()).padStart(2,'0');
+  return `${y}-${m}-${day}`;
 }
-
-function setVista(v){
-  vista = v;
-  document.getElementById('btnHoy').classList.toggle('active', v==='hoy');
-  document.getElementById('btnTodo').classList.toggle('active', v==='todo');
-  render();
+function diaHoy(){
+  const today = localDateStr(new Date());
+  return DIAS.find(d => d.fecha === today) || null;
 }
 
 function actHTML(slots){
@@ -207,24 +203,21 @@ function mensajeDiaHTML(){
   </div>`;
 }
 
+/* Los pasajeros sólo pueden ver el día de hoy — no el cronograma completo
+   de la semana (eso queda para cronogramageneral.html, uso interno). */
 function render(){
   const hoy = diaHoy();
   const el = document.getElementById('cronoContent');
 
-  if(vista === 'hoy'){
-    if(!hoy){
-      const esBefore = new Date() < new Date('2026-08-15');
-      el.innerHTML = `<div class="fuera-rango">
-        <div class="ei">${esBefore ? '🏔️' : '✈️'}</div>
-        <p>${esBefore ? 'El viaje empieza el 15 de agosto. ¡Ya falta poco!' : 'El viaje ya terminó. ¡Gracias por viajar con Wake Up!'}</p>
-        <button onclick="setVista('todo')" type="button" style="margin-top:16px;padding:10px 20px;border-radius:10px;border:1.5px solid var(--line);background:transparent;color:var(--muted);font-family:Outfit,sans-serif;font-size:.88rem;cursor:pointer;">Ver cronograma completo</button>
-      </div>`;
-      return;
-    }
-    el.innerHTML = mensajeDiaHTML() + dayCardHTML(hoy, true, true);
-  } else {
-    el.innerHTML = DIAS.map(d => dayCardHTML(d, d.fecha===(hoy?.fecha||''), d.fecha===(hoy?.fecha||''))).join('');
+  if(!hoy){
+    const esBefore = localDateStr(new Date()) < '2026-08-15';
+    el.innerHTML = `<div class="fuera-rango">
+      <div class="ei">${esBefore ? '🏔️' : '✈️'}</div>
+      <p>${esBefore ? 'El viaje empieza el 15 de agosto. ¡Ya falta poco!' : 'El viaje ya terminó. ¡Gracias por viajar con Wake Up!'}</p>
+    </div>`;
+    return;
   }
+  el.innerHTML = mensajeDiaHTML() + dayCardHTML(hoy, true, true);
 }
 
 const _supaMsg = supabase.createClient('https://mzousqdahqterfawhwsz.supabase.co','eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im16b3VzcWRhaHF0ZXJmYXdod3N6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA1MTc4MzUsImV4cCI6MjA5NjA5MzgzNX0.EdSlcRdLD75OdYlwtZGLVgL_PGpJysWb_MKvuwGgj5Y');
