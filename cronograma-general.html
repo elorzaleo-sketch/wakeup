@@ -129,6 +129,15 @@
   .addslot:hover{background:rgba(241,29,140,.06);border-style:solid;}
   .emptyturno{color:var(--muted);font-size:13px;font-weight:600;padding:6px 2px;}
 
+  .mealrow{display:flex;align-items:center;justify-content:space-between;gap:6px;padding:3px 6px;
+    font-size:11.5px;font-weight:600;color:var(--muted);}
+  .mealrow .meallabel{white-space:nowrap;flex:none;}
+  .mealrow .mealtime-view{font-weight:700;color:var(--ink);font-size:11.5px;flex:none;}
+  .mealrow .time24{flex:none;width:auto;padding:1px 3px;border-radius:7px;background:transparent;border-color:transparent;}
+  .mealrow .time24:focus-within{border-color:var(--cyan);background:#fff;}
+  .mealrow .time24 select{font-size:11.5px;padding:2px 0;}
+  .mealrow .time24 .hh,.mealrow .time24 .mm{width:22px;}
+
   .legend{margin-top:22px;display:flex;gap:18px;flex-wrap:wrap;font-size:12px;color:var(--muted);font-weight:600;}
   .legend .item{display:flex;align-items:center;gap:6px;}
   .swatch{width:14px;height:14px;border-radius:4px;border:1.5px solid;}
@@ -173,6 +182,7 @@
   .tact.twarn{color:var(--warn);}
   .tact.tfull{color:var(--green);}
   .tact .ttime{font-weight:600;color:var(--muted);font-size:11px;}
+  .tmeal{font-weight:600;color:var(--muted);font-size:10.5px;margin-bottom:3px;}
 
   @media print{
     @page{ size:landscape; margin:10mm; }
@@ -373,11 +383,18 @@ let state = { year:2026, month:8, from:15, to:22, data:{} }; // month 1-12
 let isAdmin = false;
 
 const emptySlot = () => ({act:"",salida:"",llegada:""});
-const emptyDay  = () => ({manana:[emptySlot()],tarde:[emptySlot()],noche:[emptySlot()]});
+const emptyComidas = () => ({manana:"",tarde:"",noche:""});
+const emptyDay  = () => ({manana:[emptySlot()],tarde:[emptySlot()],noche:[emptySlot()],comidas:emptyComidas()});
+const COMIDA = {manana:{label:"Desayuno",emoji:"🥐"}, tarde:{label:"Almuerzo",emoji:"🍴"}, noche:{label:"Cena",emoji:"🍽️"}};
 const weekday = d => WEEKDAYS[new Date(state.year, state.month-1, d).getDay()];
 const daysInMonth = (y,m) => new Date(y, m, 0).getDate();
 function daysList(){ const a=[]; for(let n=state.from;n<=state.to;n++) a.push(n); return a; }
-function ensureDays(){ daysList().forEach(d=>{ if(!state.data[d]) state.data[d]=emptyDay(); }); }
+function ensureDays(){
+  daysList().forEach(d=>{
+    if(!state.data[d]) state.data[d]=emptyDay();
+    else if(!state.data[d].comidas) state.data[d].comidas=emptyComidas();
+  });
+}
 
 /* ===== estado actividades (normal / fullday / warn) ===== */
 function buildStatus(){
@@ -421,6 +438,7 @@ function render(){
     TURNOS.forEach(t=>{
       const col=document.createElement('div'); col.className='turno';
       col.innerHTML=`<div class="turno-mob">${t.icon} ${t.label}</div>`;
+      col.appendChild(mealRow(d,t.key));
       const arr=state.data[d][t.key];
       if(isAdmin){
         arr.forEach((slot,idx)=>col.appendChild(slotEdit(d,t.key,idx,slot,status)));
@@ -451,8 +469,11 @@ function renderTableView(status){
   daysList().forEach(d=>{
     html+=`<tr><td class="tday"><b>${d}</b><span class="tdname">${weekday(d)}</span></td>`;
     TURNOS.forEach(t=>{
+      const c=COMIDA[t.key];
+      const comidaVal=state.data[d].comidas?state.data[d].comidas[t.key]:"";
+      const mealHtml=`<div class="tmeal">${c.emoji} ${c.label}${comidaVal?` · ${comidaVal}`:''}</div>`;
       const arr=state.data[d][t.key].filter(s=>s.act);
-      if(!arr.length){ html+='<td class="tempty">—</td>'; return; }
+      if(!arr.length){ html+=`<td class="tempty">${mealHtml}—</td>`; return; }
       const cell=arr.map(s=>{
         const a=ACT[s.act], st=status[s.act];
         const cls = st==='warn'?' twarn':st==='fullday'?' tfull':'';
@@ -460,7 +481,7 @@ function renderTableView(status){
         const times=[s.salida,s.llegada].filter(Boolean).join(' → ');
         return `<div class="tact${cls}">${a?a.emoji:'⚠️'} ${a?a.name:s.act}${flag}${times?`<div class="ttime">${times}</div>`:''}</div>`;
       }).join('');
-      html+=`<td>${cell}</td>`;
+      html+=`<td>${mealHtml}${cell}</td>`;
     });
     html+='</tr>';
   });
@@ -489,6 +510,24 @@ function mkTime24(value, onChange){
   hh.value=h||''; mm.value=m||'';
   const emit=()=>onChange((hh.value&&mm.value)?`${hh.value}:${mm.value}`:'');
   hh.addEventListener('change',emit); mm.addEventListener('change',emit);
+  return wrap;
+}
+
+/* Renglón chico y de baja jerarquía para Desayuno/Almuerzo/Cena, va antes de las
+   actividades de cada turno. Siempre está presente; solo cambia el horario. */
+function mealRow(d,turnoKey){
+  const c=COMIDA[turnoKey];
+  const wrap=document.createElement('div'); wrap.className='mealrow';
+  const label=document.createElement('span'); label.className='meallabel'; label.textContent=`${c.emoji} ${c.label}`;
+  wrap.appendChild(label);
+  if(isAdmin){
+    const t=mkTime24(state.data[d].comidas[turnoKey]||"", v=>{ state.data[d].comidas[turnoKey]=v; queueSave(); });
+    wrap.appendChild(t);
+  } else {
+    const val=state.data[d].comidas[turnoKey];
+    const tv=document.createElement('span'); tv.className='mealtime-view'; tv.textContent=val||'--';
+    wrap.appendChild(tv);
+  }
   return wrap;
 }
 
