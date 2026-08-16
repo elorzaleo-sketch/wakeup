@@ -919,9 +919,11 @@ function activityBlock(key){
     if(act) out += `${act.emoji} *${act.nombre.toUpperCase()}*\n`;
     else if(a.actividad) out += `*${a.actividad.toUpperCase()}*\n`;
     grupos.forEach((g,i)=>{
+      const total = colegiosCount(g.colegios);
       let line=`${numEmoji(i+1)} Salida Grupo ${i+1}`;
       if(g.colegios.length) line += `: ${colegiosLabel(g.colegios)}`;
       out += line+'\n';
+      if(total) out += `👥 Total: ${g.cap ? `${total}/${g.cap}` : total} ${total===1?'pasajero':'pasajeros'}\n`;
       if(g.h) out += `⏰ ${g.h}\n`;
     });
     if(a.regreso) out += `↩️ Regreso: ${a.regreso}\n`;
