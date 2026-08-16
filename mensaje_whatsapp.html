@@ -105,6 +105,11 @@
   .turno-grid{ display:flex; gap:14px; flex-wrap:wrap; align-items:flex-start; }
   .turno-grid .hor{ max-width:150px; }
   .turno-grid .cols{ flex:1; min-width:200px; }
+  /* Actividad dentro de un turno (mañana/tarde/noche): puede haber más de una,
+     por eso va en una caja blanca propia (contraste con las de "grupo" adentro,
+     que son .item y quedan celestitas). */
+  .act-item{ background:#fff; border:1.5px solid var(--line); border-radius:14px; padding:14px; margin-bottom:12px; }
+  .act-item .item-head .name{ font-size:14px; }
 
   .preview-wrap{ position:sticky; top:80px; }
   .preview{ background:#0b1416; border-radius:16px; padding:0; overflow:hidden; box-shadow:0 8px 30px rgba(8,8,8,.18); }
@@ -261,7 +266,8 @@
 
     <div class="card act" data-act="actManana">
       <div class="title"><span class="emoji">☀️</span> Actividad de la mañana <span class="pill act">actividad</span></div>
-      <div class="act-body"></div>
+      <div class="acts"></div>
+      <button class="add" data-add-act="actManana">＋ Agregar actividad</button>
     </div>
 
     <div class="card" data-meal="almuerzo">
@@ -273,7 +279,8 @@
 
     <div class="card act" data-act="actTarde">
       <div class="title"><span class="emoji">🌤️</span> Actividad de la tarde <span class="pill act">actividad</span></div>
-      <div class="act-body"></div>
+      <div class="acts"></div>
+      <button class="add" data-add-act="actTarde">＋ Agregar actividad</button>
     </div>
 
     <div class="card" data-meal="merienda">
@@ -291,7 +298,8 @@
 
     <div class="card act" data-act="actNoche">
       <div class="title"><span class="emoji">🌙</span> Actividad de la noche <span class="pill act">actividad</span></div>
-      <div class="act-body"></div>
+      <div class="acts"></div>
+      <button class="add" data-add-act="actNoche">＋ Agregar actividad</button>
     </div>
   </div>
 
@@ -335,15 +343,22 @@ let ACTIVIDADES = [
 ];
 const DEFAULT_ACTS = JSON.parse(JSON.stringify(ACTIVIDADES));
 
+/* Cada turno (mañana/tarde/noche) puede tener más de una actividad en simultáneo
+   (por ej. una mitad del grupo hace Ski y la otra Trekking), por eso cada uno es
+   un ARRAY de actividades en vez de una sola. Cada actividad, además de sus
+   "grupos" de salida (colegios + horario de salida), ahora tiene también un
+   horario de regreso propio. */
+function emptyActividad(){ return {actividad:'', grupos:[{colegios:[],h:''}], regreso:'', detalles:'', obs:''}; }
+
 const state = {
   fecha:'',
   desayuno:{turnos:[{h:'',colegios:[]}], obs:''},
   almuerzo:{turnos:[{h:'',colegios:[]}], obs:''},
   cena:    {turnos:[{h:'',colegios:[]}], obs:''},
   merienda:{h:'', obs:''},
-  actManana:{actividad:'', grupos:[{colegios:[], h:''}], detalles:'', obs:''},
-  actTarde: {actividad:'', grupos:[{colegios:[], h:''}], detalles:'', obs:''},
-  actNoche: {actividad:'', grupos:[{colegios:[], h:''}], detalles:'', obs:''},
+  actManana:[emptyActividad()],
+  actTarde: [emptyActividad()],
+  actNoche: [emptyActividad()],
 };
 
 /* ===== Capacidades y pasajeros (solo para vos, no sale en el mensaje) ===== */
@@ -397,10 +412,15 @@ function poolForMeal(meal, turno){
   state[meal].turnos.forEach(t=>{ if(t!==turno) t.colegios.forEach(c=>{ if(c!=='Todos') sib.add(c); }); });
   return poolDisponible(sib, turno.colegios);
 }
+/* Todos los "grupos" de salida de TODAS las actividades de un mismo turno
+   (mañana/tarde/noche), juntos — un colegio no puede estar anotado en dos
+   actividades del mismo turno a la vez, así que el chequeo de repetidos y de
+   capacidad tiene que mirar el turno completo, no una sola actividad. */
+function allGruposIn(key){ return state[key].flatMap(a=>a.grupos); }
 function poolForGrupo(key, grupo){
   if(grupo.colegios.includes('Todos')) return [];
   const sib=new Set();
-  state[key].grupos.forEach(g=>{ if(g!==grupo) g.colegios.forEach(c=>{ if(c!=='Todos') sib.add(c); }); });
+  allGruposIn(key).forEach(g=>{ if(g!==grupo) g.colegios.forEach(c=>{ if(c!=='Todos') sib.add(c); }); });
   return poolDisponible(sib, grupo.colegios);
 }
 function suggestHTML(used, cap, pool){
@@ -422,12 +442,23 @@ function loadSaved(){
     const raw=localStorage.getItem(LS_KEY); if(!raw) return;
     const d=JSON.parse(raw);
     if(d.config){ Object.assign(config, d.config); config.counts = d.config.counts || {}; }
-    if(d.state){ Object.assign(state, d.state); loadedFromStorage = true; }
+    if(d.state){
+      Object.assign(state, d.state);
+      // Migración: borradores guardados antes de permitir varias actividades
+      // por turno tenían actManana/actTarde/actNoche como un objeto suelto en
+      // vez de un array. Los envolvemos para que sigan andando.
+      ['actManana','actTarde','actNoche'].forEach(k=>{
+        if(state[k] && !Array.isArray(state[k])) state[k] = [state[k]];
+        state[k] = (state[k]||[]).map(a=> Object.assign(emptyActividad(), a));
+        if(!state[k].length) state[k] = [emptyActividad()];
+      });
+      loadedFromStorage = true;
+    }
   }catch(e){ console.error(e); }
 }
 
 /* Panel de configuración */
-function rerenderCaps(){ ['desayuno','almuerzo','cena'].forEach(renderTurnos); ['actManana','actTarde','actNoche'].forEach(renderGrupos); }
+function rerenderCaps(){ ['desayuno','almuerzo','cena'].forEach(renderTurnos); ['actManana','actTarde','actNoche'].forEach(refreshGruposForKey); }
 function refreshCfgTotal(){ const el=$('#cfgTotal'); if(el) el.textContent = totalAll(); }
 function renderCfgCounts(){
   const cont=$('#cfgCounts'); if(!cont) return;
@@ -457,13 +488,13 @@ function resetDraft(){
   state.almuerzo = {turnos:[{h:'',colegios:[]}], obs:''};
   state.cena     = {turnos:[{h:'',colegios:[]}], obs:''};
   state.merienda = {h:'', obs:''};
-  ['actManana','actTarde','actNoche'].forEach(k=> state[k]={actividad:'',grupos:[{colegios:[],h:''}],detalles:'',obs:''});
+  ['actManana','actTarde','actNoche'].forEach(k=> state[k]=[emptyActividad()]);
   fechaInput.value = state.fecha;
   document.querySelectorAll('[data-obs]').forEach(t=> t.value='');
   const mh=$('[data-merhorario]'); if(mh) setTime24(mh,'');
   refreshDate();
   ['desayuno','almuerzo','cena'].forEach(renderTurnos);
-  ['actManana','actTarde','actNoche'].forEach(renderActivity);
+  ['actManana','actTarde','actNoche'].forEach(renderActivities);
   updatePreview(); persist();
   toast('Mensaje reiniciado ✔');
 }
@@ -581,30 +612,49 @@ function renderTurnos(meal){
 /* ===== Actividades ===== */
 function actOptions(sel){ return '<option value="">— Elegir actividad —</option>' +
   ACTIVIDADES.map(a=>`<option value="${a.nombre}" ${a.nombre===sel?'selected':''}>${a.emoji} ${a.nombre}</option>`).join(''); }
-function renderActivity(key){
-  const a=state[key];
-  const card=document.querySelector(`[data-act="${key}"] .act-body`);
-  card.innerHTML = `
+function renderActivities(key){
+  const acts=state[key];
+  const cont=document.querySelector(`[data-act="${key}"] .acts`); if(!cont) return;
+  cont.innerHTML='';
+  acts.forEach((a,i)=> cont.appendChild(buildActivityItem(key,i)));
+}
+function buildActivityItem(key,i){
+  const a=state[key][i];
+  const wrap=document.createElement('div'); wrap.className='act-item';
+  wrap.innerHTML = `
+    <div class="item-head"><span class="name">Actividad ${i+1}</span>
+      ${state[key].length>1?'<button class="del" title="Quitar actividad">✕</button>':''}</div>
     <div class="field" style="margin-bottom:14px"><label>Actividad</label><select class="act-select">${actOptions(a.actividad)}</select></div>
     <div class="grupos"></div>
     <button class="add" data-add-grupo>＋ Agregar grupo</button>
+    <div class="row" style="margin-top:14px">
+      <div class="field" style="max-width:160px"><label>↩️ Horario de regreso</label><div class="time24 rhor"></div></div>
+    </div>
     <div style="margin-top:14px"><label>Detalles (se completa solo según la actividad)</label>
       <textarea class="det" placeholder="(se autocompleta — podés editarlo)">${a.detalles}</textarea></div>
     <div style="margin-top:12px"><label>Observaciones</label><textarea class="obs" placeholder="(opcional)">${a.obs}</textarea></div>`;
-  card.querySelector('.act-select').addEventListener('change', e=>{
+  const grupCont = wrap.querySelector('.grupos');
+  renderGruposInto(grupCont, key, a);
+  wrap.querySelector('.act-select').addEventListener('change', e=>{
     a.actividad=e.target.value;
     const found=ACTIVIDADES.find(x=>x.nombre===a.actividad);
     a.detalles = found ? (found.detalle||'') : '';
-    card.querySelector('.det').value=a.detalles; updatePreview();
+    wrap.querySelector('.det').value=a.detalles; updatePreview(); persist();
   });
-  card.querySelector('.det').addEventListener('input', e=>{ a.detalles=e.target.value; updatePreview(); });
-  card.querySelector('.obs').addEventListener('input', e=>{ a.obs=e.target.value; updatePreview(); });
-  card.querySelector('[data-add-grupo]').addEventListener('click', ()=>{ a.grupos.push({colegios:[],h:''}); renderGrupos(key); updatePreview(); });
-  renderGrupos(key);
+  wrap.querySelector('.det').addEventListener('input', e=>{ a.detalles=e.target.value; updatePreview(); });
+  wrap.querySelector('.obs').addEventListener('input', e=>{ a.obs=e.target.value; updatePreview(); });
+  wrap.querySelector('.rhor').replaceWith(mkTime24(a.regreso||'', v=>{ a.regreso=v; updatePreview(); persist(); }));
+  wrap.querySelector('[data-add-grupo]').addEventListener('click', ()=>{ a.grupos.push({colegios:[],h:''}); renderGruposInto(grupCont,key,a); updatePreview(); persist(); });
+  const del=wrap.querySelector('.del');
+  if(del) del.addEventListener('click', ()=>{ state[key].splice(i,1); renderActivities(key); updatePreview(); persist(); });
+  return wrap;
 }
-function renderGrupos(key){
-  const a=state[key]; const dup=blockConflicts(a.grupos);
-  const cont=document.querySelector(`[data-act="${key}"] .grupos`); if(!cont) return; cont.innerHTML = dup.size ? warnHTML() : '';
+/* Vuelve a dibujar sólo los "grupos" (salidas por colegio) de UNA actividad,
+   sin tocar el select de actividad ni los textareas — así el usuario no
+   pierde el foco mientras escribe. */
+function renderGruposInto(cont, key, a){
+  const dup=blockConflicts(allGruposIn(key));
+  cont.innerHTML = dup.size ? warnHTML() : '';
   a.grupos.forEach((g,i)=>{
     const used = colegiosCount(g.colegios);
     const div=document.createElement('div'); div.className='item';
@@ -620,8 +670,8 @@ function renderGrupos(key){
           <div class="cap-input"><input type="number" min="0" inputmode="numeric" class="gcap" value="${g.cap||''}" placeholder="0">${presets}</div>
         </div>
       </div>`;
-    wireColPicker(div.querySelector('.cols'), g, ()=>renderGrupos(key));
-    div.querySelector('.ghor').replaceWith(mkTime24(g.h, v=>{ g.h=v; updatePreview(); }));
+    wireColPicker(div.querySelector('.cols'), g, ()=>renderGruposInto(cont,key,a));
+    div.querySelector('.ghor').replaceWith(mkTime24(g.h, v=>{ g.h=v; updatePreview(); persist(); }));
     const gcap=div.querySelector('.gcap');
     const refreshGcapVisual=()=>{
       const u=colegiosCount(g.colegios);
@@ -630,22 +680,36 @@ function renderGrupos(key){
       div.querySelector('.suggest-slot').innerHTML = '';
     };
     gcap.addEventListener('input', e=>{ g.cap=parseInt(e.target.value)||0; refreshGcapVisual(); persist(); });
-    gcap.addEventListener('change', ()=>{ renderGrupos(key); persist(); });
-    div.querySelectorAll('.cap-preset').forEach(b=> b.addEventListener('click', ()=>{ g.cap=parseInt(b.dataset.cap)||0; renderGrupos(key); persist(); }));
+    gcap.addEventListener('change', ()=>{ renderGruposInto(cont,key,a); persist(); });
+    div.querySelectorAll('.cap-preset').forEach(b=> b.addEventListener('click', ()=>{ g.cap=parseInt(b.dataset.cap)||0; renderGruposInto(cont,key,a); persist(); }));
     const sg=div.querySelector('.suggest-add');
     if(sg) sg.addEventListener('click', ()=>{
       JSON.parse(decodeURIComponent(sg.dataset.add)).forEach(c=>{ if(!g.colegios.includes(c)) g.colegios.push(c); });
-      renderGrupos(key); updatePreview();
+      renderGruposInto(cont,key,a); updatePreview(); persist();
     });
     const del=div.querySelector('.del');
-    if(del) del.addEventListener('click', ()=>{ a.grupos.splice(i,1); renderGrupos(key); updatePreview(); });
+    if(del) del.addEventListener('click', ()=>{ a.grupos.splice(i,1); renderGruposInto(cont,key,a); updatePreview(); persist(); });
     cont.appendChild(div);
+  });
+}
+/* Sólo refresca los badges de capacidad de los grupos ya dibujados (lo usa
+   rerenderCaps cuando cambian las cantidades por colegio), sin reconstruir
+   los selects de actividad ni los textareas de cada actividad. */
+function refreshGruposForKey(key){
+  const cont=document.querySelector(`[data-act="${key}"] .acts`); if(!cont) return;
+  const items=cont.querySelectorAll('.act-item');
+  state[key].forEach((a,i)=>{
+    const itemEl=items[i]; if(!itemEl) return;
+    const grupCont=itemEl.querySelector('.grupos');
+    if(grupCont) renderGruposInto(grupCont, key, a);
   });
 }
 
 /* ===== Listeners generales ===== */
 document.querySelectorAll('[data-add-turno]').forEach(b=>
   b.addEventListener('click', ()=>{ const m=b.dataset.addTurno; state[m].turnos.push({h:'',colegios:[]}); renderTurnos(m); updatePreview(); }));
+document.querySelectorAll('[data-add-act]').forEach(b=>
+  b.addEventListener('click', ()=>{ const k=b.dataset.addAct; state[k].push(emptyActividad()); renderActivities(k); updatePreview(); persist(); }));
 document.querySelectorAll('[data-obs]').forEach(t=>
   t.addEventListener('input', e=>{ state[e.target.dataset.obs].obs=e.target.value; updatePreview(); }));
 buildTime24In($('[data-merhorario]'), state.merienda.h, v=>{ state.merienda.h=v; updatePreview(); });
@@ -672,7 +736,7 @@ async function pushActs(list){
   if(ins.error){ console.error(ins.error); toast('Error al guardar en la base'); return false; }
   return true;
 }
-function refreshSelectedDetails(){ ['actManana','actTarde','actNoche'].forEach(k=>{ const a=state[k]; if(a.actividad){ const f=ACTIVIDADES.find(x=>x.nombre===a.actividad); a.detalles = f?(f.detalle||''):a.detalles; } }); }
+function refreshSelectedDetails(){ ['actManana','actTarde','actNoche'].forEach(k=> state[k].forEach(a=>{ if(a.actividad){ const f=ACTIVIDADES.find(x=>x.nombre===a.actividad); a.detalles = f?(f.detalle||''):a.detalles; } })); }
 
 /* ===== Config en Supabase: pasajeros por colegio + capacidades (tabla config_app) ===== */
 async function fetchConfig(){
@@ -717,7 +781,7 @@ $('#xlsx').addEventListener('change', async e=>{
     }).filter(a=>a.nombre);
     if(parsed.length){
       ACTIVIDADES=parsed; refreshSelectedDetails();
-      ['actManana','actTarde','actNoche'].forEach(renderActivity);
+      ['actManana','actTarde','actNoche'].forEach(renderActivities);
       toast('Procesando…');
       const saved = await pushActs(parsed);
       refreshActCount(saved);
@@ -761,7 +825,7 @@ $('#resetacts').addEventListener('click', async ()=>{
   toast('Recargando…');
   const ok = await fetchActs();
   refreshSelectedDetails();
-  ['actManana','actTarde','actNoche'].forEach(renderActivity);
+  ['actManana','actTarde','actNoche'].forEach(renderActivities);
   refreshActCount(ok); updatePreview();
   toast(ok ? 'Actividades recargadas ✔' : 'No hay nada en la base todavía');
 });
@@ -780,22 +844,25 @@ function mealBlock(emoji, titulo, meal){
   return out;
 }
 function activityBlock(key){
-  const a=state[key];
-  const act=ACTIVIDADES.find(x=>x.nombre===a.actividad);
-  const grupos=a.grupos.filter(g=>g.colegios.length || g.h);
-  if(!a.actividad && !grupos.length && !a.detalles.trim() && !a.obs.trim()) return '';
-  let out='';
-  if(act) out += `${act.emoji} *${act.nombre.toUpperCase()}*\n`;
-  else if(a.actividad) out += `*${a.actividad.toUpperCase()}*\n`;
-  grupos.forEach((g,i)=>{
-    let line=`${numEmoji(i+1)} Salida Grupo ${i+1}`;
-    if(g.colegios.length) line += `: ${g.colegios.join(', ')}`;
-    out += line+'\n';
-    if(g.h) out += `⏰ ${g.h}\n`;
-  });
-  if(a.detalles.trim()) out += `*Detalles:* ${a.detalles.trim()}\n`;
-  if(a.obs.trim()) out += `*Observaciones:* ${a.obs.trim()}\n`;
-  return out;
+  const bloques = state[key].map(a=>{
+    const act=ACTIVIDADES.find(x=>x.nombre===a.actividad);
+    const grupos=a.grupos.filter(g=>g.colegios.length || g.h);
+    if(!a.actividad && !grupos.length && !a.regreso && !a.detalles.trim() && !a.obs.trim()) return '';
+    let out='';
+    if(act) out += `${act.emoji} *${act.nombre.toUpperCase()}*\n`;
+    else if(a.actividad) out += `*${a.actividad.toUpperCase()}*\n`;
+    grupos.forEach((g,i)=>{
+      let line=`${numEmoji(i+1)} Salida Grupo ${i+1}`;
+      if(g.colegios.length) line += `: ${g.colegios.join(', ')}`;
+      out += line+'\n';
+      if(g.h) out += `⏰ ${g.h}\n`;
+    });
+    if(a.regreso) out += `↩️ Regreso: ${a.regreso}\n`;
+    if(a.detalles.trim()) out += `*Detalles:* ${a.detalles.trim()}\n`;
+    if(a.obs.trim()) out += `*Observaciones:* ${a.obs.trim()}\n`;
+    return out;
+  }).filter(b=>b.trim());
+  return bloques.join('\n');
 }
 function buildMessage(){
   const parts=[]; if(state.fecha) parts.push(`📅 *${diaTexto(state.fecha)}*`);
@@ -858,12 +925,12 @@ document.querySelectorAll('[data-obs]').forEach(t=> t.value = (state[t.dataset.o
 const _mh=$('[data-merhorario]'); if(_mh) setTime24(_mh, state.merienda.h || '');
 renderCfgCounts(); refreshCfgTotal();
 ['desayuno','almuerzo','cena'].forEach(renderTurnos);
-['actManana','actTarde','actNoche'].forEach(renderActivity);
+['actManana','actTarde','actNoche'].forEach(renderActivities);
 refreshDate(); refreshActCount(false);
 ready = true; updatePreview();
 (async ()=>{
   const ok = await fetchActs();
-  if(ok){ if(!loadedFromStorage) refreshSelectedDetails(); ['actManana','actTarde','actNoche'].forEach(renderActivity); refreshActCount(true); updatePreview(); }
+  if(ok){ if(!loadedFromStorage) refreshSelectedDetails(); ['actManana','actTarde','actNoche'].forEach(renderActivities); refreshActCount(true); updatePreview(); }
 })();
 (async ()=>{
   const ok = await fetchConfig();
