@@ -96,6 +96,11 @@
   .chip.todos{ background:var(--green); }
   .chip.dup{ background:#d9820c; }
   .chip button{ border:none; background:rgba(255,255,255,.2); color:#fff; width:17px; height:17px; border-radius:99px; cursor:pointer; font-size:11px; line-height:1; }
+  /* Cantidad de gente de ese colegio en este chip puntual — editable, para
+     poder repartir un mismo colegio en varios turnos/grupos. */
+  .chip input.chipn{ width:34px; background:rgba(255,255,255,.2); border:none; border-radius:6px; color:#fff;
+    font-family:inherit; font-size:11px; font-weight:700; text-align:center; padding:3px 2px; -moz-appearance:textfield; }
+  .chip input.chipn::-webkit-outer-spin-button,.chip input.chipn::-webkit-inner-spin-button{ -webkit-appearance:none; margin:0; }
   .warn{ display:flex; align-items:center; gap:7px; background:rgba(217,130,12,.12); color:#b3690a; font-size:12.5px; font-weight:600; padding:7px 11px; border-radius:9px; margin-bottom:10px; }
   .add-col{ display:flex; gap:8px; align-items:center; }
   .add-col select{ flex:1; }
@@ -367,11 +372,22 @@ const LS_KEY = 'wakeup_mensaje_v1';
 let ready = false;
 let loadedFromStorage = false;
 
+/* Desde acá, cada colegio dentro de un turno/grupo es {c:'Nombre', n:cantidad}
+   (o {c:'Todos'} sin cantidad) — así un mismo colegio puede repartirse entre
+   varios turnos/grupos cuando el número no cierra redondo, y sabemos
+   exactamente cuánta gente de ese colegio va en cada uno. */
 function totalAll(){ return COLEGIOS.reduce((s,c)=> s + (config.counts[c]||0), 0); }
+function esTodos(colegios){ return (colegios||[]).some(x=>x.c==='Todos'); }
 function colegiosCount(colegios){
   if(!colegios || !colegios.length) return 0;
-  if(colegios.includes('Todos')) return totalAll();
-  return colegios.reduce((s,c)=> s + (config.counts[c]||0), 0);
+  if(esTodos(colegios)) return totalAll();
+  return colegios.reduce((s,x)=> s + (x.n||0), 0);
+}
+/* Texto para el mensaje / vista previa: "Colegio (cantidad)". */
+function colegiosLabel(colegios){
+  if(!colegios || !colegios.length) return '';
+  if(esTodos(colegios)) return 'Todos';
+  return colegios.map(x=> `${x.c} (${x.n||0})`).join(', ');
 }
 function capBadge(used, cap){
   if(!cap || cap<=0) return '';
@@ -384,53 +400,62 @@ function capWarnHTML(used, cap, kind){
   const sug = kind==='grupo' ? 'sumá otra combi o pasá a un micro más grande' : 'conviene abrir otro turno';
   return `<div class="cap-warn">⚠️ Te pasaste por ${extra} ${extra===1?'lugar':'lugares'} — ${sug}</div>`;
 }
+/* Colegios (o partes de colegios) de una comida que todavía no están
+   anotados en ningún turno — muestra cuánta gente de cada uno falta repartir. */
 function faltantes(meal){
-  const assigned=new Set(); let todos=false;
-  state[meal].turnos.forEach(t=> t.colegios.forEach(c=>{ if(c==='Todos') todos=true; else assigned.add(c); }));
+  const sums={}; let todos=false;
+  state[meal].turnos.forEach(t=> t.colegios.forEach(x=>{ if(x.c==='Todos') todos=true; else sums[x.c]=(sums[x.c]||0)+(x.n||0); }));
   if(todos) return [];
-  return COLEGIOS.filter(c=> !assigned.has(c));
+  return COLEGIOS
+    .filter(c=> (sums[c]||0) < (config.counts[c]||0))
+    .map(c=> ({c, falta:(config.counts[c]||0)-(sums[c]||0)}));
 }
 
-/* ===== Sugerencia: qué colegios sumar para acercarse a la capacidad sin pasarse ===== */
+/* ===== Sugerencia: qué colegios (o qué parte de ellos) sumar para acercarse
+   a la capacidad sin pasarse ===== */
 function bestSubset(pool, room){
-  let best={schools:[], sum:0};
+  let best={items:[], sum:0};
   const n=pool.length;
   for(let mask=1; mask<(1<<n); mask++){
-    let s=0; const names=[];
-    for(let i=0;i<n;i++){ if(mask&(1<<i)){ s+=pool[i].n; names.push(pool[i].c); } }
-    if(s<=room && (s>best.sum || (s===best.sum && names.length<best.schools.length))) best={schools:names, sum:s};
+    let s=0; const items=[];
+    for(let i=0;i<n;i++){ if(mask&(1<<i)){ s+=pool[i].n; items.push(pool[i]); } }
+    if(s<=room && (s>best.sum || (s===best.sum && items.length<best.items.length))) best={items, sum:s};
   }
   return best;
 }
-function poolDisponible(hermanos, propios){
-  const taken=new Set(hermanos); propios.forEach(c=>taken.add(c));
-  return COLEGIOS.filter(c=> !taken.has(c) && (config.counts[c]||0)>0).map(c=>({c, n:config.counts[c]}));
+/* Cuánta gente de cada colegio está todavía sin repartir entre los turnos/
+   grupos "hermanos" (sin contar lo que ya está puesto en este mismo turno). */
+function poolDisponible(hermanosColegios, propios){
+  const usado={};
+  hermanosColegios.forEach(x=>{ if(x.c!=='Todos') usado[x.c]=(usado[x.c]||0)+(x.n||0); });
+  const propiosNombres = new Set((propios||[]).filter(x=>x.c!=='Todos').map(x=>x.c));
+  return COLEGIOS
+    .filter(c=> !propiosNombres.has(c))
+    .map(c=> ({c, n:(config.counts[c]||0)-(usado[c]||0)}))
+    .filter(x=> x.n>0);
 }
 function poolForMeal(meal, turno){
-  if(turno.colegios.includes('Todos')) return [];
-  const sib=new Set();
-  state[meal].turnos.forEach(t=>{ if(t!==turno) t.colegios.forEach(c=>{ if(c!=='Todos') sib.add(c); }); });
-  return poolDisponible(sib, turno.colegios);
+  if(esTodos(turno.colegios)) return [];
+  const hermanos = state[meal].turnos.filter(t=>t!==turno).flatMap(t=>t.colegios);
+  return poolDisponible(hermanos, turno.colegios);
 }
 /* Todos los "grupos" de salida de TODAS las actividades de un mismo turno
-   (mañana/tarde/noche), juntos — un colegio no puede estar anotado en dos
-   actividades del mismo turno a la vez, así que el chequeo de repetidos y de
-   capacidad tiene que mirar el turno completo, no una sola actividad. */
+   (mañana/tarde/noche), juntos — la disponibilidad y el chequeo de exceso
+   tienen que mirar el turno completo, no una sola actividad. */
 function allGruposIn(key){ return state[key].flatMap(a=>a.grupos); }
 function poolForGrupo(key, grupo){
-  if(grupo.colegios.includes('Todos')) return [];
-  const sib=new Set();
-  allGruposIn(key).forEach(g=>{ if(g!==grupo) g.colegios.forEach(c=>{ if(c!=='Todos') sib.add(c); }); });
-  return poolDisponible(sib, grupo.colegios);
+  if(esTodos(grupo.colegios)) return [];
+  const hermanos = allGruposIn(key).filter(g=>g!==grupo).flatMap(g=>g.colegios);
+  return poolDisponible(hermanos, grupo.colegios);
 }
 function suggestHTML(used, cap, pool){
   if(!cap || cap<=0) return '';
   const room = cap - used;
   if(room<=0 || !pool.length) return '';
   const best = bestSubset(pool, room);
-  if(!best.schools.length) return '';
-  const detail = best.schools.map(c=>`${c} (${config.counts[c]})`).join(' + ');
-  const data = encodeURIComponent(JSON.stringify(best.schools));
+  if(!best.items.length) return '';
+  const detail = best.items.map(x=>`${x.c} (${x.n})`).join(' + ');
+  const data = encodeURIComponent(JSON.stringify(best.items));
   return `<div class="suggest">💡 Podés sumar <strong>${detail}</strong> → quedaría ${used+best.sum}/${cap}
     <button type="button" class="suggest-add" data-add='${data}'>Agregar</button></div>`;
 }
@@ -452,6 +477,14 @@ function loadSaved(){
         state[k] = (state[k]||[]).map(a=> Object.assign(emptyActividad(), a));
         if(!state[k].length) state[k] = [emptyActividad()];
       });
+      // Migración: borradores guardados antes de poder repartir un colegio
+      // entre varios turnos tenían colegios como texto simple ("Berazategui")
+      // en vez de {c, n}. Los convertimos asumiendo el total cargado de ese
+      // colegio (es la mejor cantidad que podemos adivinar de un dato viejo).
+      const migrarColegios = list => (list||[]).map(x=>
+        typeof x === 'string' ? (x==='Todos' ? {c:'Todos'} : {c:x, n:config.counts[x]||0}) : x);
+      ['desayuno','almuerzo','cena'].forEach(m=> (state[m].turnos||[]).forEach(t=> t.colegios = migrarColegios(t.colegios)));
+      ['actManana','actTarde','actNoche'].forEach(k=> state[k].forEach(a=> (a.grupos||[]).forEach(g=> g.colegios = migrarColegios(g.colegios))));
       loadedFromStorage = true;
     }
   }catch(e){ console.error(e); }
@@ -535,34 +568,61 @@ function mkTime24(value, onChange){
 
 /* ===== Selector de colegios (compartido por turnos y grupos) ===== */
 function colOptions(){ return '<option value="Todos">Todos</option>' + COLEGIOS.map(c=>`<option value="${c}">${c}</option>`).join(''); }
+/* Ya no marca "repetido" por el sólo hecho de que un colegio aparezca en más
+   de un turno/grupo — eso es justamente cómo se reparte un colegio cuando no
+   entra entero en uno solo. Ahora marca si entre todos los turnos/grupos del
+   bloque se anotó MÁS gente de un colegio de la que ese colegio tiene en
+   total (ahí sí hay un error de carga). */
 function blockConflicts(items){
-  const count={}; items.forEach(it=>it.colegios.forEach(c=>count[c]=(count[c]||0)+1));
-  const dup=new Set(Object.keys(count).filter(c=>count[c]>1));
-  const hasTodos=items.some(it=>it.colegios.includes('Todos'));
-  const named=items.some(it=>it.colegios.some(c=>c!=='Todos'));
-  if(hasTodos && named){ dup.add('Todos'); items.forEach(it=>it.colegios.forEach(c=>{ if(c!=='Todos') dup.add(c); })); }
+  const sum={};
+  items.forEach(it=> it.colegios.forEach(x=>{ if(x.c!=='Todos') sum[x.c]=(sum[x.c]||0)+(x.n||0); }));
+  const dup=new Set(Object.keys(sum).filter(c=> sum[c] > (config.counts[c]||0)));
+  const hasTodos=items.some(it=> esTodos(it.colegios));
+  const named=items.some(it=> it.colegios.some(x=>x.c!=='Todos'));
+  if(hasTodos && named){ dup.add('Todos'); items.forEach(it=> it.colegios.forEach(x=>{ if(x.c!=='Todos') dup.add(x.c); })); }
   return dup;
 }
-function warnHTML(){ return '<div class="warn">⚠️ Hay colegios repetidos en este bloque</div>'; }
+function warnHTML(){ return '<div class="warn">⚠️ Hay colegios con más gente anotada de la que tienen cargada — revisá las cantidades</div>'; }
 function colPickerMarkup(colegios, dup){
   dup = dup || new Set();
-  const chips = colegios.map((c,ci)=>{
-    const bad = dup.has(c);
-    return `<span class="chip ${c==='Todos'?'todos':''} ${bad?'dup':''}">${bad?'⚠️ ':''}${c}<button data-rm="${ci}">✕</button></span>`;
+  const chips = colegios.map((x,ci)=>{
+    const bad = dup.has(x.c);
+    const isTodos = x.c==='Todos';
+    const total = config.counts[x.c]||0;
+    const numHtml = isTodos ? '' : `<input type="number" class="chipn" min="0" max="${total||99}" value="${x.n||0}" data-ci="${ci}" title="Cantidad de ${x.c}">`;
+    return `<span class="chip ${isTodos?'todos':''} ${bad?'dup':''}">${bad?'⚠️ ':''}${x.c}${numHtml}<button data-rm="${ci}">✕</button></span>`;
   }).join('');
   return `<label>Colegios</label>
     <div class="add-col"><select class="colsel">${colOptions()}</select><button class="plus" type="button" title="Agregar colegio">＋</button></div>
     <div class="chips">${chips||'<span class="sub">Sin colegios seleccionados</span>'}</div>`;
 }
-function wireColPicker(scope, obj, rerender){
+/* remainingFor(nombreColegio) — opcional — calcula cuánta gente de ese colegio
+   está todavía sin anotar en los turnos/grupos hermanos, para proponerla como
+   cantidad por defecto al agregar el chip (así, si ya usaste una parte del
+   colegio en otro turno, acá te sugiere directamente el resto). */
+function wireColPicker(scope, obj, rerender, remainingFor){
   scope.querySelector('.plus').addEventListener('click', ()=>{
     const v = scope.querySelector('.colsel').value;
-    if(v==='Todos') obj.colegios = ['Todos'];
-    else { obj.colegios = obj.colegios.filter(c=>c!=='Todos'); if(!obj.colegios.includes(v)) obj.colegios.push(v); }
-    rerender(); updatePreview();
+    if(v==='Todos') obj.colegios = [{c:'Todos'}];
+    else {
+      obj.colegios = obj.colegios.filter(x=>x.c!=='Todos');
+      if(!obj.colegios.some(x=>x.c===v)){
+        const def = remainingFor ? remainingFor(v) : (config.counts[v]||0);
+        obj.colegios.push({c:v, n: Math.max(0, def)});
+      }
+    }
+    rerender(); updatePreview(); persist();
+  });
+  scope.querySelectorAll('[data-ci]').forEach(inp=>{
+    inp.addEventListener('input', e=>{
+      let v = parseInt(e.target.value)||0; if(v<0) v=0;
+      obj.colegios[+e.target.dataset.ci].n = v;
+      updatePreview(); persist();
+    });
+    inp.addEventListener('change', ()=>{ rerender(); persist(); });
   });
   scope.querySelectorAll('[data-rm]').forEach(b=> b.addEventListener('click', e=>{
-    obj.colegios.splice(+e.currentTarget.dataset.rm,1); rerender(); updatePreview();
+    obj.colegios.splice(+e.currentTarget.dataset.rm,1); rerender(); updatePreview(); persist();
   }));
 }
 
@@ -589,22 +649,26 @@ function renderTurnos(meal){
         <div class="cols">${colPickerMarkup(t.colegios, dup)}</div>
       </div>${capWarnHTML(used, config.comedor, 'turno')}${suggestHTML(used, config.comedor, poolForMeal(meal, t))}`;
     const _horTurno=div.querySelector('.hor .time24'); _horTurno.replaceWith(mkTime24(t.h, v=>{ t.h=v; updatePreview(); }));
-    wireColPicker(div.querySelector('.cols'), t, ()=>renderTurnos(meal));
+    wireColPicker(div.querySelector('.cols'), t, ()=>renderTurnos(meal), c=>{
+      const usadoEnOtros = state[meal].turnos.filter(x=>x!==t).reduce((s,x)=> s + x.colegios.filter(y=>y.c===c).reduce((s2,y)=>s2+(y.n||0),0), 0);
+      return (config.counts[c]||0) - usadoEnOtros;
+    });
     const sg=div.querySelector('.suggest-add');
     if(sg) sg.addEventListener('click', ()=>{
-      JSON.parse(decodeURIComponent(sg.dataset.add)).forEach(c=>{ if(!t.colegios.includes(c)) t.colegios.push(c); });
-      renderTurnos(meal); updatePreview();
+      JSON.parse(decodeURIComponent(sg.dataset.add)).forEach(x=>{ if(!t.colegios.some(y=>y.c===x.c)) t.colegios.push({c:x.c, n:x.n}); });
+      renderTurnos(meal); updatePreview(); persist();
     });
     const del=div.querySelector('.del');
     if(del) del.addEventListener('click', ()=>{ items.splice(i,1); renderTurnos(meal); updatePreview(); });
     cont.appendChild(div);
   });
-  // Yapa: faltantes de la comida (todos los colegios tienen que comer)
+  // Yapa: faltantes de la comida (todos los colegios tienen que comer) — con
+  // cuánta gente de cada colegio todavía no quedó anotada en ningún turno.
   if(items.some(t=>t.colegios.length)){
     const falt = faltantes(meal);
     const fdiv = document.createElement('div');
     fdiv.className = 'faltan ' + (falt.length ? 'faltan-pend' : 'faltan-ok');
-    fdiv.innerHTML = falt.length ? `🧮 Faltan asignar: ${falt.join(', ')}` : '✅ Todos los colegios están asignados';
+    fdiv.innerHTML = falt.length ? `🧮 Faltan asignar: ${falt.map(x=>`${x.c} (${x.falta})`).join(', ')}` : '✅ Todos los colegios están asignados';
     cont.appendChild(fdiv);
   }
 }
@@ -670,7 +734,10 @@ function renderGruposInto(cont, key, a){
           <div class="cap-input"><input type="number" min="0" inputmode="numeric" class="gcap" value="${g.cap||''}" placeholder="0">${presets}</div>
         </div>
       </div>`;
-    wireColPicker(div.querySelector('.cols'), g, ()=>renderGruposInto(cont,key,a));
+    wireColPicker(div.querySelector('.cols'), g, ()=>renderGruposInto(cont,key,a), c=>{
+      const usadoEnOtros = allGruposIn(key).filter(x=>x!==g).reduce((s,x)=> s + x.colegios.filter(y=>y.c===c).reduce((s2,y)=>s2+(y.n||0),0), 0);
+      return (config.counts[c]||0) - usadoEnOtros;
+    });
     div.querySelector('.ghor').replaceWith(mkTime24(g.h, v=>{ g.h=v; updatePreview(); persist(); }));
     const gcap=div.querySelector('.gcap');
     const refreshGcapVisual=()=>{
@@ -684,7 +751,7 @@ function renderGruposInto(cont, key, a){
     div.querySelectorAll('.cap-preset').forEach(b=> b.addEventListener('click', ()=>{ g.cap=parseInt(b.dataset.cap)||0; renderGruposInto(cont,key,a); persist(); }));
     const sg=div.querySelector('.suggest-add');
     if(sg) sg.addEventListener('click', ()=>{
-      JSON.parse(decodeURIComponent(sg.dataset.add)).forEach(c=>{ if(!g.colegios.includes(c)) g.colegios.push(c); });
+      JSON.parse(decodeURIComponent(sg.dataset.add)).forEach(x=>{ if(!g.colegios.some(y=>y.c===x.c)) g.colegios.push({c:x.c, n:x.n}); });
       renderGruposInto(cont,key,a); updatePreview(); persist();
     });
     const del=div.querySelector('.del');
@@ -837,7 +904,7 @@ function mealBlock(emoji, titulo, meal){
   if(!turnos.length && !m.obs.trim()) return '';
   let out=`${emoji} *${titulo}*\n`;
   turnos.forEach((t,i)=>{
-    const bits=[]; if(t.h) bits.push(t.h); if(t.colegios.length) bits.push(t.colegios.join(', '));
+    const bits=[]; if(t.h) bits.push(t.h); if(t.colegios.length) bits.push(colegiosLabel(t.colegios));
     out += `${numEmoji(i+1)} Turno ${i+1}: ${bits.join(' — ')}\n`;
   });
   if(m.obs.trim()) out += `Observaciones: ${m.obs.trim()}\n`;
@@ -853,7 +920,7 @@ function activityBlock(key){
     else if(a.actividad) out += `*${a.actividad.toUpperCase()}*\n`;
     grupos.forEach((g,i)=>{
       let line=`${numEmoji(i+1)} Salida Grupo ${i+1}`;
-      if(g.colegios.length) line += `: ${g.colegios.join(', ')}`;
+      if(g.colegios.length) line += `: ${colegiosLabel(g.colegios)}`;
       out += line+'\n';
       if(g.h) out += `⏰ ${g.h}\n`;
     });
