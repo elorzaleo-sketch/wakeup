@@ -77,7 +77,10 @@ body{font-family:'Outfit',sans-serif;color:var(--text);background:var(--ink);min
 <script>
 const sb = supabase.createClient('https://mzousqdahqterfawhwsz.supabase.co','eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im16b3VzcWRhaHF0ZXJmYXdod3N6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA1MTc4MzUsImV4cCI6MjA5NjA5MzgzNX0.EdSlcRdLD75OdYlwtZGLVgL_PGpJysWb_MKvuwGgj5Y');
 
-const ACTIVITIES = [
+/* Lista vieja hardcodeada (id numérico -> nombre). Ya no se usa para mostrar
+   actividades: queda solo para poder leer cronogramas guardados antes del
+   cambio a Supabase, que tenían slot.act = id numérico en vez de nombre. */
+const LEGACY_ACTIVITIES = [
   {id:1,name:"Circuito Chico, Punto Panorámico",emoji:"🚌"},{id:2,name:"Adventure City Tour",emoji:"🏙️"},
   {id:3,name:"Ski",emoji:"🏂"},{id:4,name:"Piedras Blancas De Día",emoji:"❄️"},
   {id:5,name:"Adventure Day (Tom Wesley)",emoji:"🎒"},{id:6,name:"Canopy",emoji:"🌲"},
@@ -89,7 +92,33 @@ const ACTIVITIES = [
   {id:17,name:"Piedras Blancas De Noche",emoji:"🌜"},{id:18,name:"Centro libre / compras",emoji:"🛍️"},
   {id:19,name:"Llegada al hotel",emoji:"🏨"},{id:20,name:"Salida del hotel",emoji:"🏨"},
 ];
-const ACT = Object.fromEntries(ACTIVITIES.map(a=>[a.id,a]));
+const LEGACY_ID_TO_NAME = Object.fromEntries(LEGACY_ACTIVITIES.map(a=>[a.id,a.name]));
+
+/* Lista real de actividades: se trae de la tabla `actividades` en Supabase
+   (la misma que usa cronogramageneral.html). Se identifican por nombre, no
+   por id — igual que hace ahora el cronograma general. */
+let ACTIVITIES = LEGACY_ACTIVITIES.map(({name,emoji})=>({name,emoji})); // fallback hasta que cargue Supabase
+let ACT = Object.fromEntries(ACTIVITIES.map(a=>[a.name,a]));
+
+async function fetchActivities(){
+  try{
+    const {data,error} = await sb.from('actividades').select('nombre,emoji,orden').order('orden',{ascending:true});
+    if(error) throw error;
+    if(data && data.length){
+      ACTIVITIES = data.map(d=>({name:d.nombre, emoji:d.emoji||'📌'}));
+      ACT = Object.fromEntries(ACTIVITIES.map(a=>[a.name,a]));
+    }
+  }catch(e){ console.error('Error cargando actividades:', e); }
+}
+
+/* Convierte los ids numéricos viejos (guardados antes del cambio a Supabase)
+   a nombre, para que los días ya guardados con ese formato sigan mostrándose. */
+function resolveAct(actRef){
+  if(actRef==null || actRef==='') return null;
+  if(typeof actRef==='number') return ACT[LEGACY_ID_TO_NAME[actRef]] || null;
+  if(typeof actRef==='string' && /^\d+$/.test(actRef)) return ACT[LEGACY_ID_TO_NAME[Number(actRef)]] || null;
+  return ACT[actRef] || null;
+}
 
 const DIAS = [
   {n:15,label:'Día 1',desc:'Sábado 15 de agosto',fecha:'2026-08-15'},
@@ -123,7 +152,7 @@ function actHTML(slots){
   const filled = slots.filter(s => s.act);
   if(!filled.length) return '<div class="empty-act">Sin actividad cargada</div>';
   return filled.map(s => {
-    const a = ACT[s.act];
+    const a = resolveAct(s.act);
     if(!a) return '';
     const partes = [];
     if(s.salida) partes.push('Salida ' + s.salida);
@@ -203,7 +232,8 @@ let mensajeDia = null;
 
 async function load(){
   try{
-    const [cronoRes, msgRes] = await Promise.all([
+    const [, cronoRes, msgRes] = await Promise.all([
+      fetchActivities(),
       sb.from('cronograma').select('data').eq('id','general').single(),
       _supaMsg.from('mensaje_dia').select('*').order('updated_at',{ascending:false}).limit(1)
     ]);
