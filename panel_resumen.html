@@ -245,17 +245,43 @@ document.getElementById('btnPublicar').addEventListener('click',async()=>{
   const prog=document.getElementById('rdProgress');prog.style.display='block';
   const fill=document.getElementById('rdFill');fill.style.width='10%';
 
-  async function subirArchivoR2(file,folder){
+  function sleep(ms){return new Promise(r=>setTimeout(r,ms));}
+
+  async function subirArchivoR2(file,folder,intentos=3){
+    // Si el archivo llega vac\u00edo o "fantasma" (t\u00edpico de fotos/videos de iCloud
+    // que todav\u00eda no bajaron por completo al celular), avisamos claro en vez
+    // de mandar una subida que el servidor va a rechazar como truncada.
+    if(!file||file.size===0){
+      throw new Error(`"${file?.name||'archivo'}" est\u00e1 vac\u00edo o no termin\u00f3 de descargarse en el celular. Abrilo en la app de Fotos para que se descargue completo y volv\u00e9 a intentar.`);
+    }
     const safeName=file.name.normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s/g,'_');
     const fileName=`${Date.now()}_${safeName}`;
-    const fd=new FormData();
-    fd.append('file',file);
-    fd.append('fileName',fileName);
-    fd.append('folder',folder);
-    const res=await fetch(R2_WORKER,{method:'POST',headers:{'X-Auth-Token':R2_TOKEN},body:fd});
-    const json=await res.json();
-    if(!res.ok) throw new Error(json.error||'Error subiendo archivo');
-    return json.url;
+    let ultimoError;
+    for(let intento=1;intento<=intentos;intento++){
+      try{
+        const fd=new FormData();
+        fd.append('file',file);
+        fd.append('fileName',fileName);
+        fd.append('folder',folder);
+        const res=await fetch(R2_WORKER,{method:'POST',headers:{'X-Auth-Token':R2_TOKEN},body:fd});
+        let json;
+        try{ json=await res.json(); }
+        catch{ throw new Error(`El servidor devolvi\u00f3 una respuesta inv\u00e1lida al subir "${file.name}" (posible corte de conexi\u00f3n a mitad de subida).`); }
+        if(!res.ok) throw new Error(json.error||`Error subiendo "${file.name}"`);
+        return json.url;
+      }catch(err){
+        ultimoError=err;
+        // Solo reintentamos si parece un problema transitorio de red/conexi\u00f3n,
+        // no si el worker rechaz\u00f3 el archivo por un motivo v\u00e1lido (ej. auth).
+        const pareceRed = err instanceof TypeError || /truncad|network|fetch|conexi\u00f3n/i.test(err.message||'');
+        if(intento<intentos && pareceRed){
+          await sleep(800*intento); // backoff simple: 0.8s, 1.6s...
+          continue;
+        }
+        break;
+      }
+    }
+    throw new Error(`No se pudo subir "${file.name}" tras ${intentos} intentos: ${ultimoError.message}. Revis\u00e1 tu conexi\u00f3n (recomendado: wifi para videos) y volv\u00e9 a intentar.`);
   }
   try{
     const fotoUrls=[],videoUrls=[];
