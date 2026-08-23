@@ -537,6 +537,11 @@ textarea{resize:vertical;min-height:80px;}
     <p style="font-size:.85rem;color:var(--muted);line-height:1.6;text-align:center;padding:4px 8px 10px;border-bottom:1px solid var(--line);margin-bottom:4px;">💬 Mientras más respondas y nos cuentes, más nos ayuda para seguir creciendo.</p>
 
     <div class="survey-q">
+      <span class="q-label">Tu nombre</span>
+      <input type="text" id="efNombreFamiliar" placeholder="Ej: María García">
+    </div>
+
+    <div class="survey-q">
       <span class="q-label">Nombre de tu hijo/a</span>
       <input type="text" id="efNombre" placeholder="Ej: Valentina García">
     </div>
@@ -1147,12 +1152,15 @@ setupStars('starsExp', v=>efStarsExp=v);
 setupOpts('optRecFam',  v=>efRecFam=v);
 
 document.getElementById('btnEnviarEncuestaFam').addEventListener('click', async ()=>{
+  const nombreFamiliar = document.getElementById('efNombreFamiliar').value.trim();
   const nombre = document.getElementById('efNombre').value.trim();
   const errEl = document.getElementById('efError');
   errEl.textContent='';
-  if(!nombre){ errEl.textContent='Escribí tu nombre.'; return; }
+  if(!nombreFamiliar){ errEl.textContent='Escribí tu nombre.'; return; }
+  if(!nombre){ errEl.textContent='Escribí el nombre de tu hijo/a.'; return; }
 
   const payload={
+    nombre_familiar:nombreFamiliar,
     nombre, como_se_entero:efEntero,
     estrellas_organizacion:efStarsOrg||null,
     estrellas_experiencia:efStarsExp||null,
