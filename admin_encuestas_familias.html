@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Wake Up · Autorizaciones encuesta</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --cyan:#5DB4C9; --magenta:#F11D8C; --green:#199432;
+  --ink:#080808; --text:#fff; --muted:#98a6aa;
+  --line:rgba(255,255,255,.13); --card:rgba(255,255,255,.04); --card2:rgba(255,255,255,.07);
+}
+*{box-sizing:border-box;}
+html,body{min-height:100dvh;}
+body{font-family:'Outfit',sans-serif;color:var(--text);background:var(--ink);margin:0;padding:26px 14px 60px;}
+.wrap{max-width:640px;margin:0 auto;}
+h1{font-family:'Bricolage Grotesque',sans-serif;font-weight:800;font-size:1.5rem;line-height:1.1;text-align:center;margin:0 0 6px;letter-spacing:-.015em;}
+.sub{text-align:center;color:var(--muted);font-size:.88rem;margin:0 0 22px;}
+.accent{height:4px;width:70px;margin:0 auto 26px;border-radius:99px;
+  background:linear-gradient(90deg,var(--cyan) 0 33%,var(--magenta) 33% 66%,var(--green) 66% 100%);}
+
+/* login */
+#viewLogin{max-width:340px;margin:60px auto 0;}
+label{display:block;font-size:.8rem;font-weight:600;margin:0 0 5px;color:var(--muted);}
+input[type=password],input[type=text]{
+  width:100%;font-family:'Outfit',sans-serif;font-size:.97rem;padding:12px 14px;
+  border:1.5px solid var(--line);border-radius:11px;background:rgba(255,255,255,.04);color:var(--text);
+  transition:border-color .15s,box-shadow .15s;margin-bottom:14px;}
+input::placeholder{color:#5e6b6f;}
+input:focus{outline:none;border-color:var(--cyan);background:rgba(255,255,255,.06);box-shadow:0 0 0 3px rgba(93,180,201,.18);}
+.btn{display:flex;align-items:center;justify-content:center;gap:9px;width:100%;
+  text-decoration:none;cursor:pointer;font-family:'Outfit',sans-serif;font-weight:600;font-size:.95rem;
+  padding:13px 18px;border-radius:12px;border:none;color:#fff;transition:transform .15s,box-shadow .2s,opacity .15s;}
+.btn-cyan{background:var(--cyan);box-shadow:0 12px 28px -10px rgba(93,180,201,.5);}
+.btn-cyan:hover{transform:translateY(-2px);}
+.btn-green{background:var(--green);}
+.btn-outline{background:transparent;border:1.5px solid var(--line);color:var(--muted);box-shadow:none;}
+.btn-outline:hover{border-color:var(--cyan);color:var(--text);background:rgba(93,180,201,.06);}
+.btn:disabled{opacity:.5;cursor:not-allowed;transform:none !important;}
+.error{color:var(--magenta);font-size:.82rem;text-align:center;min-height:1.2em;margin:6px 0 0;}
+
+/* app */
+#viewApp{display:none;}
+.topbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;}
+.topbar button{background:transparent;border:1px solid var(--line);color:var(--muted);border-radius:9px;
+  padding:7px 12px;font-family:'Outfit',sans-serif;font-size:.8rem;cursor:pointer;}
+.topbar button:hover{color:var(--text);border-color:var(--cyan);}
+
+.filters{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;}
+.filters button{flex:1;min-width:100px;background:var(--card);border:1.5px solid var(--line);color:var(--muted);
+  border-radius:10px;padding:9px 10px;font-family:'Outfit',sans-serif;font-size:.82rem;font-weight:600;cursor:pointer;}
+.filters button.active{border-color:var(--cyan);color:var(--text);background:rgba(93,180,201,.1);}
+
+.stats{text-align:center;color:var(--muted);font-size:.8rem;margin-bottom:16px;}
+
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 16px;margin-bottom:12px;}
+.card-top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:8px;}
+.names{flex:1;min-width:0;}
+.names .fam{font-weight:700;font-size:.98rem;}
+.names .hijo{color:var(--muted);font-size:.82rem;margin-top:1px;}
+.date{color:var(--muted);font-size:.72rem;white-space:nowrap;}
+.stars-line{font-size:.78rem;color:var(--muted);margin-bottom:8px;}
+.txt{font-size:.85rem;line-height:1.5;color:#dbe3e5;margin:6px 0;white-space:pre-wrap;}
+.txt-label{font-size:.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin:8px 0 2px;}
+.card-bottom{display:flex;justify-content:flex-end;margin-top:10px;}
+.auth-btn{display:flex;align-items:center;gap:7px;cursor:pointer;border:1.5px solid var(--line);
+  border-radius:10px;padding:9px 14px;font-family:'Outfit',sans-serif;font-size:.83rem;font-weight:600;
+  background:transparent;color:var(--muted);transition:all .15s;}
+.auth-btn.on{border-color:var(--green);color:var(--green);background:rgba(25,148,50,.1);}
+.auth-btn:hover{opacity:.85;}
+.auth-btn:disabled{opacity:.5;cursor:wait;}
+.empty{text-align:center;color:var(--muted);padding:40px 0;font-size:.9rem;}
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(20px);
+  background:#1a2224;border:1px solid var(--line);color:var(--text);padding:11px 18px;border-radius:11px;
+  font-size:.85rem;opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;z-index:50;}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+
+  <div id="viewLogin">
+    <h1>🔒 Panel admin</h1>
+    <p class="sub">Autorizaciones de la encuesta de familias</p>
+    <div class="accent"></div>
+    <label for="passInput">Clave de administrador</label>
+    <input type="password" id="passInput" autocomplete="current-password" placeholder="••••••••••••">
+    <button class="btn btn-cyan" id="loginBtn" type="button">Ingresar</button>
+    <p class="error" id="loginError"></p>
+  </div>
+
+  <div id="viewApp">
+    <h1>💬 Autorizaciones</h1>
+    <p class="sub">Marcá manualmente a las familias que te dieron el ok por teléfono.</p>
+    <div class="topbar">
+      <span class="stats" id="stats">Cargando…</span>
+      <button id="logoutBtn" type="button">Salir</button>
+    </div>
+    <div class="filters">
+      <button class="active" data-f="todos" type="button">Todos</button>
+      <button data-f="autorizado" type="button">Autorizados</button>
+      <button data-f="no" type="button">No autorizados</button>
+    </div>
+    <div id="list"></div>
+  </div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+<script>
+/* ============================================================
+   CONFIG — cambiá esta clave por una propia antes de compartir el link
+   ============================================================ */
+const ADMIN_PASS = "wuadmin26!";
+const SESS_KEY = "wakeup_admin_session";
+const SUPA_URL = "https://mzousqdahqterfawhwsz.supabase.co";
+const SUPA_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im16b3VzcWRhaHF0ZXJmYXdod3N6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA1MTc4MzUsImV4cCI6MjA5NjA5MzgzNX0.EdSlcRdLD75OdYlwtZGLVgL_PGpJysWb_MKvuwGgj5Y";
+const supa = supabase.createClient(SUPA_URL, SUPA_KEY);
+
+function lsSet(k,v){ try{ sessionStorage.setItem(k,v); }catch(e){} }
+function lsGet(k){ try{ return sessionStorage.getItem(k); }catch(e){ return null; } }
+function lsDel(k){ try{ sessionStorage.removeItem(k); }catch(e){} }
+
+function showToast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(showToast._t);
+  showToast._t = setTimeout(()=>t.classList.remove('show'), 2200);
+}
+
+/* ── LOGIN ── */
+function attemptLogin(){
+  const p = document.getElementById('passInput').value;
+  if(p === ADMIN_PASS){
+    lsSet(SESS_KEY,'1');
+    document.getElementById('loginError').textContent='';
+    document.getElementById('viewLogin').style.display='none';
+    document.getElementById('viewApp').style.display='block';
+    loadEncuestas();
+  } else {
+    document.getElementById('loginError').textContent='Clave incorrecta.';
+  }
+}
+document.getElementById('loginBtn').addEventListener('click', attemptLogin);
+document.getElementById('passInput').addEventListener('keydown', e=>{ if(e.key==='Enter'){ e.preventDefault(); attemptLogin(); } });
+document.getElementById('logoutBtn').addEventListener('click', ()=>{
+  lsDel(SESS_KEY);
+  document.getElementById('passInput').value='';
+  document.getElementById('viewApp').style.display='none';
+  document.getElementById('viewLogin').style.display='block';
+});
+
+/* ── DATA ── */
+let ROWS = [];
+let currentFilter = 'todos';
+
+async function loadEncuestas(){
+  document.getElementById('list').innerHTML = '';
+  document.getElementById('stats').textContent = 'Cargando…';
+  const { data, error } = await supa.from('encuestas_familias').select('*').order('created_at',{ascending:false});
+  if(error){
+    document.getElementById('stats').textContent = '';
+    document.getElementById('list').innerHTML = `<div class="empty">Error al cargar: ${error.message}</div>`;
+    return;
+  }
+  ROWS = data || [];
+  render();
+}
+
+function fmtDate(iso){
+  try{
+    return new Date(iso).toLocaleDateString('es-AR', {day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});
+  }catch(e){ return ''; }
+}
+
+function stars(n){ return n ? '★'.repeat(n) + '☆'.repeat(5-n) : '—'; }
+
+function render(){
+  const total = ROWS.length;
+  const autorizados = ROWS.filter(r=>r.autorizo_compartir).length;
+  document.getElementById('stats').textContent = `${total} respuestas · ${autorizados} autorizadas`;
+
+  let rows = ROWS;
+  if(currentFilter==='autorizado') rows = ROWS.filter(r=>r.autorizo_compartir);
+  if(currentFilter==='no') rows = ROWS.filter(r=>!r.autorizo_compartir);
+
+  const list = document.getElementById('list');
+  if(!rows.length){
+    list.innerHTML = '<div class="empty">No hay respuestas para este filtro.</div>';
+    return;
+  }
+
+  list.innerHTML = rows.map(r=>`
+    <div class="card" data-id="${r.id}">
+      <div class="card-top">
+        <div class="names">
+          <div class="fam">${esc(r.nombre_familiar || '(sin nombre)')}</div>
+          <div class="hijo">Hijo/a: ${esc(r.nombre || '—')}</div>
+        </div>
+        <div class="date">${fmtDate(r.created_at)}</div>
+      </div>
+      <div class="stars-line">Experiencia ${stars(r.estrellas_experiencia)} · Organización ${stars(r.estrellas_organizacion)}${r.recomendaria ? ' · Recomienda: '+esc(r.recomendaria) : ''}</div>
+      ${r.comentario ? `<div class="txt-label">Comentario</div><div class="txt">${esc(r.comentario)}</div>` : ''}
+      ${r.recomendacion ? `<div class="txt-label">Le diría a otra familia</div><div class="txt">${esc(r.recomendacion)}</div>` : ''}
+      <div class="card-bottom">
+        <button class="auth-btn ${r.autorizo_compartir?'on':''}" type="button" onclick="toggleAutorizo('${r.id}', ${!r.autorizo_compartir})">
+          ${r.autorizo_compartir ? '✓ Autorizado' : 'Marcar autorizado'}
+        </button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function esc(s){
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+async function toggleAutorizo(id, nuevoValor){
+  const btn = document.querySelector(`.card[data-id="${id}"] .auth-btn`);
+  if(btn) btn.disabled = true;
+  const { error } = await supa.from('encuestas_familias').update({ autorizo_compartir: nuevoValor }).eq('id', id);
+  if(error){
+    showToast('Error al guardar. Intentá de nuevo.');
+    if(btn) btn.disabled = false;
+    return;
+  }
+  const row = ROWS.find(r => String(r.id) === String(id));
+  if(row) row.autorizo_compartir = nuevoValor;
+  showToast(nuevoValor ? 'Marcado como autorizado ✓' : 'Autorización quitada');
+  render();
+}
+
+document.querySelectorAll('.filters button').forEach(b=>{
+  b.addEventListener('click', ()=>{
+    document.querySelectorAll('.filters button').forEach(x=>x.classList.remove('active'));
+    b.classList.add('active');
+    currentFilter = b.dataset.f;
+    render();
+  });
+});
+
+/* ── Sesión activa ── */
+if(lsGet(SESS_KEY) === '1'){
+  document.getElementById('viewLogin').style.display='none';
+  document.getElementById('viewApp').style.display='block';
+  loadEncuestas();
+}
+</script>
+</body>
+</html>
