@@ -124,7 +124,9 @@ select option{background:#1a2224;}
 
 <script>
 const SUPA_URL="https://mzousqdahqterfawhwsz.supabase.co", SUPA_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im16b3VzcWRhaHF0ZXJmYXdod3N6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA1MTc4MzUsImV4cCI6MjA5NjA5MzgzNX0.EdSlcRdLD75OdYlwtZGLVgL_PGpJysWb_MKvuwGgj5Y";
-const supa=supabase.createClient(SUPA_URL,SUPA_KEY);
+const supa=supabase.createClient(SUPA_URL,SUPA_KEY,{
+  global:{ fetch:(url,options={})=>fetch(url,{...options,cache:'no-store'}) }
+});
 let toastT;
 function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove('show'),2800);}
 </script>
@@ -204,15 +206,17 @@ async function editNombreFamiliar(id) {
   if(nuevo === null) return; // canceló
   const nuevoTrim = nuevo.trim();
   if(!nuevoTrim){ showToast('El nombre no puede quedar vacío.'); return; }
-  const { error } = await supa.from('encuestas_familias').update({ nombre_familiar: nuevoTrim }).eq('id', id);
-  if(error) { showToast('Error al guardar. Intentá de nuevo.'); return; }
+  const { data, error } = await supa.from('encuestas_familias').update({ nombre_familiar: nuevoTrim }).eq('id', id).select();
+  if(error) { showToast('Error al guardar: ' + error.message); return; }
+  if(!data || !data.length) { showToast('⚠️ No se guardó: falta permiso (RLS) en Supabase.'); return; }
   if(row) row.nombre_familiar = nuevoTrim;
   showToast('Nombre actualizado ✓');
   renderEfCards();
 }
 async function toggleAutorizo(id, nuevoValor) {
-  const { error } = await supa.from('encuestas_familias').update({ autorizo_compartir: nuevoValor }).eq('id', id);
-  if(error) { showToast('Error al guardar. Intentá de nuevo.'); return; }
+  const { data, error } = await supa.from('encuestas_familias').update({ autorizo_compartir: nuevoValor }).eq('id', id).select();
+  if(error) { showToast('Error al guardar: ' + error.message); return; }
+  if(!data || !data.length) { showToast('⚠️ No se guardó: falta permiso (RLS) en Supabase.'); return; }
   const row = allEfData.find(r => String(r.id) === String(id));
   if(row) row.autorizo_compartir = nuevoValor;
   document.getElementById('statAut').textContent = allEfData.filter(r=>r.autorizo_compartir).length;
