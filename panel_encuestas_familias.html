@@ -106,14 +106,17 @@ select option{background:#1a2224;}
   <a href="/#accesos" style="font-size:.83rem;font-weight:600;color:var(--muted);text-decoration:none;padding:6px 14px;border:1.5px solid var(--line);border-radius:99px;transition:.15s;">Panel →</a>
 </div>
 <div class="container">
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px;">
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:20px;">
     <div class="stat"><div class="val" id="statTotal">—</div><div class="lbl">Respuestas</div></div>
     <div class="stat"><div class="val" id="statRec" style="color:var(--green);">—</div><div class="lbl">Recomendarían</div></div>
+    <div class="stat"><div class="val" id="statAut" style="color:var(--cyan);">—</div><div class="lbl">Autorizadas</div></div>
   </div>
   <div class="filter-bar">
     <button class="filter-btn active" type="button" onclick="setFiltro('todas',this)">Todas</button>
     <button class="filter-btn" type="button" onclick="setFiltro('con-comentario',this)">Con comentario</button>
     <button class="filter-btn" type="button" onclick="setFiltro('recomendaria',this)">Lo recomendarían</button>
+    <button class="filter-btn" type="button" onclick="setFiltro('autorizadas',this)">Autorizadas</button>
+    <button class="filter-btn" type="button" onclick="setFiltro('no-autorizadas',this)">Sin autorizar</button>
   </div>
   <div id="encuestasFamList"><div style="color:var(--muted);font-size:.88rem;text-align:center;padding:16px;">Cargando…</div></div>
 </div>
@@ -140,11 +143,16 @@ function renderEfCards(){
   let data=[...allEfData];
   if(filtroActivo==='con-comentario') data=data.filter(r=>r.comentario||r.recomendacion);
   if(filtroActivo==='recomendaria') data=data.filter(r=>r.recomendaria&&r.recomendaria.startsWith('sí'));
+  if(filtroActivo==='autorizadas') data=data.filter(r=>r.autorizo_compartir);
+  if(filtroActivo==='no-autorizadas') data=data.filter(r=>!r.autorizo_compartir);
   if(!data.length){el.innerHTML='<div style="color:var(--muted);font-size:.88rem;text-align:center;padding:20px;">No hay respuestas con ese filtro.</div>';return;}
   const stars=n=>n?'★'.repeat(n)+'☆'.repeat(5-n):'—';
   el.innerHTML=data.map(r=>`<div class="ef-card">
       <div class="card-head">
-        <span class="card-nombre">${r.nombre||'Anónimo'}</span>
+        <div>
+          <span class="card-nombre">${r.nombre_familiar||'Anónimo'}</span>
+          ${r.nombre?`<div style="font-size:.78rem;color:var(--muted);margin-top:1px;">Hijo/a: ${r.nombre}</div>`:''}
+        </div>
         <div style="display:flex;align-items:center;gap:8px;">
           <span class="card-fecha">${new Date(r.created_at).toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric'})}</span>
           <button type="button" onclick="deleteEf('${r.id}')" style="padding:3px 9px;border-radius:7px;border:1.5px solid rgba(255,95,174,.3);background:transparent;color:#ff5fae;font-family:Outfit,sans-serif;font-size:.73rem;font-weight:600;cursor:pointer;">🗑️</button>
@@ -156,6 +164,15 @@ function renderEfCards(){
       ${r.recomendaria?`<div class="ef-field"><div class="ef-label">¿Recomendaría?</div><div class="ef-val badge">${r.recomendaria}</div></div>`:''}
       ${r.comentario?`<hr class="divider"><div class="ef-field"><div class="ef-label">Comentario</div><div class="ef-val">${r.comentario}</div></div>`:''}
       ${r.recomendacion?`<div class="ef-field"><div class="ef-label">Qué le diría a otras familias</div><div class="ef-val" style="font-style:italic;">"${r.recomendacion}"</div></div>`:''}
+      <hr class="divider">
+      <button type="button" onclick="toggleAutorizo('${r.id}', ${!r.autorizo_compartir})"
+        style="display:flex;align-items:center;justify-content:center;gap:7px;width:100%;cursor:pointer;
+        border-radius:10px;padding:9px 14px;font-family:Outfit,sans-serif;font-size:.83rem;font-weight:600;
+        border:1.5px solid ${r.autorizo_compartir ? 'var(--green)' : 'var(--line)'};
+        background:${r.autorizo_compartir ? 'rgba(25,148,50,.12)' : 'transparent'};
+        color:${r.autorizo_compartir ? 'var(--green)' : 'var(--muted)'};">
+        ${r.autorizo_compartir ? '✓ Autoriza compartir en redes / reuniones' : 'Marcar como autorizado (pedido por teléfono)'}
+      </button>
     </div>`).join('');
 }
 
@@ -169,6 +186,8 @@ async function loadEncuestasFam(){
   document.getElementById('statTotal').textContent=data.length;
   const rec=data.filter(r=>r.recomendaria&&r.recomendaria.startsWith('sí')).length;
   document.getElementById('statRec').textContent=data.length?Math.round(rec/data.length*100)+'%':'—';
+  const aut=data.filter(r=>r.autorizo_compartir).length;
+  document.getElementById('statAut').textContent=aut;
   renderEfCards();
 }
 async function deleteEf(id) {
@@ -176,6 +195,15 @@ async function deleteEf(id) {
   const { error } = await supa.from('encuestas_familias').delete().eq('id', id);
   if(error) { alert('Error: ' + error.message); return; }
   loadEncuestasFam();
+}
+async function toggleAutorizo(id, nuevoValor) {
+  const { error } = await supa.from('encuestas_familias').update({ autorizo_compartir: nuevoValor }).eq('id', id);
+  if(error) { showToast('Error al guardar. Intentá de nuevo.'); return; }
+  const row = allEfData.find(r => String(r.id) === String(id));
+  if(row) row.autorizo_compartir = nuevoValor;
+  document.getElementById('statAut').textContent = allEfData.filter(r=>r.autorizo_compartir).length;
+  showToast(nuevoValor ? 'Marcado como autorizado ✓' : 'Autorización quitada');
+  renderEfCards();
 }
 
 loadEncuestasFam();
