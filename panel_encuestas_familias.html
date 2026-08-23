@@ -151,6 +151,7 @@ function renderEfCards(){
       <div class="card-head">
         <div>
           <span class="card-nombre">${r.nombre_familiar||'Anónimo'}</span>
+          <button type="button" onclick="editNombreFamiliar('${r.id}')" title="Editar nombre" style="border:none;background:transparent;color:var(--muted);cursor:pointer;font-size:.78rem;padding:0 0 0 4px;">✏️</button>
           ${r.nombre?`<div style="font-size:.78rem;color:var(--muted);margin-top:1px;">Hijo/a: ${r.nombre}</div>`:''}
         </div>
         <div style="display:flex;align-items:center;gap:8px;">
@@ -195,6 +196,19 @@ async function deleteEf(id) {
   const { error } = await supa.from('encuestas_familias').delete().eq('id', id);
   if(error) { alert('Error: ' + error.message); return; }
   loadEncuestasFam();
+}
+async function editNombreFamiliar(id) {
+  const row = allEfData.find(r => String(r.id) === String(id));
+  const actual = row && row.nombre_familiar ? row.nombre_familiar : '';
+  const nuevo = prompt('Nombre del padre/madre:', actual);
+  if(nuevo === null) return; // canceló
+  const nuevoTrim = nuevo.trim();
+  if(!nuevoTrim){ showToast('El nombre no puede quedar vacío.'); return; }
+  const { error } = await supa.from('encuestas_familias').update({ nombre_familiar: nuevoTrim }).eq('id', id);
+  if(error) { showToast('Error al guardar. Intentá de nuevo.'); return; }
+  if(row) row.nombre_familiar = nuevoTrim;
+  showToast('Nombre actualizado ✓');
+  renderEfCards();
 }
 async function toggleAutorizo(id, nuevoValor) {
   const { error } = await supa.from('encuestas_familias').update({ autorizo_compartir: nuevoValor }).eq('id', id);
