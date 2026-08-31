@@ -123,6 +123,7 @@ select option{background:#1a2224;}
     <button class="filter-btn" type="button" onclick="setFiltro('autorizadas',this)">Autorizadas</button>
     <button class="filter-btn" type="button" onclick="setFiltro('no-autorizadas',this)">Sin autorizar</button>
   </div>
+  <button type="button" class="ghost-btn" style="margin-bottom:16px;" onclick="exportarTodo(event)">📦 Exportar todo lo filtrado</button>
   <div id="encuestasFamList"><div style="color:var(--muted);font-size:.88rem;text-align:center;padding:16px;">Cargando…</div></div>
 </div>
 <div class="export-menu" id="exportMenu">
@@ -151,13 +152,30 @@ function setFiltro(f, btn){
   renderEfCards();
 }
 
-function renderEfCards(){
-  const el=document.getElementById('encuestasFamList');
+function getFilteredEfData(){
   let data=[...allEfData];
   if(filtroActivo==='con-comentario') data=data.filter(r=>r.comentario||r.recomendacion);
   if(filtroActivo==='recomendaria') data=data.filter(r=>r.recomendaria&&r.recomendaria.startsWith('sí'));
   if(filtroActivo==='autorizadas') data=data.filter(r=>r.autorizo_compartir);
   if(filtroActivo==='no-autorizadas') data=data.filter(r=>!r.autorizo_compartir);
+  return data;
+}
+
+function exportarTodo(evt){
+  const data = getFilteredEfData().filter(r => r.comentario || r.recomendacion);
+  if(!data.length){ showToast('No hay comentarios con texto para exportar en este filtro.'); return; }
+  const rows = data.map(r => ({
+    grupo: 'familias',
+    nombre: r.nombre_familiar || 'Una familia Wake Up',
+    estrellas: r.estrellas_experiencia,
+    parrafos: [r.comentario, r.recomendacion].filter(Boolean),
+  }));
+  wuOpenExportMenu(evt, { bulk: true, rows });
+}
+
+function renderEfCards(){
+  const el=document.getElementById('encuestasFamList');
+  let data=getFilteredEfData();
   if(!data.length){el.innerHTML='<div style="color:var(--muted);font-size:.88rem;text-align:center;padding:20px;">No hay respuestas con ese filtro.</div>';return;}
   const stars=n=>n?'★'.repeat(n)+'☆'.repeat(5-n):'—';
   el.innerHTML=data.map(r=>`<div class="ef-card">
