@@ -1,7 +1,9 @@
 /* Wake Up · Exportador de comentarios a imagen (historias IG / tarjeta suelta)
    Se usa igual en encuestas.html y panel_encuestas_familias.html.
-   Requiere en la página: <div class="export-menu" id="exportMenu"> con 4 <button data-fmt data-theme>,
-   una función global openExportMenu(evt, id) que llame a wuOpenExportMenu(evt, rowInfo). */
+   Requiere en la página: <div class="export-menu" id="exportMenu"> con 4 <button data-fmt data-theme>.
+   Cada página define su propio openExportMenu(evt, id) (una fila) y exportarTodo(evt) (varias),
+   que llaman a wuOpenExportMenu(evt, rowInfo) — rowInfo es {grupo,nombre,estrellas,parrafos}
+   o, para exportar todo, {bulk:true, rows:[...]}. */
 
 (function () {
   const PALETTE = {
@@ -13,10 +15,20 @@
   };
 
   let pendingRow = null;
-  const menu = document.getElementById('exportMenu');
-  if (!menu) return;
+  let wired = false;
 
+  function getMenu() {
+    return document.getElementById('exportMenu');
+  }
+
+  // Siempre queda definida, aunque el menú todavía no esté en el DOM
+  // (evita el "wuOpenExportMenu is not defined" si algo cambia el orden de carga).
   window.wuOpenExportMenu = function (evt, rowInfo) {
+    const menu = getMenu();
+    if (!menu) {
+      console.warn('[wakeup export] No se encontró <div id="exportMenu"> en esta página.');
+      return;
+    }
     evt.stopPropagation();
     pendingRow = rowInfo;
     const btn = evt.currentTarget || evt.target;
@@ -27,18 +39,41 @@
     if (left > maxLeft) left = maxLeft;
     menu.style.left = Math.max(8, left) + 'px';
     menu.classList.add('open');
+
+    if (!wired) {
+      wired = true;
+      menu.addEventListener('click', onMenuClick);
+      document.addEventListener('click', (e) => {
+        const m = getMenu();
+        if (m && !m.contains(e.target)) m.classList.remove('open');
+      });
+    }
   };
 
-  document.addEventListener('click', (e) => {
-    if (!menu.contains(e.target)) menu.classList.remove('open');
-  });
-
-  menu.addEventListener('click', (e) => {
+  function onMenuClick(e) {
     const btn = e.target.closest('button[data-fmt]');
     if (!btn || !pendingRow) return;
-    menu.classList.remove('open');
-    buildAndDownload(pendingRow, btn.dataset.fmt, btn.dataset.theme);
-  });
+    getMenu().classList.remove('open');
+    if (pendingRow.bulk) {
+      downloadBulk(pendingRow.rows, btn.dataset.fmt, btn.dataset.theme);
+    } else {
+      buildAndDownload(pendingRow, btn.dataset.fmt, btn.dataset.theme);
+    }
+  }
+
+  function downloadBulk(rows, fmt, theme) {
+    if (!rows || !rows.length) return;
+    if (typeof showToast === 'function') {
+      showToast(`Descargando ${rows.length} imagen${rows.length === 1 ? '' : 'es'}… revisá los permisos de descarga del navegador si te los pide.`);
+    }
+    let i = 0;
+    (function next() {
+      if (i >= rows.length) return;
+      buildAndDownload(rows[i], fmt, theme);
+      i++;
+      setTimeout(next, 450);
+    })();
+  }
 
   function wrapLines(ctx, text, maxWidth) {
     const words = String(text).split(/\s+/);
@@ -129,14 +164,12 @@
       const cardW = W - 120;
       ctx.font = '500 40px Arial, sans-serif';
       let totalTextH = 0;
-      const wrapped = paras.map((p, i) => {
+      paras.forEach((p, i) => {
         ctx.font = i === 0 ? '500 40px Arial, sans-serif' : 'italic 400 34px Arial, sans-serif';
         const lines = wrapLines(ctx, p, cardW - pad * 2);
         const lh = i === 0 ? 54 : 46;
         totalTextH += lines.length * lh + (i > 0 ? 30 : 0);
-        return { lines, lh };
       });
-      const headerH = 30 + 46; // eyebrow-ish spacing not used here
       const footH = 90;
       const cardH = pad * 2 + totalTextH + footH + 40;
       canvas.width = W;
@@ -174,19 +207,16 @@
   }
 
   function drawCard(ctx, opts) {
-    const { x, y, w, accent, cardBg, cardBorder, textMain, textMuted, row, paras, pad, dark, shadow, big } = opts;
+    const { x, y, w, accent, cardBg, cardBorder, textMain, textMuted, row, paras, pad, shadow, big } = opts;
 
-    // measure text first to size the card if forcedHeight not given
     const innerW = w - pad * 2;
-    ctx.font = big ? '600 46px Arial, sans-serif' : '500 40px Arial, sans-serif';
-    let y2 = 0;
     const blocks = paras.map((p, i) => {
       ctx.font = i === 0
         ? (big ? '600 46px Arial, sans-serif' : '500 40px Arial, sans-serif')
         : (big ? 'italic 400 38px Arial, sans-serif' : 'italic 400 34px Arial, sans-serif');
       const lines = wrapLines(ctx, p, innerW);
       const lh = i === 0 ? (big ? 60 : 54) : (big ? 50 : 46);
-      return { lines, lh, italic: i > 0 };
+      return { lines, lh };
     });
     let textH = 0;
     blocks.forEach((b, i) => { textH += b.lines.length * b.lh + (i > 0 ? 28 : 0); });
