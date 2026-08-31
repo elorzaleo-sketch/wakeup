@@ -98,6 +98,11 @@ select option{background:#1a2224;}
 .stat{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;text-align:center;margin-bottom:6px;}
 .stat .val{font-family:'Bricolage Grotesque',sans-serif;font-size:2rem;font-weight:800;color:var(--cyan);}
 .stat .lbl{font-size:.78rem;color:var(--muted);margin-top:4px;}
+.ghost-btn{padding:5px 12px;border-radius:8px;border:1.5px solid var(--line);background:transparent;color:var(--muted);font-family:'Outfit',sans-serif;font-size:.78rem;font-weight:600;cursor:pointer;}
+.export-menu{position:absolute;z-index:50;background:#12181a;border:1px solid var(--line);border-radius:12px;padding:6px;box-shadow:0 12px 30px rgba(0,0,0,.4);display:none;min-width:190px;}
+.export-menu.open{display:block;}
+.export-menu button{display:block;width:100%;text-align:left;padding:9px 12px;border-radius:8px;border:none;background:transparent;color:var(--text);font-family:'Outfit',sans-serif;font-size:.83rem;cursor:pointer;}
+.export-menu button:hover{background:rgba(255,255,255,.06);}
 </style>
 </head>
 <body>
@@ -119,6 +124,12 @@ select option{background:#1a2224;}
     <button class="filter-btn" type="button" onclick="setFiltro('no-autorizadas',this)">Sin autorizar</button>
   </div>
   <div id="encuestasFamList"><div style="color:var(--muted);font-size:.88rem;text-align:center;padding:16px;">Cargando…</div></div>
+</div>
+<div class="export-menu" id="exportMenu">
+  <button type="button" data-fmt="historia" data-theme="dark">🌙 Historia IG · fondo negro</button>
+  <button type="button" data-fmt="historia" data-theme="light">☀️ Historia IG · fondo blanco</button>
+  <button type="button" data-fmt="tarjeta" data-theme="dark">🌙 Solo tarjeta · oscura</button>
+  <button type="button" data-fmt="tarjeta" data-theme="light">☀️ Solo tarjeta · clara</button>
 </div>
 <div class="toast" id="toast"></div>
 
@@ -156,8 +167,9 @@ function renderEfCards(){
           <button type="button" onclick="editNombreFamiliar('${r.id}')" title="Editar nombre" style="border:none;background:transparent;color:var(--muted);cursor:pointer;font-size:.78rem;padding:0 0 0 4px;">✏️</button>
           ${r.nombre?`<div style="font-size:.78rem;color:var(--muted);margin-top:1px;">Hijo/a: ${r.nombre}</div>`:''}
         </div>
-        <div style="display:flex;align-items:center;gap:8px;">
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
           <span class="card-fecha">${new Date(r.created_at).toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric'})}</span>
+          <button type="button" class="ghost-btn" onclick="openExportMenu(event,'${r.id}')">🖼️ Exportar</button>
           <button type="button" onclick="deleteEf('${r.id}')" style="padding:3px 9px;border-radius:7px;border:1.5px solid rgba(255,95,174,.3);background:transparent;color:#ff5fae;font-family:Outfit,sans-serif;font-size:.73rem;font-weight:600;cursor:pointer;">🗑️</button>
         </div>
       </div>
@@ -224,8 +236,21 @@ async function toggleAutorizo(id, nuevoValor) {
   renderEfCards();
 }
 
+function openExportMenu(evt, id) {
+  const r = allEfData.find(x => String(x.id) === String(id));
+  if (!r) return;
+  wuOpenExportMenu(evt, {
+    grupo: 'familias',
+    nombre: r.nombre_familiar || 'Una familia Wake Up',
+    estrellas: r.estrellas_experiencia,
+    parrafos: [r.comentario, r.recomendacion].filter(Boolean)
+  });
+}
+
 loadEncuestasFam();
 </script>
+
+<script src="export-imagenes.js"></script>
 
 <script>
 if ('serviceWorker' in navigator) {
