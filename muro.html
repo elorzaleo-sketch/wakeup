@@ -212,13 +212,6 @@
     .toggle .thumb{transition:none;}
     .scroll-cue{animation:none;}
   }
-
-  /* ---------- background loading veil (hides the youtube/vimeo control flash) ---------- */
-  .bg-veil{
-    position:absolute;inset:0;z-index:2;background:var(--ink);
-    opacity:1;transition:opacity .8s ease;pointer-events:none;
-  }
-  .bg-veil.hide{opacity:0;}
 </style>
 </head>
 <body>
@@ -226,7 +219,6 @@
 
 <div class="bg" id="bg">
   <div id="bgMedia"></div>
-  <div class="bg-veil" id="bgVeil"></div>
 </div>
 
 <button type="button" class="sound-btn" id="soundBtn" hidden aria-pressed="false">
@@ -305,23 +297,15 @@
   let mediaType = null; // 'video' | 'youtube' | 'vimeo'
   let mediaEl = null;
   let soundOn = false;
-  let veilHidden = false;
 
   function showSoundBtn(){
     const btn = document.getElementById('soundBtn');
     btn.hidden = false;
   }
 
-  function hideVeil(){
-    if(veilHidden) return;
-    veilHidden = true;
-    const veil = document.getElementById('bgVeil');
-    if(veil) veil.classList.add('hide');
-  }
-
   function setBackgroundMedia(url){
     const holder = document.getElementById('bgMedia');
-    if(!url){ document.getElementById('bg').classList.add('no-video'); hideVeil(); return; }
+    if(!url){ document.getElementById('bg').classList.add('no-video'); return; }
 
     const yt = extractYouTubeId(url);
     if(yt){
@@ -329,9 +313,6 @@
       mediaType = 'youtube';
       mediaEl = document.getElementById('ytFrame');
       showSoundBtn();
-      // El propio reproductor de YouTube tarda un instante en aplicar controls=0;
-      // dejamos el velo tapando ese "flash" inicial de sus controles nativos.
-      setTimeout(hideVeil, 1300);
       return;
     }
     const vm = extractVimeoId(url);
@@ -340,7 +321,6 @@
       mediaType = 'vimeo';
       mediaEl = document.getElementById('vmFrame');
       showSoundBtn();
-      setTimeout(hideVeil, 1100);
       return;
     }
     const drive = driveDirectLink(url);
@@ -349,14 +329,12 @@
     v.className = 'bg-fill';
     v.autoplay = true; v.muted = true; v.loop = true; v.playsInline = true; v.preload = 'auto';
     v.src = finalUrl;
-    v.onerror = () => { document.getElementById('bg').classList.add('no-video'); hideVeil(); };
-    v.addEventListener('playing', hideVeil, { once:true });
+    v.onerror = () => document.getElementById('bg').classList.add('no-video');
     holder.appendChild(v);
     v.play().catch(()=>{});
     mediaType = 'video';
     mediaEl = v;
     showSoundBtn();
-    setTimeout(hideVeil, 1500); // red de seguridad si 'playing' no dispara
   }
 
   function setSound(on){
