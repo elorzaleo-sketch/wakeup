@@ -1,0 +1,395 @@
+<title>Historias Wake Up</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&family=Outfit:wght@400;500;600;700&display=swap');
+
+  :root{
+    --ink:#080808;
+    --ink-2:#0e1113;
+    --cyan:#5DB4C9;
+    --magenta:#F11D8C;
+    --green:#3ec463;
+    --gold:#f5c842;
+    --text:#f5f7f7;
+    --muted:#98a6aa;
+    --line:rgba(255,255,255,.14);
+    --card:rgba(255,255,255,.055);
+    --card-2:rgba(255,255,255,.09);
+  }
+
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{
+    margin:0;background:var(--ink);color:var(--text);
+    font-family:'Outfit',sans-serif;
+    min-height:100dvh;overflow-x:hidden;
+    -webkit-font-smoothing:antialiased;
+  }
+  h1,h2,.brand,.pill{font-family:'Bricolage Grotesque',sans-serif;}
+
+  /* ---------- fixed video background ---------- */
+  .bg{
+    position:fixed;inset:0;z-index:0;overflow:hidden;background:var(--ink);
+  }
+  .bg-fill{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);opacity:.55;}
+  video.bg-fill{min-width:100%;min-height:100%;width:auto;height:auto;object-fit:cover;}
+  iframe.bg-frame{
+    width:177.78vh;height:100vh;min-width:100vw;min-height:56.25vw;
+    border:none;pointer-events:none;
+  }
+  .bg::before{ /* vignette */
+    content:'';position:absolute;inset:0;
+    background:
+      radial-gradient(ellipse at 50% 20%, rgba(8,8,8,.15), rgba(8,8,8,.66) 62%, var(--ink) 100%),
+      linear-gradient(180deg, rgba(8,8,8,.55) 0%, rgba(8,8,8,.72) 45%, var(--ink) 92%);
+  }
+  .bg.no-video{background:
+    radial-gradient(ellipse at 30% 10%, rgba(93,180,201,.16), transparent 55%),
+    radial-gradient(ellipse at 80% 0%, rgba(241,29,140,.14), transparent 50%),
+    var(--ink);
+  }
+
+  /* ---------- layout ---------- */
+  .stage{position:relative;z-index:1;}
+
+  .hero{
+    min-height:min(92dvh,860px);display:flex;flex-direction:column;
+    align-items:center;justify-content:center;text-align:center;
+    padding:min(14vh,120px) 24px 64px;
+  }
+  .eyebrow{
+    font-size:.78rem;font-weight:600;letter-spacing:.16em;text-transform:uppercase;
+    color:var(--cyan);margin:0 0 18px;
+  }
+  .eyebrow span{color:var(--magenta);}
+  h1{
+    font-size:clamp(2.3rem,6vw,4.2rem);line-height:1.04;font-weight:800;
+    margin:0 0 20px;max-width:16ch;text-wrap:balance;
+    background:linear-gradient(100deg,#fff 35%, var(--cyan) 75%, var(--magenta) 100%);
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+  }
+  .subtitle{
+    font-size:clamp(1rem,1.7vw,1.2rem);color:var(--muted);max-width:46ch;
+    margin:0 0 44px;line-height:1.55;
+  }
+
+  /* toggle */
+  .toggle{
+    position:relative;display:inline-flex;padding:5px;border-radius:999px;
+    background:var(--card);border:1.5px solid var(--line);backdrop-filter:blur(14px);
+  }
+  .toggle .thumb{
+    position:absolute;top:5px;bottom:5px;left:5px;width:calc(33.333% - 3.33px);
+    border-radius:999px;transition:transform .35s cubic-bezier(.65,0,.35,1),background .35s;
+    background:linear-gradient(120deg,#8a8fce,#6a6fae);
+    z-index:0;
+  }
+  .toggle[data-active="familias"] .thumb{
+    transform:translateX(100%);
+    background:linear-gradient(120deg,var(--magenta),#c91578);
+  }
+  .toggle[data-active="egresados"] .thumb{
+    transform:translateX(200%);
+    background:linear-gradient(120deg,var(--cyan),#3f8fa3);
+  }
+  .toggle button{
+    position:relative;z-index:1;border:none;background:transparent;cursor:pointer;
+    font-family:'Bricolage Grotesque',sans-serif;font-weight:700;font-size:.98rem;
+    color:var(--muted);padding:13px 24px;border-radius:999px;min-width:112px;
+    transition:color .25s;
+  }
+  .toggle button.active{color:#fff;}
+  .toggle button:focus-visible{outline:2px solid var(--cyan);outline-offset:3px;}
+
+  .count-line{margin-top:20px;font-size:.85rem;color:var(--muted);min-height:1.2em;}
+  .count-line b{color:var(--text);font-variant-numeric:tabular-nums;}
+
+  /* ---------- wall ---------- */
+  .wall{
+    max-width:1180px;margin:0 auto;padding:0 20px 40px;
+    columns:1;column-gap:22px;
+  }
+  @media(min-width:720px){ .wall{columns:2;} }
+  @media(min-width:1040px){ .wall{columns:3;} }
+
+  .card{
+    break-inside:avoid;margin:0 0 22px;padding:26px 24px 22px;
+    border-radius:20px;border:1px solid var(--line);
+    background:linear-gradient(160deg,var(--card-2),var(--card));
+    backdrop-filter:blur(10px);position:relative;overflow:hidden;
+    opacity:0;transform:translateY(18px);
+    transition:opacity .6s ease, transform .6s ease;
+  }
+  .card.in{opacity:1;transform:translateY(0);}
+  .card::before{
+    content:'';position:absolute;left:0;top:0;bottom:0;width:4px;
+  }
+  .card[data-group="familias"]::before{background:linear-gradient(var(--magenta),transparent);}
+  .card[data-group="egresados"]::before{background:linear-gradient(var(--cyan),transparent);}
+
+  .quote-mark{
+    font-family:'Bricolage Grotesque',sans-serif;font-size:2.6rem;font-weight:800;
+    line-height:1;height:22px;overflow:visible;margin-bottom:6px;opacity:.5;
+  }
+  .card[data-group="familias"] .quote-mark{color:var(--magenta);}
+  .card[data-group="egresados"] .quote-mark{color:var(--cyan);}
+
+  .quote{font-size:1.02rem;line-height:1.55;margin:0 0 14px;color:var(--text);}
+  .quote.secondary{
+    font-style:italic;color:var(--muted);font-size:.94rem;
+    padding-top:12px;border-top:1px dashed var(--line);margin-top:14px;
+  }
+
+  .card-foot{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:16px;}
+  .who{display:flex;flex-direction:column;gap:2px;}
+  .name{font-family:'Bricolage Grotesque',sans-serif;font-weight:700;font-size:.92rem;}
+  .stars{color:var(--gold);letter-spacing:2px;font-size:.82rem;}
+  .rec-tag{
+    display:inline-flex;align-items:center;gap:5px;font-size:.72rem;font-weight:600;
+    color:var(--green);white-space:nowrap;
+  }
+
+  .empty, .loading{
+    text-align:center;color:var(--muted);padding:70px 20px;font-size:.95rem;
+    grid-column:1/-1;
+  }
+
+  footer{
+    position:relative;z-index:1;text-align:center;padding:50px 20px 46px;
+    color:var(--muted);font-size:.82rem;border-top:1px solid var(--line);
+    margin-top:20px;
+  }
+  footer .brand{color:var(--text);font-weight:700;font-size:1rem;}
+  footer .brand span{color:var(--cyan);}
+
+  @media (prefers-reduced-motion: reduce){
+    html{scroll-behavior:auto;}
+    .card{transition:none;opacity:1;transform:none;}
+    .toggle .thumb{transition:none;}
+  }
+</style>
+
+<div class="bg" id="bg">
+  <div id="bgMedia"></div>
+</div>
+
+<div class="stage">
+  <header class="hero">
+    <p class="eyebrow">WAKE UP <span>·</span> VIAJES DE EGRESADOS</p>
+    <h1 id="heroTitle">Voces del viaje</h1>
+    <p class="subtitle" id="heroSubtitle">Familias y egresados cuentan, con sus propias palabras, cómo fue vivir un viaje Wake Up.</p>
+
+    <div class="toggle" id="toggle" data-active="todas">
+      <div class="thumb"></div>
+      <button type="button" class="active" data-tab="todas">Todas</button>
+      <button type="button" data-tab="familias">Familias</button>
+      <button type="button" data-tab="egresados">Egresados</button>
+    </div>
+    <p class="count-line" id="countLine"></p>
+  </header>
+
+  <main class="wall" id="wall">
+    <div class="loading">Cargando historias…</div>
+  </main>
+
+  <footer>
+    <div class="brand">Wake Up <span>Viajes</span></div>
+    <div style="margin-top:6px;">Historias compartidas con autorización de cada familia y egresado.</div>
+  </footer>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script>
+(function(){
+  const SUPA_URL = "https://mzousqdahqterfawhwsz.supabase.co";
+  const SUPA_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im16b3VzcWRhaHF0ZXJmYXdod3N6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA1MTc4MzUsImV4cCI6MjA5NjA5MzgzNX0.EdSlcRdLD75OdYlwtZGLVgL_PGpJysWb_MKvuwGgj5Y";
+  const supa = supabase.createClient(SUPA_URL, SUPA_KEY, { global:{ fetch:(url,opt={})=>fetch(url,{...opt,cache:'no-store'}) } });
+
+  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  let cache = { familias: null, egresados: null };
+  let groupError = { familias: false, egresados: false };
+  let active = 'todas';
+
+  function shuffle(arr){
+    const a = arr.slice();
+    for(let i = a.length - 1; i > 0; i--){
+      const j = Math.floor(Math.random() * (i + 1));
+      [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+  }
+
+  function esc(s){
+    return (s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+  function stars(n){ n = Number(n)||0; return n ? '★'.repeat(n) + '☆'.repeat(Math.max(0,5-n)) : ''; }
+
+  function extractYouTubeId(url){
+    const m = url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|shorts\/))([a-zA-Z0-9_-]{6,})/);
+    return m ? m[1] : null;
+  }
+  function extractVimeoId(url){
+    const m = url.match(/vimeo\.com\/(?:video\/)?(\d+)/);
+    return m ? m[1] : null;
+  }
+  function driveDirectLink(url){
+    const m = url.match(/drive\.google\.com\/file\/d\/([a-zA-Z0-9_-]+)/);
+    return m ? `https://drive.google.com/uc?export=download&id=${m[1]}` : null;
+  }
+
+  function setBackgroundMedia(url){
+    const holder = document.getElementById('bgMedia');
+    if(!url){ document.getElementById('bg').classList.add('no-video'); return; }
+
+    const yt = extractYouTubeId(url);
+    if(yt){
+      holder.innerHTML = `<iframe class="bg-fill bg-frame" src="https://www.youtube.com/embed/${yt}?autoplay=1&mute=1&loop=1&playlist=${yt}&controls=0&showinfo=0&modestbranding=1&playsinline=1&iv_load_policy=3&rel=0" allow="autoplay; encrypted-media" frameborder="0"></iframe>`;
+      return;
+    }
+    const vm = extractVimeoId(url);
+    if(vm){
+      holder.innerHTML = `<iframe class="bg-fill bg-frame" src="https://player.vimeo.com/video/${vm}?autoplay=1&muted=1&loop=1&background=1" allow="autoplay; fullscreen" frameborder="0"></iframe>`;
+      return;
+    }
+    const drive = driveDirectLink(url);
+    const finalUrl = drive || url;
+    const v = document.createElement('video');
+    v.className = 'bg-fill';
+    v.autoplay = true; v.muted = true; v.loop = true; v.playsInline = true; v.preload = 'auto';
+    v.src = finalUrl;
+    v.onerror = () => document.getElementById('bg').classList.add('no-video');
+    holder.appendChild(v);
+    v.play().catch(()=>{});
+  }
+
+  async function loadConfig(){
+    try{
+      const { data, error } = await supa.from('config_muro').select('*').eq('id',1).single();
+      if(error || !data) { document.getElementById('bg').classList.add('no-video'); return; }
+      if(data.titulo) document.getElementById('heroTitle').textContent = data.titulo;
+      if(data.subtitulo) document.getElementById('heroSubtitle').textContent = data.subtitulo;
+      setBackgroundMedia(data.video_url);
+    }catch(e){
+      document.getElementById('bg').classList.add('no-video');
+    }
+  }
+
+  async function loadGroup(group){
+    if(cache[group]) return cache[group];
+    const table = group === 'familias' ? 'vista_muro_familias' : 'vista_muro_egresados';
+    const { data, error } = await supa.from(table).select('*').order('created_at', { ascending:false });
+    if(error){
+      console.error(`[muro] error al leer ${table}:`, error.message || error);
+      groupError[group] = true;
+      cache[group] = [];
+    } else {
+      cache[group] = data || [];
+    }
+    return cache[group];
+  }
+
+  function cardHtml(r, group){
+    if(group === 'familias'){
+      const main = r.comentario ? esc(r.comentario) : (r.recomendacion ? '' : '');
+      const secondary = r.recomendacion ? esc(r.recomendacion) : '';
+      if(!main && !secondary) return '';
+      return `
+      <div class="card" data-group="familias">
+        <div class="quote-mark">&ldquo;</div>
+        ${main ? `<p class="quote">${main}</p>` : ''}
+        ${secondary ? `<p class="quote secondary">&ldquo;${secondary}&rdquo;</p>` : ''}
+        <div class="card-foot">
+          <div class="who">
+            <span class="name">${esc(r.nombre_familiar) || 'Una familia Wake Up'}</span>
+            ${r.estrellas_experiencia ? `<span class="stars">${stars(r.estrellas_experiencia)}</span>` : ''}
+          </div>
+          ${r.recomendaria && String(r.recomendaria).toLowerCase().startsWith('s') ? '<span class="rec-tag">✓ Lo recomienda</span>' : ''}
+        </div>
+      </div>`;
+    }
+    const main = r.feedback_libre ? esc(r.feedback_libre) : '';
+    const secondary = r.para_quien_duda ? esc(r.para_quien_duda) : '';
+    if(!main && !secondary) return '';
+    return `
+    <div class="card" data-group="egresados">
+      <div class="quote-mark">&ldquo;</div>
+      ${main ? `<p class="quote">${main}</p>` : ''}
+      ${secondary ? `<p class="quote secondary">&ldquo;${secondary}&rdquo;</p>` : ''}
+      <div class="card-foot">
+        <div class="who">
+          <span class="name">${esc(r.nombre) || 'Un egresado Wake Up'}</span>
+          ${r.estrellas ? `<span class="stars">${stars(r.estrellas)}</span>` : ''}
+        </div>
+        ${r.recomendaria && String(r.recomendaria).toLowerCase().startsWith('s') ? '<span class="rec-tag">✓ Lo recomienda</span>' : ''}
+      </div>
+    </div>`;
+  }
+
+  function revealCards(){
+    if(reduceMotion) return;
+    const cards = document.querySelectorAll('.card:not(.in)');
+    const io = new IntersectionObserver((entries)=>{
+      entries.forEach(en=>{
+        if(en.isIntersecting){
+          en.target.classList.add('in');
+          io.unobserve(en.target);
+        }
+      });
+    }, { threshold:.12, rootMargin:'0px 0px -40px 0px' });
+    cards.forEach(c=>io.observe(c));
+  }
+
+  async function render(group){
+    const wall = document.getElementById('wall');
+    wall.style.opacity = '0';
+    await new Promise(r=>setTimeout(r, reduceMotion ? 0 : 160));
+    wall.innerHTML = '<div class="loading">Cargando historias…</div>';
+    wall.style.opacity = '1';
+
+    let rows; // array of {r, g}
+    let anyError;
+    if(group === 'todas'){
+      const [fam, egr] = await Promise.all([loadGroup('familias'), loadGroup('egresados')]);
+      if(active !== group) return;
+      const combined = fam.map(r => ({ r, g: 'familias' })).concat(egr.map(r => ({ r, g: 'egresados' })));
+      rows = shuffle(combined);
+      anyError = groupError.familias && groupError.egresados;
+    } else {
+      const data = await loadGroup(group);
+      if(active !== group) return;
+      rows = data.map(r => ({ r, g: group }));
+      anyError = groupError[group];
+    }
+
+    const htmlParts = rows.map(({ r, g }) => cardHtml(r, g)).filter(Boolean);
+    document.getElementById('countLine').innerHTML = htmlParts.length
+      ? `<b>${htmlParts.length}</b> historia${htmlParts.length===1?'':'s'} compartida${htmlParts.length===1?'':'s'}`
+      : '';
+
+    if(!htmlParts.length){
+      wall.innerHTML = anyError
+        ? `<div class="empty">No se pudieron cargar las historias ahora. Volvé a intentar en un rato.</div>`
+        : `<div class="empty">Todavía no hay historias${group === 'todas' ? '' : ' de ' + group} autorizadas para mostrar acá.</div>`;
+      return;
+    }
+    wall.innerHTML = htmlParts.join('');
+    if(reduceMotion){
+      document.querySelectorAll('.card').forEach(c=>c.classList.add('in'));
+    } else {
+      revealCards();
+    }
+  }
+
+  const toggle = document.getElementById('toggle');
+  toggle.addEventListener('click', (e)=>{
+    const btn = e.target.closest('button[data-tab]');
+    if(!btn || btn.classList.contains('active')) return;
+    active = btn.dataset.tab;
+    toggle.dataset.active = active;
+    toggle.querySelectorAll('button').forEach(b=>b.classList.toggle('active', b===btn));
+    render(active);
+  });
+
+  loadConfig();
+  render('todas');
+})();
+</script>
