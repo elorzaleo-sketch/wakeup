@@ -126,12 +126,20 @@
   .card[data-group="familias"]::before{background:linear-gradient(var(--magenta),transparent);}
   .card[data-group="egresados"]::before{background:linear-gradient(var(--cyan),transparent);}
 
+  .card-top{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:6px;}
   .quote-mark{
     font-family:'Bricolage Grotesque',sans-serif;font-size:2.6rem;font-weight:800;
-    line-height:1;height:22px;overflow:visible;margin-bottom:6px;opacity:.5;
+    line-height:1;height:22px;overflow:visible;opacity:.5;
   }
   .card[data-group="familias"] .quote-mark{color:var(--magenta);}
   .card[data-group="egresados"] .quote-mark{color:var(--cyan);}
+
+  .group-tag{
+    font-size:.66rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;
+    padding:4px 10px;border-radius:999px;white-space:nowrap;margin-top:4px;
+  }
+  .card[data-group="familias"] .group-tag{color:var(--magenta);background:rgba(241,29,140,.12);border:1px solid rgba(241,29,140,.25);}
+  .card[data-group="egresados"] .group-tag{color:var(--cyan);background:rgba(93,180,201,.12);border:1px solid rgba(93,180,201,.25);}
 
   .quote{font-size:1.02rem;line-height:1.55;margin:0 0 14px;color:var(--text);}
   .quote.secondary{
@@ -353,7 +361,10 @@
       if(!main && !secondary) return '';
       return `
       <div class="card" data-group="familias">
-        <div class="quote-mark">&ldquo;</div>
+        <div class="card-top">
+          <div class="quote-mark">&ldquo;</div>
+          <span class="group-tag">Familia</span>
+        </div>
         ${main ? `<p class="quote">${main}</p>` : ''}
         ${secondary ? `<p class="quote secondary">&ldquo;${secondary}&rdquo;</p>` : ''}
         <div class="card-foot">
@@ -370,7 +381,10 @@
     if(!main && !secondary) return '';
     return `
     <div class="card" data-group="egresados">
-      <div class="quote-mark">&ldquo;</div>
+      <div class="card-top">
+        <div class="quote-mark">&ldquo;</div>
+        <span class="group-tag">Egresado</span>
+      </div>
       ${main ? `<p class="quote">${main}</p>` : ''}
       ${secondary ? `<p class="quote secondary">&ldquo;${secondary}&rdquo;</p>` : ''}
       <div class="card-foot">
