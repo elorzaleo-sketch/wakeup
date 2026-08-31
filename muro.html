@@ -108,6 +108,22 @@
   .count-line{margin-top:20px;font-size:.85rem;color:var(--muted);min-height:1.2em;}
   .count-line b{color:var(--text);font-variant-numeric:tabular-nums;}
 
+  .scroll-cue{
+    margin-top:28px;display:flex;flex-direction:column;align-items:center;gap:6px;
+    color:var(--muted);font-size:.72rem;font-weight:600;letter-spacing:.04em;
+    animation:cueBounce 2.2s ease-in-out infinite;
+  }
+  @keyframes cueBounce{
+    0%,100%{transform:translateY(0);opacity:.5;}
+    50%{transform:translateY(7px);opacity:1;}
+  }
+
+  @media(max-width:680px){
+    .hero{min-height:auto;padding:64px 20px 20px;}
+    .subtitle{margin-bottom:30px;}
+    .scroll-cue{margin-top:22px;}
+  }
+
   /* ---------- wall ---------- */
   .wall{
     max-width:1180px;margin:0 auto;padding:0 20px 40px;
@@ -194,7 +210,15 @@
     html{scroll-behavior:auto;}
     .card{transition:none;opacity:1;transform:none;}
     .toggle .thumb{transition:none;}
+    .scroll-cue{animation:none;}
   }
+
+  /* ---------- background loading veil (hides the youtube/vimeo control flash) ---------- */
+  .bg-veil{
+    position:absolute;inset:0;z-index:2;background:var(--ink);
+    opacity:1;transition:opacity .8s ease;pointer-events:none;
+  }
+  .bg-veil.hide{opacity:0;}
 </style>
 </head>
 <body>
@@ -202,6 +226,7 @@
 
 <div class="bg" id="bg">
   <div id="bgMedia"></div>
+  <div class="bg-veil" id="bgVeil"></div>
 </div>
 
 <button type="button" class="sound-btn" id="soundBtn" hidden aria-pressed="false">
@@ -222,6 +247,10 @@
       <button type="button" data-tab="egresados">Egresados</button>
     </div>
     <p class="count-line" id="countLine"></p>
+    <div class="scroll-cue" aria-hidden="true">
+      <span>Mirá las historias</span>
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+    </div>
   </header>
 
   <main class="wall" id="wall">
@@ -276,15 +305,23 @@
   let mediaType = null; // 'video' | 'youtube' | 'vimeo'
   let mediaEl = null;
   let soundOn = false;
+  let veilHidden = false;
 
   function showSoundBtn(){
     const btn = document.getElementById('soundBtn');
     btn.hidden = false;
   }
 
+  function hideVeil(){
+    if(veilHidden) return;
+    veilHidden = true;
+    const veil = document.getElementById('bgVeil');
+    if(veil) veil.classList.add('hide');
+  }
+
   function setBackgroundMedia(url){
     const holder = document.getElementById('bgMedia');
-    if(!url){ document.getElementById('bg').classList.add('no-video'); return; }
+    if(!url){ document.getElementById('bg').classList.add('no-video'); hideVeil(); return; }
 
     const yt = extractYouTubeId(url);
     if(yt){
@@ -292,6 +329,9 @@
       mediaType = 'youtube';
       mediaEl = document.getElementById('ytFrame');
       showSoundBtn();
+      // El propio reproductor de YouTube tarda un instante en aplicar controls=0;
+      // dejamos el velo tapando ese "flash" inicial de sus controles nativos.
+      setTimeout(hideVeil, 1300);
       return;
     }
     const vm = extractVimeoId(url);
@@ -300,6 +340,7 @@
       mediaType = 'vimeo';
       mediaEl = document.getElementById('vmFrame');
       showSoundBtn();
+      setTimeout(hideVeil, 1100);
       return;
     }
     const drive = driveDirectLink(url);
@@ -308,12 +349,14 @@
     v.className = 'bg-fill';
     v.autoplay = true; v.muted = true; v.loop = true; v.playsInline = true; v.preload = 'auto';
     v.src = finalUrl;
-    v.onerror = () => document.getElementById('bg').classList.add('no-video');
+    v.onerror = () => { document.getElementById('bg').classList.add('no-video'); hideVeil(); };
+    v.addEventListener('playing', hideVeil, { once:true });
     holder.appendChild(v);
     v.play().catch(()=>{});
     mediaType = 'video';
     mediaEl = v;
     showSoundBtn();
+    setTimeout(hideVeil, 1500); // red de seguridad si 'playing' no dispara
   }
 
   function setSound(on){
