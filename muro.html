@@ -153,6 +153,22 @@
     grid-column:1/-1;
   }
 
+  /* sound toggle */
+  .sound-btn{
+    position:fixed;right:18px;bottom:18px;z-index:10;
+    display:flex;align-items:center;gap:8px;cursor:pointer;
+    padding:12px 18px;border-radius:999px;border:1.5px solid var(--line);
+    background:rgba(8,8,8,.55);backdrop-filter:blur(14px);
+    color:var(--text);font-family:'Outfit',sans-serif;font-weight:600;font-size:.85rem;
+    box-shadow:0 8px 24px rgba(0,0,0,.35);transition:border-color .2s,transform .15s;
+  }
+  .sound-btn:hover{border-color:var(--cyan);transform:translateY(-1px);}
+  .sound-btn:focus-visible{outline:2px solid var(--cyan);outline-offset:3px;}
+  .sound-btn .ico{font-size:1.05rem;}
+  @media(max-width:480px){
+    .sound-btn{right:12px;bottom:12px;padding:11px 15px;font-size:.8rem;}
+  }
+
   footer{
     position:relative;z-index:1;text-align:center;padding:50px 20px 46px;
     color:var(--muted);font-size:.82rem;border-top:1px solid var(--line);
@@ -171,6 +187,11 @@
 <div class="bg" id="bg">
   <div id="bgMedia"></div>
 </div>
+
+<button type="button" class="sound-btn" id="soundBtn" hidden aria-pressed="false">
+  <span class="ico" id="soundIco">🔇</span>
+  <span id="soundLabel">Activar sonido</span>
+</button>
 
 <div class="stage">
   <header class="hero">
@@ -236,18 +257,33 @@
     return m ? `https://drive.google.com/uc?export=download&id=${m[1]}` : null;
   }
 
+  let mediaType = null; // 'video' | 'youtube' | 'vimeo'
+  let mediaEl = null;
+  let soundOn = false;
+
+  function showSoundBtn(){
+    const btn = document.getElementById('soundBtn');
+    btn.hidden = false;
+  }
+
   function setBackgroundMedia(url){
     const holder = document.getElementById('bgMedia');
     if(!url){ document.getElementById('bg').classList.add('no-video'); return; }
 
     const yt = extractYouTubeId(url);
     if(yt){
-      holder.innerHTML = `<iframe class="bg-fill bg-frame" src="https://www.youtube.com/embed/${yt}?autoplay=1&mute=1&loop=1&playlist=${yt}&controls=0&showinfo=0&modestbranding=1&playsinline=1&iv_load_policy=3&rel=0" allow="autoplay; encrypted-media" frameborder="0"></iframe>`;
+      holder.innerHTML = `<iframe id="ytFrame" class="bg-fill bg-frame" src="https://www.youtube.com/embed/${yt}?autoplay=1&mute=1&loop=1&playlist=${yt}&controls=0&showinfo=0&modestbranding=1&playsinline=1&iv_load_policy=3&rel=0&enablejsapi=1" allow="autoplay; encrypted-media" frameborder="0"></iframe>`;
+      mediaType = 'youtube';
+      mediaEl = document.getElementById('ytFrame');
+      showSoundBtn();
       return;
     }
     const vm = extractVimeoId(url);
     if(vm){
-      holder.innerHTML = `<iframe class="bg-fill bg-frame" src="https://player.vimeo.com/video/${vm}?autoplay=1&muted=1&loop=1&background=1" allow="autoplay; fullscreen" frameborder="0"></iframe>`;
+      holder.innerHTML = `<iframe id="vmFrame" class="bg-fill bg-frame" src="https://player.vimeo.com/video/${vm}?autoplay=1&muted=1&loop=1&background=1&api=1" allow="autoplay; fullscreen" frameborder="0"></iframe>`;
+      mediaType = 'vimeo';
+      mediaEl = document.getElementById('vmFrame');
+      showSoundBtn();
       return;
     }
     const drive = driveDirectLink(url);
@@ -259,7 +295,30 @@
     v.onerror = () => document.getElementById('bg').classList.add('no-video');
     holder.appendChild(v);
     v.play().catch(()=>{});
+    mediaType = 'video';
+    mediaEl = v;
+    showSoundBtn();
   }
+
+  function setSound(on){
+    soundOn = on;
+    if(mediaType === 'video' && mediaEl){
+      mediaEl.muted = !on;
+      if(on) mediaEl.play().catch(()=>{});
+    } else if(mediaType === 'youtube' && mediaEl && mediaEl.contentWindow){
+      const cmd = (func, args) => mediaEl.contentWindow.postMessage(JSON.stringify({ event:'command', func, args: args || [] }), '*');
+      if(on){ cmd('unMute'); cmd('setVolume', [100]); }
+      else { cmd('mute'); }
+    } else if(mediaType === 'vimeo' && mediaEl && mediaEl.contentWindow){
+      mediaEl.contentWindow.postMessage(JSON.stringify({ method:'setVolume', value: on ? 1 : 0 }), '*');
+    }
+    const btn = document.getElementById('soundBtn');
+    document.getElementById('soundIco').textContent = on ? '🔊' : '🔇';
+    document.getElementById('soundLabel').textContent = on ? 'Silenciar' : 'Activar sonido';
+    btn.setAttribute('aria-pressed', on ? 'true' : 'false');
+  }
+
+  document.getElementById('soundBtn').addEventListener('click', () => setSound(!soundOn));
 
   async function loadConfig(){
     try{
