@@ -53,6 +53,14 @@
     color:var(--muted);font-family:'Outfit',sans-serif;font-size:.8rem;font-weight:600;cursor:pointer;transition:.15s;}
   .filter-btn.active{border-color:var(--cyan);color:var(--text);background:rgba(93,180,201,.1);}
   @media(max-width:500px){.stats{grid-template-columns:1fr 1fr;}.container{padding:16px 16px 60px;}}
+  .toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(80px);background:#1e2e31;border:1px solid rgba(93,180,201,.3);border-radius:12px;padding:10px 18px;font-size:.86rem;color:var(--text);transition:transform .3s cubic-bezier(.34,1.56,.64,1),opacity .3s;opacity:0;z-index:99;pointer-events:none;}
+  .toast.show{transform:translateX(-50%) translateY(0);opacity:1;}
+  .card-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+  .ghost-btn{padding:5px 12px;border-radius:8px;border:1.5px solid var(--line);background:transparent;color:var(--muted);font-family:'Outfit',sans-serif;font-size:.78rem;font-weight:600;cursor:pointer;}
+  .export-menu{position:absolute;z-index:50;background:#12181a;border:1px solid var(--line);border-radius:12px;padding:6px;box-shadow:0 12px 30px rgba(0,0,0,.4);display:none;min-width:190px;}
+  .export-menu.open{display:block;}
+  .export-menu button{display:block;width:100%;text-align:left;padding:9px 12px;border-radius:8px;border:none;background:transparent;color:var(--text);font-family:'Outfit',sans-serif;font-size:.83rem;cursor:pointer;}
+  .export-menu button:hover{background:rgba(255,255,255,.06);}
 </style>
 </head>
 <body>
@@ -67,12 +75,15 @@
     <div class="stat cyan"><div class="val" id="statTotal">—</div><div class="lbl">Respuestas</div></div>
     <div class="stat magenta"><div class="val" id="statAvg">—</div><div class="lbl">Promedio estrellas</div></div>
     <div class="stat green"><div class="val" id="statRec">—</div><div class="lbl">Lo recomendarían</div></div>
+    <div class="stat cyan"><div class="val" id="statAut">—</div><div class="lbl">Autorizadas para el muro</div></div>
   </div>
 
   <p class="section-title" style="margin-top:24px;">Respuestas individuales</p>
 
   <div class="filter-bar" id="filterBar">
     <button class="filter-btn active" data-f="todas" type="button">Todas</button>
+    <button class="filter-btn" data-f="autorizadas" type="button">Autorizadas</button>
+    <button class="filter-btn" data-f="no-autorizadas" type="button">Sin autorizar</button>
     <button class="filter-btn" data-f="5" type="button">★★★★★</button>
     <button class="filter-btn" data-f="4" type="button">★★★★</button>
     <button class="filter-btn" data-f="1-3" type="button">★★★ o menos</button>
@@ -84,6 +95,14 @@
   </div>
 </div>
 
+<div class="export-menu" id="exportMenu">
+  <button type="button" data-fmt="historia" data-theme="dark">🌙 Historia IG · fondo negro</button>
+  <button type="button" data-fmt="historia" data-theme="light">☀️ Historia IG · fondo blanco</button>
+  <button type="button" data-fmt="tarjeta" data-theme="dark">🌙 Solo tarjeta · oscura</button>
+  <button type="button" data-fmt="tarjeta" data-theme="light">☀️ Solo tarjeta · clara</button>
+</div>
+<div class="toast" id="toast"></div>
+
 <script>
 const SUPA_URL = "https://mzousqdahqterfawhwsz.supabase.co";
 const SUPA_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im16b3VzcWRhaHF0ZXJmYXdod3N6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA1MTc4MzUsImV4cCI6MjA5NjA5MzgzNX0.EdSlcRdLD75OdYlwtZGLVgL_PGpJysWb_MKvuwGgj5Y";
@@ -91,6 +110,15 @@ const supa = supabase.createClient(SUPA_URL, SUPA_KEY);
 
 let allData = [];
 let filtroActivo = 'todas';
+let toastT;
+
+function showToast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastT);
+  toastT = setTimeout(() => t.classList.remove('show'), 2800);
+}
 
 function starsHtml(n) {
   return '★'.repeat(n || 0) + '☆'.repeat(5 - (n || 0));
@@ -116,6 +144,7 @@ function renderCards(data) {
         <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
           <span class="stars-disp">${starsHtml(r.estrellas)}</span>
           <span class="card-fecha">${formatFecha(r.created_at)}</span>
+          <button type="button" class="ghost-btn" onclick="openExportMenu(event,'${r.id}')">🖼️ Exportar</button>
           <button type="button" onclick="deleteEncuesta('${r.id}')" style="padding:3px 9px;border-radius:7px;border:1.5px solid rgba(255,95,174,.3);background:transparent;color:#ff5fae;font-family:Outfit,sans-serif;font-size:.73rem;font-weight:600;cursor:pointer;">🗑️</button>
         </div>
       </div>
@@ -125,6 +154,15 @@ function renderCards(data) {
       ${r.momento_favorito ? `<div class="field-row"><div class="flabel">Momento favorito</div><div class="fval">${r.momento_favorito}</div></div>` : ''}
       ${r.mejoraria ? `<div class="field-row"><div class="flabel">Mejoraría</div><div class="fval">${r.mejoraria}</div></div>` : ''}
       ${r.para_quien_duda ? `<hr class="divider"><div class="field-row"><div class="flabel">Para quien duda en elegir Wake Up</div><div class="fval" style="font-style:italic;">"${r.para_quien_duda}"</div></div>` : ''}
+      <hr class="divider">
+      <button type="button" onclick="toggleAutorizo('${r.id}', ${!r.autorizo_compartir})"
+        style="display:flex;align-items:center;justify-content:center;gap:7px;width:100%;cursor:pointer;
+        border-radius:10px;padding:9px 14px;font-family:Outfit,sans-serif;font-size:.83rem;font-weight:600;
+        border:1.5px solid ${r.autorizo_compartir ? 'var(--green)' : 'var(--line)'};
+        background:${r.autorizo_compartir ? 'rgba(25,148,50,.12)' : 'transparent'};
+        color:${r.autorizo_compartir ? 'var(--green)' : 'var(--muted)'};">
+        ${r.autorizo_compartir ? '✓ Autoriza compartir en el muro público' : 'Marcar como autorizado para el muro'}
+      </button>
     </div>`;
   }).join('');
 }
@@ -135,6 +173,8 @@ function applyFilter() {
   else if (filtroActivo === '4') data = data.filter(r => r.estrellas === 4);
   else if (filtroActivo === '1-3') data = data.filter(r => r.estrellas <= 3);
   else if (filtroActivo === 'con-comentario') data = data.filter(r => r.feedback_libre || r.para_quien_duda);
+  else if (filtroActivo === 'autorizadas') data = data.filter(r => r.autorizo_compartir);
+  else if (filtroActivo === 'no-autorizadas') data = data.filter(r => !r.autorizo_compartir);
   renderCards(data);
 }
 
@@ -161,6 +201,7 @@ async function load() {
   const rec = data.filter(r => r.recomendaria && r.recomendaria.startsWith('sí')).length;
   const pct = data.length ? Math.round(rec / data.length * 100) + '%' : '—';
   document.getElementById('statRec').textContent = pct;
+  document.getElementById('statAut').textContent = data.filter(r => r.autorizo_compartir).length;
 
   applyFilter();
 }
@@ -172,8 +213,32 @@ async function deleteEncuesta(id) {
   load();
 }
 
+function openExportMenu(evt, id) {
+  const r = allData.find(x => String(x.id) === String(id));
+  if (!r) return;
+  wuOpenExportMenu(evt, {
+    grupo: 'egresados',
+    nombre: r.nombre || 'Un egresado Wake Up',
+    estrellas: r.estrellas,
+    parrafos: [r.feedback_libre, r.para_quien_duda].filter(Boolean)
+  });
+}
+
+async function toggleAutorizo(id, nuevoValor) {
+  const { data, error } = await supa.from('experiencias').update({ autorizo_compartir: nuevoValor }).eq('id', id).select();
+  if(error) { showToast('Error al guardar: ' + error.message); return; }
+  if(!data || !data.length) { showToast('⚠️ No se guardó: falta permiso (RLS) en Supabase para esta columna.'); return; }
+  const row = allData.find(r => String(r.id) === String(id));
+  if(row) row.autorizo_compartir = nuevoValor;
+  showToast(nuevoValor ? 'Autorizada para el muro público ✓' : 'Quitada del muro público');
+  document.getElementById('statAut').textContent = allData.filter(r => r.autorizo_compartir).length;
+  applyFilter();
+}
+
 load();
 </script>
+
+<script src="export-imagenes.js"></script>
 
 <script>
 if ('serviceWorker' in navigator) {
