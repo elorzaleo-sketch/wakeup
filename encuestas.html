@@ -89,6 +89,7 @@
     <button class="filter-btn" data-f="1-3" type="button">★★★ o menos</button>
     <button class="filter-btn" data-f="con-comentario" type="button">Con comentario</button>
   </div>
+  <button type="button" class="ghost-btn" style="margin-bottom:16px;" onclick="exportarTodo(event)">📦 Exportar todo lo filtrado</button>
 
   <div class="cards" id="cardsList">
     <div class="loading">Cargando encuestas…</div>
@@ -167,7 +168,7 @@ function renderCards(data) {
   }).join('');
 }
 
-function applyFilter() {
+function getFilteredData() {
   let data = [...allData];
   if (filtroActivo === '5') data = data.filter(r => r.estrellas === 5);
   else if (filtroActivo === '4') data = data.filter(r => r.estrellas === 4);
@@ -175,7 +176,23 @@ function applyFilter() {
   else if (filtroActivo === 'con-comentario') data = data.filter(r => r.feedback_libre || r.para_quien_duda);
   else if (filtroActivo === 'autorizadas') data = data.filter(r => r.autorizo_compartir);
   else if (filtroActivo === 'no-autorizadas') data = data.filter(r => !r.autorizo_compartir);
-  renderCards(data);
+  return data;
+}
+
+function applyFilter() {
+  renderCards(getFilteredData());
+}
+
+function exportarTodo(evt) {
+  const data = getFilteredData().filter(r => r.feedback_libre || r.para_quien_duda);
+  if (!data.length) { showToast('No hay comentarios con texto para exportar en este filtro.'); return; }
+  const rows = data.map(r => ({
+    grupo: 'egresados',
+    nombre: r.nombre || 'Un egresado Wake Up',
+    estrellas: r.estrellas,
+    parrafos: [r.feedback_libre, r.para_quien_duda].filter(Boolean),
+  }));
+  wuOpenExportMenu(evt, { bulk: true, rows });
 }
 
 document.getElementById('filterBar').addEventListener('click', e => {
