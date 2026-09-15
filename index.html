@@ -651,6 +651,13 @@
             <textarea id="paraQuienDuda" placeholder="Le diría que…" rows="4"></textarea>
           </div>
 
+          <div class="survey-q">
+            <label style="display:flex;align-items:flex-start;gap:9px;cursor:pointer;font-size:.83rem;color:var(--muted);line-height:1.5;">
+              <input type="checkbox" id="autorizoCompartirEgresado" style="margin-top:2px;width:17px;height:17px;flex:0 0 auto;accent-color:var(--cyan);">
+              Autorizo a compartir esta encuesta en redes sociales o futuras reuniones
+            </label>
+          </div>
+
           <button class="btn btn-magenta" id="enviarEncuesta" type="button">
             Enviar mi experiencia
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13"/><path d="M22 2 15 22 11 13 2 9l20-7z"/></svg>
@@ -1097,6 +1104,7 @@ document.getElementById('enviarEncuesta').addEventListener('click', async () => 
     momento_favorito: document.getElementById('momentoFavorito').value.trim(),
     mejoraria: document.getElementById('mejoraría').value.trim(),
     para_quien_duda: document.getElementById('paraQuienDuda').value.trim(),
+    autoriza_egresado: document.getElementById('autorizoCompartirEgresado').checked,
     created_at: new Date().toISOString()
   };
   try {
