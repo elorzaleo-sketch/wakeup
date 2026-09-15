@@ -197,6 +197,7 @@ function renderEfCards(){
       ${r.recomendaria?`<div class="ef-field"><div class="ef-label">¿Recomendaría?</div><div class="ef-val badge">${r.recomendaria}</div></div>`:''}
       ${r.comentario?`<hr class="divider"><div class="ef-field"><div class="ef-label">Comentario</div><div class="ef-val">${r.comentario}</div></div>`:''}
       ${r.recomendacion?`<div class="ef-field"><div class="ef-label">Qué le diría a otras familias</div><div class="ef-val" style="font-style:italic;">"${r.recomendacion}"</div></div>`:''}
+      <div class="ef-field"><div class="ef-label">Consentimiento de la familia</div><div class="ef-val">${r.autoriza_familia ? '<span class="badge">✓ Autorizó al completar la encuesta</span>' : '<span style="color:var(--muted);font-size:.82rem;">No marcó el check de autorización</span>'}</div></div>
       <hr class="divider">
       <button type="button" onclick="toggleAutorizo('${r.id}', ${!r.autorizo_compartir})"
         style="display:flex;align-items:center;justify-content:center;gap:7px;width:100%;cursor:pointer;
