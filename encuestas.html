@@ -155,6 +155,7 @@ function renderCards(data) {
       ${r.momento_favorito ? `<div class="field-row"><div class="flabel">Momento favorito</div><div class="fval">${r.momento_favorito}</div></div>` : ''}
       ${r.mejoraria ? `<div class="field-row"><div class="flabel">Mejoraría</div><div class="fval">${r.mejoraria}</div></div>` : ''}
       ${r.para_quien_duda ? `<hr class="divider"><div class="field-row"><div class="flabel">Para quien duda en elegir Wake Up</div><div class="fval" style="font-style:italic;">"${r.para_quien_duda}"</div></div>` : ''}
+      <div class="field-row"><div class="flabel">Consentimiento</div><div class="fval">${r.autoriza_egresado ? '<span class="badge">✓ Autorizó al completar la encuesta</span>' : '<span style="color:var(--muted);font-size:.82rem;">No marcó el check de autorización</span>'}</div></div>
       <hr class="divider">
       <button type="button" onclick="toggleAutorizo('${r.id}', ${!r.autorizo_compartir})"
         style="display:flex;align-items:center;justify-content:center;gap:7px;width:100%;cursor:pointer;
